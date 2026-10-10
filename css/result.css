@@ -1,0 +1,21 @@
+/* result.css - result stage, badges, mode tabs */
+.stage { --maxh: 70dvh; width: min(100%, calc(var(--maxh) * var(--ar, 1.333))); margin: 0 auto; position: relative; background: repeating-conic-gradient(var(--panel-2) 0 25%, var(--panel) 0 50%) 0 0 / 20px 20px; border: 2px solid var(--text); border-radius: var(--radius); overflow: hidden; touch-action: manipulation; line-height: 0; }
+.stage canvas { display: block; width: 100%; height: auto; }
+.stage .orig { position: absolute; inset: 0; pointer-events: none; clip-path: inset(0 50% 0 0); }
+.stage.editing { cursor: crosshair; outline: 3px dashed var(--accent-2); outline-offset: -3px; }
+.badges { position: absolute; left: 8px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; line-height: 1.2; }
+.badge { background: rgba(0,0,0,.72); color: #fff; font-size: .72rem; font-weight: 800; padding: 4px 8px; border-radius: 99px; }
+.badge.warn { background: var(--accent); }
+.stage-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+@media (min-width: 560px) { .modes { grid-template-columns: repeat(4, 1fr); } }
+.mode-tab { font-size: .9rem; min-height: 48px; border-radius: var(--radius-s); border: 2px solid var(--border); background: var(--panel-2); font-weight: 800; cursor: pointer; padding: 0 6px; }
+.mode-tab[aria-selected="true"] { border-color: var(--accent); background: var(--accent); color: #fff; box-shadow: 3px 3px 0 var(--ink); }
+
+/* phones / narrow: keep the preview pinned while adjusting sliders */
+@media (max-width: 899px) {
+  .stage-col { display: contents; }
+  .stage { --maxh: 40dvh; position: sticky; top: calc(var(--safe-t) + 56px); z-index: 8; box-shadow: 0 10px 14px -8px rgba(0, 0, 0, .45); }
+  .stage-tools, #edit-hint { grid-column: 1; }
+}
+@media (max-height: 520px) and (orientation: landscape) { .stage { --maxh: 78dvh; } }

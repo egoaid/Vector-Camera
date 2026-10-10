@@ -1,0 +1,21 @@
+/* layout.css - page structure, screens, responsive grid */
+.topbar { position: sticky; top: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; padding: calc(var(--safe-t) + 6px) var(--gutter) 6px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 900; letter-spacing: .02em; }
+.brand-dot { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, var(--accent-2) 0 28%, var(--accent) 30% 62%, var(--ink) 64%); box-shadow: 0 0 0 2px var(--text); }
+.topbar-actions { display: flex; gap: 4px; }
+.screen { display: none; max-width: 1100px; margin: 0 auto; padding: 0 var(--gutter) 40px; }
+.screen.active { display: block; }
+.hero { text-align: center; padding: 36px 0 20px; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 38%, transparent) 1.6px, transparent 2px) 0 0 / 14px 14px; border-radius: var(--radius); margin-top: 14px; }
+.hero h1 { font-size: clamp(2.2rem, 9vw, 3.8rem); font-weight: 900; letter-spacing: -.01em; margin: 0 0 6px; text-shadow: 3px 3px 0 var(--accent), 6px 6px 0 var(--ink); }
+.tagline { text-wrap: balance; line-break: strict; font-size: 1.05rem; max-width: 34em; margin: 0 auto 22px; padding: 0 12px; }
+.cta { display: flex; flex-direction: column; gap: 12px; max-width: 420px; margin: 0 auto; padding: 0 12px; }
+.start-options { max-width: 640px; margin: 18px auto; }
+.content { max-width: 720px; margin: 28px auto 0; }
+.content h2 { border-left: 6px solid var(--accent); padding-left: 10px; }
+.copyright { color: var(--muted); font-size: .85rem; margin-top: 2em; text-align: center; }
+.result-layout { display: grid; gap: 16px; padding-top: 12px; }
+@media (min-width: 900px) {
+  .result-layout { grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); align-items: start; }
+  .stage-col { position: sticky; top: 64px; }
+}
+@media (orientation: landscape) and (max-height: 520px) { .result-layout { grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr); } .stage-col { position: sticky; top: 52px; } }

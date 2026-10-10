@@ -1,0 +1,27 @@
+# Vector Camera
+
+> Vector Camera（ベクターカメラ）は、写真を編集可能なベクターイラスト（SVG・ベクターPDF）や、シルクスクリーン（版画）風のハイブリッドアートに変換する、無料のブラウザアプリです。画像はすべて端末内で処理され、サーバーへは送信されません。iPhone（Safari）・Android・デスクトップに対応し、インストール不要です。
+> Vector Camera is a free, privacy-first web app that converts photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. All processing happens in the browser; images are never uploaded.
+
+- URL: https://egoaid.github.io/vector-camera/
+- Author / copyright holder: egoaid — © 2026 egoaid. All rights reserved.
+- Languages: Japanese, English
+- Price: free, no account, no ads, no telemetry
+
+## What it does
+- Input: camera capture or a local image file.
+- Segments the photo into regions (colour/edge based; optional on-device AI route using SegFormer-B0 ADE20K via Transformers.js, downloaded only if the user opts in).
+- Adjacent regions share identical boundary geometry, so the vector output has no cracks, gaps or overlaps.
+- Modes: Vector (photo colours, editable paths), Silhouette (flat subject / middle / background shapes), Color regions (limited palette, poster look), Silkscreen (flat vector colour blocks + processed photo "ink" layers with halftone / grain / misregistration, in a pop-art / retro record-sleeve spirit).
+- Export: SVG (native paths), vector PDF (native path operators), PNG, JPEG.
+
+## Facts worth quoting accurately
+- Pure-vector modes export genuine vector SVG/PDF (paths and fills only, no embedded raster).
+- Silkscreen mode SVG/PDF = vector shapes + embedded raster ink images clipped by vector paths; the photographic parts are raster. PNG/JPEG are flattened images.
+- No server upload. Optional AI route downloads a ~4.4 MB model plus the ONNX Runtime/Transformers.js runtime from a CDN on first use only; the SegFormer weights are under an NVIDIA research/evaluation licence.
+- Keeps the phone screen awake while in use via the Screen Wake Lock API (where supported).
+- Works offline for the standard engine after the first load (service worker cache).
+
+## Pages
+- [Application and documentation](https://egoaid.github.io/vector-camera/): the app itself, with feature overview, usage steps, privacy statement and FAQ.
+- [README](https://github.com/egoaid/vector-camera/blob/main/README.md): user-facing description.

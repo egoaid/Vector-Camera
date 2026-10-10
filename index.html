@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vector Camera｜写真をベクター・シルクスクリーン風に変換する無料カメラアプリ</title>
+<meta name="description" content="Vector Cameraは、写真をSVG・PDFのベクターイラストや、版画（シルクスクリーン）風のハイブリッドアートに変換する無料のWebアプリ。画像は端末内で処理され、サーバーへ送信されません。iPhone・Android対応、インストール不要。">
+<meta name="keywords" content="ベクター変換,写真 ベクター化,SVG 書き出し,ベクターPDF,シルクスクリーン風,ポップアート風,カメラアプリ,ブラウザ,プライバシー,オフライン">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="author" content="egoaid">
+<meta name="theme-color" content="#121014">
+<meta name="color-scheme" content="dark light">
+<link rel="canonical" href="https://egoaid.github.io/vector-camera/">
+<link rel="alternate" hreflang="ja" href="https://egoaid.github.io/vector-camera/">
+<link rel="alternate" hreflang="x-default" href="https://egoaid.github.io/vector-camera/">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="alternate" type="text/plain" href="llms.txt" title="llms.txt">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vector Camera">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vector Camera">
+<meta property="og:title" content="Vector Camera｜写真をベクター・シルクスクリーン風に変換">
+<meta property="og:description" content="写真をSVG・ベクターPDFや、版画風のハイブリッドアートに。端末内で処理、アップロードなし。">
+<meta property="og:url" content="https://egoaid.github.io/vector-camera/">
+<meta property="og:image" content="https://egoaid.github.io/vector-camera/icons/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vector Camera｜写真をベクター・シルクスクリーン風に変換">
+<meta name="twitter:description" content="写真をSVG・ベクターPDFや、版画風のハイブリッドアートに。端末内で処理、アップロードなし。">
+<meta name="twitter:image" content="https://egoaid.github.io/vector-camera/icons/og-image.png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/camera.css">
+<link rel="stylesheet" href="css/result.css">
+<link rel="stylesheet" href="css/compare.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://egoaid.github.io/vector-camera/#app",
+      "name": "Vector Camera",
+      "url": "https://egoaid.github.io/vector-camera/",
+      "description": "写真をベクターイラスト（SVG・ベクターPDF）や、シルクスクリーン風のハイブリッドアートに変換するブラウザアプリ。画像処理はすべて端末内で行われます。",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any (modern browser: iOS Safari, Android Chrome, desktop)",
+      "browserRequirements": "Requires JavaScript. Optional: camera access, Screen Wake Lock API.",
+      "inLanguage": ["ja", "en"],
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
+      "author": { "@type": "Person", "name": "egoaid" },
+      "copyrightHolder": { "@type": "Person", "name": "egoaid" },
+      "copyrightYear": 2026,
+      "featureList": [
+        "カメラ撮影または画像選択",
+        "領域分割による写真のベクター化（共有境界でスキマなし）",
+        "ネイティブSVGとベクターPDFの書き出し",
+        "シルエット／カラー領域／シルクスクリーン風ハイブリッドの各モード",
+        "PNG・JPEG書き出し",
+        "画像は端末内で処理（サーバー送信なし）",
+        "使用中の画面スリープ抑制（Screen Wake Lock API）"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "写真はサーバーにアップロードされますか？", "acceptedAnswer": { "@type": "Answer", "text": "いいえ。画像の処理はすべてお使いの端末のブラウザ内で行われ、画像や撮影データは外部へ送信されません。" } },
+        { "@type": "Question", "name": "書き出したSVGやPDFは本当にベクターですか？", "acceptedAnswer": { "@type": "Answer", "text": "ベクター／シルエット／カラー領域モードでは、パスと塗りだけで構成された純粋なベクターです。ハイブリッド（シルクスクリーン）モードのSVG・PDFは、ベクター形状に加工した写真（ラスター画像）を重ねた構成で、写真部分はラスターです。" } },
+        { "@type": "Question", "name": "インストールや会員登録は必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "不要です。ブラウザで開くだけで使えます。ホーム画面に追加すればアプリのように起動できます。" } },
+        { "@type": "Question", "name": "AI強化エンジンは必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "必須ではありません。標準エンジンだけで動作します。AI強化を選ぶと、初回のみAIモデル（約4.4MB）と実行ランタイムをダウンロードし、端末内で実行します。" } }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<noscript><p class="noscript">Vector Cameraの利用にはJavaScriptが必要です。 / Vector Camera requires JavaScript.</p></noscript>
+
+<header class="topbar">
+  <a class="brand" href="./" aria-label="Vector Camera"><span class="brand-dot" aria-hidden="true"></span><span class="brand-name">Vector Camera</span></a>
+  <div class="topbar-actions">
+    <button type="button" class="btn btn-ghost" id="btn-lang" data-i18n="lang.toggle">English</button>
+    <button type="button" class="btn btn-ghost" id="btn-about" data-i18n-aria="about.title" aria-label="バージョン情報">ⓘ</button>
+  </div>
+</header>
+
+<main id="app">
+  <!-- START -->
+  <section id="screen-start" class="screen active" aria-labelledby="h-title">
+    <div class="hero">
+      <h1 id="h-title">Vector Camera</h1>
+      <p class="tagline" data-i18n="app.tagline">写真を、ベクター＆シルクスクリーン風アートに。端末内で完結。</p>
+      <div class="cta">
+        <button type="button" class="btn btn-primary btn-xl" id="btn-camera" data-i18n="start.camera">カメラで撮る</button>
+        <button type="button" class="btn btn-secondary btn-xl" id="btn-choose" data-i18n="start.choose">画像を選ぶ</button>
+        <input type="file" id="file-input" accept="image/*" hidden>
+      </div>
+      <p class="hint" data-i18n="start.hint">画像は端末の外へ送信されません。</p>
+      <p id="start-error" class="error" role="alert" hidden></p>
+    </div>
+
+    <div class="panel start-options">
+      <div class="field">
+        <label for="sel-engine" data-i18n="start.engine">解析エンジン</label>
+        <select id="sel-engine">
+          <option value="classic" data-i18n="engine.classic">標準（端末内・ダウンロード不要）</option>
+          <option value="ai" data-i18n="engine.ai">AI強化（SegFormer・初回DLあり）</option>
+        </select>
+        <p class="note" id="engine-note" data-i18n="engine.note.classic"></p>
+      </div>
+      <div class="field">
+        <label for="sel-quality" data-i18n="start.quality">解析サイズ</label>
+        <select id="sel-quality">
+          <option value="low" data-i18n="quality.low">軽量（512px）</option>
+          <option value="standard" selected data-i18n="quality.standard">標準（768px）</option>
+          <option value="high" data-i18n="quality.high">高精細（1024px・重い）</option>
+        </select>
+      </div>
+      <div class="field field-check">
+        <label class="check"><input type="checkbox" id="chk-wake" checked><span data-i18n="start.wake">使用中は画面を消灯させない</span></label>
+        <p class="note" id="wake-status" role="status"></p>
+      </div>
+    </div>
+
+    <div class="content" id="about-content">
+      <h2>Vector Cameraとは</h2>
+      <p>Vector Cameraは、写真を<strong>ベクターイラスト</strong>や<strong>シルクスクリーン（版画）風のアート</strong>に変換する無料のWebアプリです。カメラで撮影するか、手持ちの画像を選ぶだけ。画像は端末内で処理され、サーバーには送信されません。</p>
+      <h2>4つの変換モード</h2>
+      <ul class="feature-list">
+        <li><strong>ベクター</strong>：写真の色を保ったまま、輪郭に沿った領域に分割。SVG・ベクターPDFとして書き出せます。</li>
+        <li><strong>シルエット</strong>：被写体・中景・背景を単色の形に。構図と輪郭を強調したグラフィックに。</li>
+        <li><strong>カラー領域</strong>：色数を絞って大きな色面にまとめた、ポスター風の仕上がり。</li>
+        <li><strong>シルクスクリーン</strong>：ベクターの形状の中に、ハーフトーンやグレインで加工した写真を重ねる、ポップアート／レトロな版画風。</li>
+      </ul>
+      <h2>使い方</h2>
+      <ol class="steps">
+        <li>「カメラで撮る」または「画像を選ぶ」をタップ。</li>
+        <li>自動で領域が分割されます。モードとスタイル、スライダーで好みの見た目に調整。</li>
+        <li>SVG・ベクターPDF・PNG・JPEGで書き出し。</li>
+      </ol>
+      <h2>特長</h2>
+      <ul class="feature-list">
+        <li>隣り合う領域は同じ境界線を共有するため、スキマや重なりのない綺麗なベクターになります。</li>
+        <li>スライダー操作では重い解析をやり直さず、必要な段階だけを再計算します。</li>
+        <li>使用中は画面が自動スリープしないよう、Screen Wake Lock APIで抑制します（対応ブラウザ）。</li>
+        <li>インストール不要。ホーム画面に追加すればアプリのように使えます。</li>
+      </ul>
+      <h2>プライバシー</h2>
+      <p>撮影・選択した画像は端末のブラウザ内でのみ処理されます。アカウント登録、広告、解析用の送信はありません。任意の「AI強化」を選んだ場合に限り、初回にAIモデルとランタイムをダウンロードします（画像は送信されません）。</p>
+      <h2>よくある質問</h2>
+      <details><summary>書き出したSVG・PDFは本当にベクターですか？</summary><p>ベクター／シルエット／カラー領域モードは、パスと塗りだけの純粋なベクターです。シルクスクリーンモードは、ベクターの形状に加工した写真（ラスター）を重ねる構成で、写真部分はラスターです。完成画像はPNG・JPEGで保存できます。</p></details>
+      <details><summary>iPhoneでも使えますか？</summary><p>はい。iPhone（Safari）とAndroid（Chrome）を主な対象にしています。重い場合は「解析サイズ」を「軽量」にしてください。</p></details>
+      <details><summary>オフラインで使えますか？</summary><p>一度読み込んだ後は、標準エンジンはオフラインでも動作します。AI強化は初回のダウンロードが必要です。</p></details>
+      <section lang="en" class="en-summary">
+        <h2>About (English)</h2>
+        <p>Vector Camera is a free, privacy-first web app that converts photos into editable vector art (SVG and true vector PDF) and screen-print style hybrid artwork. All processing happens in your browser; images are never uploaded. Works on iPhone Safari, Android Chrome and desktop.</p>
+      </section>
+      <p class="copyright">© 2026 egoaid. All rights reserved.</p>
+    </div>
+  </section>
+
+  <!-- CAMERA -->
+  <section id="screen-camera" class="screen" aria-label="Camera" hidden>
+    <div class="camera-stage">
+      <video id="video" playsinline muted></video>
+      <p id="camera-error" class="error camera-error" role="alert" hidden></p>
+    </div>
+    <div class="camera-bar">
+      <button type="button" class="btn btn-secondary" id="btn-cam-close" data-i18n="camera.close">閉じる</button>
+      <button type="button" class="shutter" id="btn-shutter" data-i18n-aria="camera.shutter" aria-label="撮影"></button>
+      <button type="button" class="btn btn-secondary" id="btn-cam-switch" data-i18n="camera.switch">カメラ切替</button>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="screen" aria-label="Result" hidden>
+    <div class="result-layout">
+      <div class="stage-col">
+        <div class="stage" id="stage">
+          <canvas id="cv-result" aria-label="Result"></canvas>
+          <canvas id="cv-original" class="orig" aria-hidden="true"></canvas>
+          <div class="compare-handle" id="compare-handle" hidden aria-hidden="true"></div>
+          <input type="range" id="compare-range" class="compare-range" min="0" max="100" value="50" hidden data-i18n-aria="result.compare" aria-label="比較">
+          <div class="badges" id="badges"></div>
+        </div>
+        <div class="stage-tools">
+          <button type="button" class="btn btn-small" id="btn-compare" aria-pressed="false" data-i18n="result.compare">比較</button>
+          <button type="button" class="btn btn-small" id="btn-edit" aria-pressed="false" data-i18n="result.edit">前景/背景を直す</button>
+          <button type="button" class="btn btn-small" id="btn-edit-reset" hidden data-i18n="result.edit.reset">手動修正をリセット</button>
+          <button type="button" class="btn btn-small" id="btn-rerun" data-i18n="result.rerun">再解析</button>
+          <button type="button" class="btn btn-small" id="btn-new" data-i18n="result.new">別の画像</button>
+        </div>
+        <p class="note" id="edit-hint" hidden data-i18n="result.edit.hint"></p>
+      </div>
+
+      <div class="panel-col">
+        <div class="modes" role="tablist" id="modes"></div>
+        <p class="note" id="mode-desc"></p>
+        <div class="field"><span class="label" data-i18n="preset.label">スタイル</span><div class="chips" id="presets" role="group"></div></div>
+        <div id="controls"></div>
+        <details class="advanced" id="advanced"><summary data-i18n="adv">詳細設定</summary><div id="controls-adv"></div></details>
+        <div class="export" id="export">
+          <h2 data-i18n="exp.title">書き出し</h2>
+          <div class="field"><label for="sel-export-size" data-i18n="exp.size">出力サイズ（長辺）</label>
+            <select id="sel-export-size"><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="3072">3072 px</option></select></div>
+          <div class="export-buttons">
+            <button type="button" class="btn btn-primary" data-export="svg" data-i18n="exp.svg">SVG</button>
+            <button type="button" class="btn btn-primary" data-export="pdf" data-i18n="exp.pdf">ベクターPDF</button>
+            <button type="button" class="btn btn-secondary" data-export="png" data-i18n="exp.png">PNG</button>
+            <button type="button" class="btn btn-secondary" data-export="jpeg" data-i18n="exp.jpeg">JPEG</button>
+          </div>
+          <label class="check" id="share-wrap" hidden><input type="checkbox" id="chk-share"><span data-i18n="exp.share">共有</span></label>
+          <p class="note" id="export-note" role="status"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- PROCESSING -->
+<div id="processing" class="overlay" role="alertdialog" aria-modal="true" aria-labelledby="proc-title" hidden>
+  <div class="overlay-card">
+    <h2 id="proc-title" data-i18n="proc.title">変換中…</h2>
+    <p id="proc-stage" role="status"></p>
+    <div class="progress" aria-hidden="true"><div class="progress-bar" id="proc-bar"></div></div>
+    <button type="button" class="btn btn-secondary" id="btn-proc-cancel" data-i18n="proc.cancel">キャンセル</button>
+  </div>
+</div>
+
+<!-- AI confirm -->
+<dialog id="dlg-ai" aria-labelledby="ai-title">
+  <form method="dialog" class="dlg">
+    <h2 id="ai-title" data-i18n="ai.title">AIモデルのダウンロード</h2>
+    <p data-i18n="ai.body"></p>
+    <p class="note" data-i18n="ai.license"></p>
+    <div class="dlg-actions">
+      <button class="btn btn-secondary" value="no" data-i18n="ai.no">標準で処理する</button>
+      <button class="btn btn-primary" value="go" data-i18n="ai.go">ダウンロードして使う</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ABOUT -->
+<dialog id="dlg-about" aria-labelledby="about-title">
+  <div class="dlg">
+    <h2 id="about-title" data-i18n="about.title">バージョン情報</h2>
+    <div id="about-body"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-secondary" id="btn-clear-cache" data-i18n="about.clear">キャッシュを削除して再読み込み</button>
+      <button type="button" class="btn btn-primary" id="btn-about-close" data-i18n="about.close">閉じる</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

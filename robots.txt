@@ -1,0 +1,5 @@
+# Vector Camera - public static web app. All crawlers (search engines and AI assistants) are welcome.
+User-agent: *
+Allow: /
+
+Sitemap: https://egoaid.github.io/vector-camera/sitemap.xml

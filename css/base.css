@@ -1,0 +1,16 @@
+/* base.css - reset and element defaults */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); min-height: 100dvh; padding-bottom: var(--safe-b); overscroll-behavior-y: none; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.25; margin: 0 0 .5em; }
+h2 { font-size: 1.15rem; margin-top: 1.6em; }
+p { margin: 0 0 .9em; }
+a { color: var(--accent-2); }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.noscript { padding: var(--gutter); background: var(--accent); color: var(--ink); margin: 0; }
+.error { color: var(--danger); font-weight: 600; }
+.note { color: var(--muted); font-size: .86rem; margin: .4em 0 0; }
+.hint { color: var(--muted); font-size: .9rem; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
