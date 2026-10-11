@@ -10,9 +10,9 @@
 <meta name="author" content="egoaid">
 <meta name="theme-color" content="#121014">
 <meta name="color-scheme" content="dark light">
-<link rel="canonical" href="https://egoaid.github.io/vector-camera/">
-<link rel="alternate" hreflang="ja" href="https://egoaid.github.io/vector-camera/">
-<link rel="alternate" hreflang="x-default" href="https://egoaid.github.io/vector-camera/">
+<link rel="canonical" href="https://egoaid.github.io/Vector-Camera/">
+<link rel="alternate" hreflang="ja" href="https://egoaid.github.io/Vector-Camera/">
+<link rel="alternate" hreflang="x-default" href="https://egoaid.github.io/Vector-Camera/">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -26,8 +26,8 @@
 <meta property="og:site_name" content="Vector Camera">
 <meta property="og:title" content="Vector Camera｜写真をベクター・シルクスクリーン風に変換">
 <meta property="og:description" content="写真をSVG・ベクターPDFや、版画風のハイブリッドアートに。端末内で処理、アップロードなし。">
-<meta property="og:url" content="https://egoaid.github.io/vector-camera/">
-<meta property="og:image" content="https://egoaid.github.io/vector-camera/icons/og-image.png">
+<meta property="og:url" content="https://egoaid.github.io/Vector-Camera/">
+<meta property="og:image" content="https://egoaid.github.io/Vector-Camera/icons/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="ja_JP">
@@ -35,7 +35,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Vector Camera｜写真をベクター・シルクスクリーン風に変換">
 <meta name="twitter:description" content="写真をSVG・ベクターPDFや、版画風のハイブリッドアートに。端末内で処理、アップロードなし。">
-<meta name="twitter:image" content="https://egoaid.github.io/vector-camera/icons/og-image.png">
+<meta name="twitter:image" content="https://egoaid.github.io/Vector-Camera/icons/og-image.png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
@@ -49,9 +49,9 @@
   "@graph": [
     {
       "@type": "WebApplication",
-      "@id": "https://egoaid.github.io/vector-camera/#app",
+      "@id": "https://egoaid.github.io/Vector-Camera/#app",
       "name": "Vector Camera",
-      "url": "https://egoaid.github.io/vector-camera/",
+      "url": "https://egoaid.github.io/Vector-Camera/",
       "description": "写真をベクターイラスト（SVG・ベクターPDF）や、シルクスクリーン風のハイブリッドアートに変換するブラウザアプリ。画像処理はすべて端末内で行われます。",
       "applicationCategory": "MultimediaApplication",
       "operatingSystem": "Any (modern browser: iOS Safari, Android Chrome, desktop)",
@@ -104,6 +104,8 @@
       <p class="tagline" data-i18n="app.tagline">写真を、ベクター＆シルクスクリーン風アートに。端末内で完結。</p>
       <div class="cta">
         <button type="button" class="btn btn-primary btn-xl" id="btn-camera" data-i18n="start.camera">カメラで撮る</button>
+        <button type="button" class="btn btn-accent btn-xl" id="btn-native" data-i18n="start.native">端末の標準カメラで撮る</button>
+        <input type="file" id="file-native" accept="image/*" capture="environment" hidden>
         <button type="button" class="btn btn-secondary btn-xl" id="btn-choose" data-i18n="start.choose">画像を選ぶ</button>
         <input type="file" id="file-input" accept="image/*" hidden>
         <button type="button" class="btn btn-xl btn-collage" id="btn-collage" data-i18n="start.collage">複数の画像でコラージュ</button>
@@ -181,6 +183,7 @@
     <p id="camera-error" class="error camera-error" role="alert" hidden></p>
     <div class="camera-top">
       <button type="button" class="cam-pill" id="btn-cam-close" data-i18n="camera.close">閉じる</button>
+      <button type="button" class="cam-pill" id="btn-cam-native" data-i18n="camera.native">標準カメラ</button>
       <div class="cam-timer" role="group" data-i18n-aria="camera.timer" aria-label="セルフタイマー">
         <button type="button" class="cam-pill" data-timer="0" aria-pressed="true" data-i18n="camera.timer.off">タイマー切</button>
         <button type="button" class="cam-pill" data-timer="3" aria-pressed="false">3s</button>
@@ -208,6 +211,7 @@
         </div>
         <div class="retake-row">
           <button type="button" class="btn btn-primary" id="btn-retake" data-i18n="result.retake">📷 カメラで撮り直す</button>
+          <button type="button" class="btn btn-accent" id="btn-retake-native" data-i18n="result.retake.native">端末の標準カメラで撮り直す</button>
           <button type="button" class="btn btn-secondary" id="btn-new" data-i18n="result.new">別の画像を選ぶ</button>
         </div>
         <div class="stage-tools">

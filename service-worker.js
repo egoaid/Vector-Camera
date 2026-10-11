@@ -1,6 +1,6 @@
 /* service-worker.js - app-shell cache (same-origin only). Models fetched from CDNs are cached by Transformers.js itself. */
-const VERSION = '0.2.0-beta.1';
-const BUILD = '20261011.2';
+const VERSION = '0.2.1-beta.1';
+const BUILD = '20261012.1';
 const CACHE = `vector-camera-${VERSION}-${BUILD}`;
 const SHELL = [
   './', 'index.html', 'manifest.json',

@@ -3,7 +3,7 @@
 写真を **ベクターイラスト** や **シルクスクリーン（版画）風アート** に変換する、無料のブラウザアプリです。
 画像は端末の中だけで処理され、サーバーには送信されません。インストール・会員登録は不要です。
 
-**アプリを開く:** https://egoaid.github.io/vector-camera/
+**アプリを開く:** https://egoaid.github.io/Vector-Camera/
 
 ![Vector Camera](icons/og-image.png)
 

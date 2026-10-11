@@ -16,7 +16,7 @@ const sl = (k, min, max, onChange) => slider({ k, min, max }, onChange);
 export function buildExtras(onChange, hooks) {
   // --- randomise options
   const ro = $('random-opts'); ro.replaceChildren();
-  for (const k of ['palette', 'texture', 'background', 'subject', 'lines']) {
+  for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'font']) {
     const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params.rndOpts[k];
     const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); }); l.append(i, s); ro.append(l);
   }

@@ -2,6 +2,7 @@
 // foreground/background assignment. Pure functions (no DOM) so they are unit-testable; the app applies the result.
 import { mulberry32, hslToHex } from './color-utils.js';
 import { PRESETS, STYLE_ORDER } from './style-palette.js';
+import { FONTS } from './style-text.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 const range = (r, a, b) => Math.round(a + r() * (b - a));
@@ -53,6 +54,11 @@ export function randomize(seed, opts, cur, res = null, groups = null) {
   if (opts.lines) {
     if (r() < 0.4) { const pal = patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop; patch.lineWidth = range(r, 14, 45); patch.lineScope = pick(r, ['mid', 'all', 'fg']); patch.lineOffset = pick(r, [0, 0, range(r, 10, 45)]); patch.lineColor = pal.ink; patch.lineColor2 = pal.groups.fg.block[0]; }
     else patch.lineWidth = 0;
+  }
+  if (opts.font) {
+    const pal = patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop;
+    patch.textFont = pick(r, FONTS).id; patch.textColor = pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0]]); patch.textShadowColor = pal.ink;
+    patch.textShadow = pick(r, [0, 15, 25, 40]); patch.textAngle = pick(r, [0, 0, range(r, -12, 12)]); patch.textSpacing = range(r, 0, 8);
   }
   let overrides = null;
   if (opts.subject && res && groups) overrides = r() < 0.3 ? [] : randomOverrides(r, res, groups, range(r, 1, 4));

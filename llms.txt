@@ -3,7 +3,7 @@
 > Vector Camera（ベクターカメラ）は、写真を編集可能なベクターイラスト（SVG・ベクターPDF）や、シルクスクリーン（版画）風のハイブリッドアートに変換する、無料のブラウザアプリです。画像はすべて端末内で処理され、サーバーへは送信されません。iPhone（Safari）・Android・デスクトップに対応し、インストール不要です。
 > Vector Camera is a free, privacy-first web app that converts photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. All processing happens in the browser; images are never uploaded.
 
-- URL: https://egoaid.github.io/vector-camera/
+- URL: https://egoaid.github.io/Vector-Camera/
 - Author / copyright holder: egoaid — © 2026 egoaid. All rights reserved.
 - Languages: Japanese, English
 - Price: free, no account, no ads, no telemetry
@@ -23,5 +23,5 @@
 - Works offline for the standard engine after the first load (service worker cache).
 
 ## Pages
-- [Application and documentation](https://egoaid.github.io/vector-camera/): the app itself, with feature overview, usage steps, privacy statement and FAQ.
-- [README](https://github.com/egoaid/vector-camera/blob/main/README.md): user-facing description.
+- [Application and documentation](https://egoaid.github.io/Vector-Camera/): the app itself, with feature overview, usage steps, privacy statement and FAQ.
+- [README](https://github.com/egoaid/Vector-Camera/blob/main/README.md): user-facing description.

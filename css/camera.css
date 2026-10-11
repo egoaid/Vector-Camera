@@ -22,3 +22,5 @@
   .camera-bar { left: auto; top: 0; bottom: 0; right: 0; flex-direction: column; padding: calc(16px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) 24px; background: linear-gradient(90deg, transparent, rgba(0,0,0,.55)); }
   .camera-top { right: 120px; }
 }
+#screen-camera video.rot { inset: auto; top: 50%; left: 50%; width: 100dvh; height: 100vw; transform: translate(-50%, -50%) rotate(var(--rot, 90deg)); }
+.cam-native { margin-left: auto; }

@@ -60,7 +60,7 @@ async function analyze() {
   showProcessing('proc.segment', 0.4);
   try { await runPipeline(true); } catch (e) { if (cancelled) return; console.error(e); hideProcessing(); toast(t('err.generic')); if (!state.result) showScreen('start'); return; }
   if (cancelled) return;
-  hideProcessing(); showScreen('result'); buildUI(); await yieldUI(); redraw(); drawOriginal();
+  hideProcessing(); showScreen('result'); buildUI(); await ensureFont(state.params.textFont); await yieldUI(); redraw(); drawOriginal();
 }
 async function tryAI() {
   if (!aiConsent) {
@@ -108,7 +108,7 @@ async function addCollageFiles(files) {
   } catch (e) { console.error(e); hideProcessing(); toast(t('err.load')); if (!cells.length) showScreen('start'); return; }
   state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false;
   if (state.params.mode === 'vector' || state.params.mode === 'silhouette') { /* all modes work per piece */ }
-  hideProcessing(); showScreen('result'); buildUI(); await yieldUI(); redraw();
+  hideProcessing(); showScreen('result'); buildUI(); await ensureFont(state.params.textFont); await yieldUI(); redraw();
 }
 async function reprocessCollage(mySeq) {
   for (let i = 0; i < state.collage.cells.length; i++) {
@@ -242,11 +242,12 @@ async function doRandom() {
   Object.assign(state.params, out.params);
   if (out.overrides && solo) state.overrides = out.overrides;
   if (state.collage) state.params.collageSeed = seed % 100000;
+  if (out.params.textFont) await ensureFont(out.params.textFont);
   saveSettings(); buildUI(); await refresh();
 }
 async function undoRandom() {
   const snap = history.pop(); if (!snap) return;
-  state.params = snap.params; state.overrides = snap.overrides; saveSettings(); buildUI(); await refresh();
+  state.params = snap.params; state.overrides = snap.overrides; await ensureFont(state.params.textFont); saveSettings(); buildUI(); await refresh();
 }
 
 /* ---------- init ---------- */
@@ -266,10 +267,13 @@ function init() {
   $('btn-shutter').addEventListener('click', onShutter);
   document.querySelectorAll('[data-timer]').forEach((b) => b.addEventListener('click', () => setTimerSecs(+b.dataset.timer)));
   setTimerSecs(timerSecs);
-  const onOrient = () => { if ($('screen-camera').classList.contains('active') && !countTimer) { const v = $('video'); const vp = v.videoHeight > v.videoWidth; if (v.videoWidth && vp !== cam.isPortrait()) cam.start(v).catch(() => {}); } };
+  const onOrient = () => { if ($('screen-camera').classList.contains('active') && !countTimer && !cam.rotation) { const v = $('video'); const vp = v.videoHeight > v.videoWidth; if (v.videoWidth && vp !== cam.isPortrait()) cam.start(v).catch(() => {}); } };
   window.addEventListener('orientationchange', () => setTimeout(onOrient, 350)); window.addEventListener('resize', () => { clearTimeout(init._o); init._o = setTimeout(onOrient, 450); });
   $('btn-new').addEventListener('click', () => { showScreen('start'); });
   $('btn-retake').addEventListener('click', openCamera);
+  const nativeCam = () => { cancelTimer(); cam.stop(); $('file-native').click(); };
+  $('btn-native').addEventListener('click', nativeCam); $('btn-retake-native').addEventListener('click', nativeCam); $('btn-cam-native').addEventListener('click', nativeCam);
+  $('file-native').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) startWithSource(f); else if ($('screen-camera').classList.contains('active')) openCamera(); });
   $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
   $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl); } finally { state.collageBusy = false; } } });
   $('btn-random').addEventListener('click', doRandom); $('btn-random-undo').addEventListener('click', undoRandom);

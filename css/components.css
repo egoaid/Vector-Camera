@@ -50,3 +50,4 @@ textarea { width: 100%; padding: 10px 12px; border-radius: var(--radius-s); back
 .btn-collage { border-color: var(--text); }
 .cta { flex-wrap: wrap; }
 .poster select { margin-bottom: 8px; }
+.btn-accent { background: #fff; border-color: var(--ink); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
