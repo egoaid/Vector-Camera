@@ -106,6 +106,8 @@
         <button type="button" class="btn btn-primary btn-xl" id="btn-camera" data-i18n="start.camera">カメラで撮る</button>
         <button type="button" class="btn btn-secondary btn-xl" id="btn-choose" data-i18n="start.choose">画像を選ぶ</button>
         <input type="file" id="file-input" accept="image/*" hidden>
+        <button type="button" class="btn btn-xl btn-collage" id="btn-collage" data-i18n="start.collage">複数の画像でコラージュ</button>
+        <input type="file" id="file-collage" accept="image/*" multiple hidden>
       </div>
       <p class="hint" data-i18n="start.hint">画像は端末の外へ送信されません。</p>
       <p id="start-error" class="error" role="alert" hidden></p>
@@ -173,14 +175,23 @@
 
   <!-- CAMERA -->
   <section id="screen-camera" class="screen" aria-label="Camera" hidden>
-    <div class="camera-stage">
-      <video id="video" playsinline muted></video>
-      <p id="camera-error" class="error camera-error" role="alert" hidden></p>
+    <video id="video" playsinline muted></video>
+    <div class="camera-flash" id="camera-flash" aria-hidden="true"></div>
+    <div class="camera-count" id="camera-count" aria-live="assertive" hidden></div>
+    <p id="camera-error" class="error camera-error" role="alert" hidden></p>
+    <div class="camera-top">
+      <button type="button" class="cam-pill" id="btn-cam-close" data-i18n="camera.close">閉じる</button>
+      <div class="cam-timer" role="group" data-i18n-aria="camera.timer" aria-label="セルフタイマー">
+        <button type="button" class="cam-pill" data-timer="0" aria-pressed="true" data-i18n="camera.timer.off">タイマー切</button>
+        <button type="button" class="cam-pill" data-timer="3" aria-pressed="false">3s</button>
+        <button type="button" class="cam-pill" data-timer="5" aria-pressed="false">5s</button>
+        <button type="button" class="cam-pill" data-timer="10" aria-pressed="false">10s</button>
+      </div>
     </div>
     <div class="camera-bar">
-      <button type="button" class="btn btn-secondary" id="btn-cam-close" data-i18n="camera.close">閉じる</button>
+      <span class="cam-spacer" aria-hidden="true"></span>
       <button type="button" class="shutter" id="btn-shutter" data-i18n-aria="camera.shutter" aria-label="撮影"></button>
-      <button type="button" class="btn btn-secondary" id="btn-cam-switch" data-i18n="camera.switch">カメラ切替</button>
+      <button type="button" class="cam-round" id="btn-cam-switch" data-i18n-aria="camera.switch" aria-label="カメラ切替"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg></button>
     </div>
   </section>
 
@@ -195,12 +206,15 @@
           <input type="range" id="compare-range" class="compare-range" min="0" max="100" value="50" hidden data-i18n-aria="result.compare" aria-label="比較">
           <div class="badges" id="badges"></div>
         </div>
+        <div class="retake-row">
+          <button type="button" class="btn btn-primary" id="btn-retake" data-i18n="result.retake">📷 カメラで撮り直す</button>
+          <button type="button" class="btn btn-secondary" id="btn-new" data-i18n="result.new">別の画像を選ぶ</button>
+        </div>
         <div class="stage-tools">
           <button type="button" class="btn btn-small" id="btn-compare" aria-pressed="false" data-i18n="result.compare">比較</button>
           <button type="button" class="btn btn-small" id="btn-edit" aria-pressed="false" data-i18n="result.edit">前景/背景を直す</button>
           <button type="button" class="btn btn-small" id="btn-edit-reset" hidden data-i18n="result.edit.reset">手動修正をリセット</button>
           <button type="button" class="btn btn-small" id="btn-rerun" data-i18n="result.rerun">再解析</button>
-          <button type="button" class="btn btn-small" id="btn-new" data-i18n="result.new">別の画像</button>
         </div>
         <p class="note" id="edit-hint" hidden data-i18n="result.edit.hint"></p>
       </div>
@@ -209,18 +223,33 @@
         <div class="modes" role="tablist" id="modes"></div>
         <p class="note" id="mode-desc"></p>
         <div class="field"><span class="label" data-i18n="preset.label">スタイル</span><div class="chips" id="presets" role="group"></div></div>
+        <div class="random-row">
+          <button type="button" class="btn btn-primary" id="btn-random" data-i18n="rnd.go">🎲 ランダム生成</button>
+          <button type="button" class="btn btn-secondary" id="btn-random-undo" disabled data-i18n="rnd.undo">↩ 戻す</button>
+        </div>
+        <details class="advanced" id="sec-random"><summary data-i18n="rnd.opts">ランダム生成の対象</summary><div id="random-opts"></div></details>
         <div id="controls"></div>
+        <details class="advanced" id="sec-collage" hidden><summary data-i18n="col.title">コラージュ</summary><div id="collage-ctl"></div></details>
+        <details class="advanced" id="sec-lines"><summary data-i18n="ln.title">輪郭線</summary><div id="lines-ctl"></div></details>
+        <details class="advanced" id="sec-text"><summary data-i18n="tx.title">文字（ベクター）</summary><div id="text-ctl"></div></details>
         <details class="advanced" id="advanced"><summary data-i18n="adv">詳細設定</summary><div id="controls-adv"></div></details>
         <div class="export" id="export">
           <h2 data-i18n="exp.title">書き出し</h2>
           <div class="field"><label for="sel-export-size" data-i18n="exp.size">出力サイズ（長辺）</label>
             <select id="sel-export-size"><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="3072">3072 px</option></select></div>
+          <label class="check"><input type="checkbox" id="chk-vecink"><span data-i18n="exp.vecink">写真・粒子のラスター部分もベクターに変換（SVG/PDF・時間がかかります）</span></label>
+          <div class="field" id="vecink-opts" hidden><label for="sel-vecink-long" data-i18n="exp.vecink.res">ベクター化の解像度（高いほど精細・重い）</label>
+            <select id="sel-vecink-long"><option value="900">900 px</option><option value="1400" selected>1400 px</option><option value="2000">2000 px</option></select></div>
           <div class="export-buttons">
             <button type="button" class="btn btn-primary" data-export="svg" data-i18n="exp.svg">SVG</button>
             <button type="button" class="btn btn-primary" data-export="pdf" data-i18n="exp.pdf">ベクターPDF</button>
             <button type="button" class="btn btn-secondary" data-export="png" data-i18n="exp.png">PNG</button>
             <button type="button" class="btn btn-secondary" data-export="jpeg" data-i18n="exp.jpeg">JPEG</button>
           </div>
+          <div class="field poster"><label for="sel-poster" data-i18n="exp.poster">ポスター用ラスター書き出し（PNG）</label>
+            <select id="sel-poster"><option value="3508">A4 300dpi（3508px）</option><option value="4961" selected>A3 300dpi（4961px）</option><option value="7016">A2 300dpi（7016px）</option><option value="9933">A1 300dpi（9933px）</option><option value="12000">12000px</option></select>
+            <button type="button" class="btn btn-secondary" data-export="poster" data-i18n="exp.poster.go">ポスター用PNGを書き出す</button>
+            <p class="note" data-i18n="exp.poster.note"></p></div>
           <label class="check" id="share-wrap" hidden><input type="checkbox" id="chk-share"><span data-i18n="exp.share">共有</span></label>
           <p class="note" id="export-note" role="status"></p>
         </div>

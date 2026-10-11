@@ -43,3 +43,10 @@ dialog::backdrop { background: rgba(8, 6, 10, .75); }
 .feature-list, .steps { padding-left: 1.3em; } .feature-list li, .steps li { margin-bottom: .5em; }
 .about-table { width: 100%; border-collapse: collapse; font-size: .85rem; } .about-table td { padding: 3px 6px; border-bottom: 1px solid var(--border); } .about-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .en-summary { margin-top: 1.5em; color: var(--muted); }
+/* v0.2 additions */
+.random-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
+.random-row .btn-primary { flex: 1 1 180px; min-height: 52px; font-size: 1.05rem; }
+textarea { width: 100%; padding: 10px 12px; border-radius: var(--radius-s); background: var(--panel-2); border: 1px solid var(--border); color: var(--text); font: inherit; resize: vertical; }
+.btn-collage { border-color: var(--text); }
+.cta { flex-wrap: wrap; }
+.poster select { margin-bottom: 8px; }

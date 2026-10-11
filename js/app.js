@@ -10,6 +10,12 @@ import { PipelineClient } from './pipeline-client.js';
 import { runSegformer, cancelAI, isSupported as aiSupported } from './seg-segformer.js';
 import { classifyGroups } from './seg-saliency.js';
 import { buildScene, sceneHasRaster } from './style-scene.js';
+import { buildCollageScene } from './style-collage.js';
+import { vectorizeScene } from './vec-ink.js';
+import { TRACE_SHAPE } from './vec-ink.js';
+import { randomize, History } from './style-random.js';
+import { buildExtras } from './ui-extras.js';
+import { ensureFont } from './style-text.js';
 import { makeInkFactory } from './render-ink.js';
 import { drawScene, releaseScene } from './render-canvas.js';
 import { showScreen, showProcessing, hideProcessing, showError } from './ui-views.js';
@@ -19,14 +25,15 @@ import { initExport, updateExportNote } from './ui-export.js';
 import { initAbout } from './ui-about.js';
 import { registerSW } from './pwa.js';
 import { toast } from './ui-toast.js';
-import { PRESETS } from './style-palette.js';
+import { PRESETS, getPreset } from './style-palette.js';
 
 const $ = (id) => document.getElementById(id);
 const STAGE_KEY = { segment: 'proc.segment', merge: 'proc.merge', regions: 'proc.regions', vectorize: 'proc.vectorize', done: 'proc.done' };
+const history = new History();
 let client, compare, lastKey = '', pipeStale = false, inkCache = null, debounce = 0, editing = false, aiConsent = false, cancelled = false;
 
 /* ---------- processing helpers ---------- */
-const onPipeProgress = (stage, f) => { if (!$('processing').hidden) showProcessing(STAGE_KEY[stage] || 'proc.segment', 0.4 + 0.55 * f); };
+const onPipeProgress = (stage, f) => { if (!$('processing').hidden && !state.collageBusy) showProcessing(STAGE_KEY[stage] || 'proc.segment', 0.4 + 0.55 * f); };
 async function ensurePipeline() {
   if (!pipeStale) return; pipeStale = false;
   await client.setImage(state.work.w, state.work.h, state.work.data); await client.setSemantic(state.sem); lastKey = '';
@@ -38,7 +45,7 @@ async function startWithSource(fileOrCanvas) {
   showProcessing('proc.prepare', 0.03); await yieldUI();
   try {
     const { source, canvas } = await loadSource(fileOrCanvas);
-    state.source = source; state.canvas = canvas; state.overrides = []; editing = false;
+    state.source = source; state.canvas = canvas; state.overrides = []; editing = false; state.collage = null;
     await analyze();
   } catch (e) { console.error(e); hideProcessing(); showScreen('start'); showError('start-error', t(/memory|alloc/i.test(String(e && e.message)) ? 'err.memory' : 'err.load')); }
 }
@@ -81,6 +88,42 @@ async function runPipeline(force = false) {
   const res = await client.process(pp); lastKey = key; state.result = res; inkCache = null; return true;
 }
 
+/* ---------- collage ---------- */
+const collageQuality = () => (state.params.quality === 'high' ? 'standard' : state.params.quality);
+async function processCell(cell) {
+  const w = makeWorking(cell.canvas, collageQuality());
+  await client.setImage(w.w, w.h, w.data); await client.setSemantic(null);
+  const pp = pipelineParams(state.params, w.w, w.h); cell.res = await client.process(pp); cell.key = JSON.stringify(pp);
+  cell.groups = null; cell.inkCache = null;
+}
+async function addCollageFiles(files) {
+  const list = [...files].filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|avif|heic)$/i.test(f.name)).slice(0, 12 - (state.collage ? state.collage.cells.length : 0));
+  if (!list.length) return;
+  cancelled = false; const mySeq = ++state.seq; const cells = state.collage ? state.collage.cells : [];
+  try {
+    for (let i = 0; i < list.length; i++) {
+      showProcessing('proc.collage', (i + 0.1) / list.length * 0.9, { n: i + 1, m: list.length }); await yieldUI();
+      const { source, canvas } = await loadSource(list[i]); const cell = { source, canvas }; await processCell(cell); if (cancelled || mySeq !== state.seq) return; cells.push(cell);
+    }
+  } catch (e) { console.error(e); hideProcessing(); toast(t('err.load')); if (!cells.length) showScreen('start'); return; }
+  state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false;
+  if (state.params.mode === 'vector' || state.params.mode === 'silhouette') { /* all modes work per piece */ }
+  hideProcessing(); showScreen('result'); buildUI(); await yieldUI(); redraw();
+}
+async function reprocessCollage(mySeq) {
+  for (let i = 0; i < state.collage.cells.length; i++) {
+    const cell = state.collage.cells[i], w = makeWorking(cell.canvas, collageQuality()), pp = pipelineParams(state.params, w.w, w.h);
+    if (cell.key === JSON.stringify(pp)) continue;
+    showProcessing('proc.collage', (i + 0.1) / state.collage.cells.length * 0.9, { n: i + 1, m: state.collage.cells.length });
+    await processCell(cell); if (mySeq !== state.seq) return false;
+  }
+  hideProcessing(); return true;
+}
+const collageCells = (inkLongFor) => state.collage.cells.map((c) => {
+  if (!c.groups) c.groups = classifyGroups(c.res.stats, c.res.w, c.res.h, { subjectSize: state.params.subjectSize / 100, semNames: null, semMajor: null, overrides: [], labels: c.res.labels });
+  return { res: c.res, groups: c.groups, ink: (long) => { const L = Math.min(inkLongFor(long), Math.max(c.source.w, c.source.h)); if (!c.inkCache || c.inkCache.res !== c.res || c.inkCache.long !== L) c.inkCache = { res: c.res, long: L, f: makeInkFactory(c.source, c.res, L) }; return c.inkCache.f; } };
+});
+
 /* ---------- scene + drawing ---------- */
 function computeGroups() {
   const r = state.result;
@@ -92,16 +135,18 @@ function previewInkFactory() {
   return inkCache.f;
 }
 function rebuildScene() {
-  if (!state.result) return; computeGroups();
+  if (!state.result) return;
   if (state.scene) releaseScene(state.scene);
+  if (state.collage) { state.scene = buildCollageScene(collageCells((l) => l), state.params, { inkLong: 700 }); return; }
+  computeGroups();
   state.scene = buildScene(state.result, state.groups, state.params, state.params.mode === 'hybrid' ? previewInkFactory() : null);
 }
 function redraw() {
   if (!state.result) return; rebuildScene();
-  const cv = $('cv-result'), box = $('stage').getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1), r = state.result;
+  const cv = $('cv-result'), box = $('stage').getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1), r = state.scene;
   const long = Math.min(2048, Math.max(400, Math.round(Math.max(box.width, 300) * dpr))), k = long / Math.max(r.w, r.h);
   cv.width = Math.round(r.w * k); cv.height = Math.round(r.h * k); $('stage').style.setProperty('--ar', String(r.w / r.h));
-  drawScene(cv, state.scene, r.geom); updateBadges(); updateExportNote(state.scene);
+  drawScene(cv, state.scene, state.result.geom); updateBadges(); updateExportNote(state.scene);
 }
 function drawOriginal() {
   const cv = $('cv-original'), r = state.result; if (!r) return; const src = state.canvas, k = Math.min(1, 1600 / Math.max(r.w, r.h));
@@ -110,22 +155,27 @@ function drawOriginal() {
 function updateBadges() {
   const b = $('badges'); b.replaceChildren(); const add = (txt, warn) => { const s = document.createElement('span'); s.className = 'badge' + (warn ? ' warn' : ''); s.textContent = txt; b.append(s); };
   add(t(sceneHasRaster(state.scene) ? 'badge.hybrid' : 'badge.vector'), sceneHasRaster(state.scene));
-  add(t(state.engineUsed === 'ai' ? 'badge.ai' : 'badge.classic')); add(t('badge.regions', { n: state.result.R }));
+  if (state.collage) add(t('badge.collage', { n: state.collage.cells.length })); else { add(t(state.engineUsed === 'ai' ? 'badge.ai' : 'badge.classic')); add(t('badge.regions', { n: state.result.R })); }
 }
 
 /* ---------- UI wiring ---------- */
-function buildUI() { buildControls(onControl, setMode); $('btn-edit').hidden = !['silhouette', 'hybrid'].includes(state.params.mode); if ($('btn-edit').hidden) setEdit(false); }
+function buildUI() {
+  buildControls(onControl, setMode); buildExtras(onControl, { shuffle: () => { state.params.collageSeed = (Math.random() * 1e6) | 0; saveSettings(); redraw(); }, add: () => $('file-collage').click() });
+  const single = !state.collage; $('btn-edit').hidden = !single || !['silhouette', 'hybrid'].includes(state.params.mode); if ($('btn-edit').hidden) setEdit(false);
+  $('btn-compare').hidden = !single; if (!single) compare.off(); $('btn-rerun').hidden = !single; $('btn-edit-reset').hidden = !single || !state.overrides.length; $('btn-random-undo').disabled = !history.size;
+}
 async function onControl(key, value) {
+  if (key === 'textFont') await ensureFont(state.params.textFont);
   if (key === 'preset') { state.params.preset = value; if (state.params.mode === 'hybrid' || state.params.mode === 'regions') Object.assign(state.params, presetDefaults(state.params.mode, value)); buildUI(); saveSettings(); }
-  clearTimeout(debounce); debounce = setTimeout(refresh, 130);
+  clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130);
 }
 async function refresh() {
   const mySeq = ++state.seq; $('stage').style.opacity = '.85';
-  try { await runPipeline(); if (mySeq !== state.seq) return; redraw(); } catch (e) { console.error(e); toast(t('err.generic')); } finally { $('stage').style.opacity = ''; }
+  try { if (state.collage) { if (!(await reprocessCollage(mySeq))) return; } else { await runPipeline(); } if (mySeq !== state.seq) return; redraw(); } catch (e) { console.error(e); toast(t('err.generic')); } finally { $('stage').style.opacity = ''; }
 }
 async function setMode(mode) {
   applyModeDefaults(mode); const list = MODE_PRESETS[mode];
-  if (!list.includes(state.params.preset) && state.params.preset !== 'custom') state.params.preset = list[0];
+  if (!list.includes(state.params.preset) && state.params.preset !== 'custom' && !(state.params.preset === 'random' && state.params.customPreset)) state.params.preset = list[0];
   if (state.params.preset === 'custom' && mode !== 'silhouette') state.params.preset = list[0];
   Object.assign(state.params, presetDefaults(mode, state.params.preset)); saveSettings(); buildUI(); refresh();
 }
@@ -138,9 +188,22 @@ function onStageClick(ev) {
   const cur = state.groups[r.labels[y * r.w + x]]; state.overrides.push({ x, y, g: (cur + 1) % 3 }); $('btn-edit-reset').hidden = false; redraw();
 }
 async function getExportScene(kind) {
-  const r = state.result; computeGroups(); let f = null;
-  if (state.params.mode === 'hybrid') { const srcLong = Math.max(state.source.w, state.source.h), want = kind === 'svg' || kind === 'pdf' ? LIMITS.hybridRasterMax : state.params.exportLong; f = makeInkFactory(state.source, r, Math.min(want, srcLong)); }
-  return { scene: buildScene(r, state.groups, state.params, f), geom: r.geom };
+  const poster = kind === 'poster', vec = poster || (state.params.vecInk && (kind === 'svg' || kind === 'pdf'));
+  await ensureFont(state.params.textFont);
+  const want = vec ? (poster ? Math.max(state.params.vecInkLong, 1400) : state.params.vecInkLong) : (kind === 'svg' || kind === 'pdf' ? LIMITS.hybridRasterMax : state.params.exportLong);
+  let scene, geom = null;
+  if (state.collage) { scene = buildCollageScene(collageCells(() => want), state.params, { inkLong: want }); }
+  else {
+    const r = state.result; computeGroups(); let f = null;
+    if (state.params.mode === 'hybrid') { const srcLong = Math.max(state.source.w, state.source.h); f = makeInkFactory(state.source, r, Math.min(want, srcLong)); }
+    scene = buildScene(r, state.groups, state.params, f); geom = r.geom;
+  }
+  if (vec && sceneHasRaster(scene)) {
+    cancelled = false; showProcessing('proc.vectorink', 0.02, { n: 0, m: 1 });
+    try { await vectorizeScene(scene, (lab, w, h, R) => client.trace(lab, w, h, R, TRACE_SHAPE), { speck: state.params.vecInkSpeck, onProgress: (d, n) => showProcessing('proc.vectorink', 0.05 + 0.9 * (d / n), { n: Math.min(d + 1, n), m: n }) }); }
+    finally { hideProcessing(); }
+  }
+  return { scene, geom };
 }
 
 /* ---------- wake lock ---------- */
@@ -156,7 +219,35 @@ async function openCamera() {
   showScreen('camera'); showError('camera-error', '');
   try { await cam.start($('video')); } catch (e) { cam.stop(); showScreen('start'); showError('start-error', t(cam.errorKey(e))); }
 }
-function closeCamera() { cam.stop(); showScreen(state.result ? 'result' : 'start'); }
+let timerSecs = 0, countTimer = null;
+function setTimerSecs(n) { timerSecs = n; document.querySelectorAll('[data-timer]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.timer === n))); }
+function cancelTimer() { clearInterval(countTimer); countTimer = null; $('camera-count').hidden = true; $('btn-shutter').classList.remove('counting'); }
+function takeNow() { cancelTimer(); $('camera-flash').classList.remove('on'); void $('camera-flash').offsetWidth; $('camera-flash').classList.add('on'); const cv = cam.capture($('video')); cam.stop(); startWithSource(cv); }
+function onShutter() {
+  if (countTimer) return cancelTimer();
+  if (!timerSecs) return takeNow();
+  let n = timerSecs, el = $('camera-count'); $('btn-shutter').classList.add('counting'); el.hidden = false; el.textContent = n;
+  countTimer = setInterval(() => { n--; if (n <= 0) takeNow(); else el.textContent = n; }, 1000);
+}
+function closeCamera() { cancelTimer(); cam.stop(); showScreen(state.result ? 'result' : 'start'); }
+
+/* ---------- randomise ---------- */
+const snapshot = () => ({ params: JSON.parse(JSON.stringify(state.params)), overrides: state.overrides.slice() });
+async function doRandom() {
+  if (!state.result) return;
+  history.push(snapshot());
+  const o = state.params.rndOpts, solo = !state.collage; if (solo) computeGroups();
+  const seed = (Math.random() * 4294967296) >>> 0;
+  const out = randomize(seed, { ...o, subject: o.subject }, state.params, solo ? state.result : null, solo ? state.groups : null);
+  Object.assign(state.params, out.params);
+  if (out.overrides && solo) state.overrides = out.overrides;
+  if (state.collage) state.params.collageSeed = seed % 100000;
+  saveSettings(); buildUI(); await refresh();
+}
+async function undoRandom() {
+  const snap = history.pop(); if (!snap) return;
+  state.params = snap.params; state.overrides = snap.overrides; saveSettings(); buildUI(); await refresh();
+}
 
 /* ---------- init ---------- */
 function init() {
@@ -171,9 +262,18 @@ function init() {
   $('btn-choose').addEventListener('click', () => $('file-input').click());
   $('file-input').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) startWithSource(f); });
   $('btn-cam-close').addEventListener('click', closeCamera);
-  $('btn-cam-switch').addEventListener('click', async () => { try { await cam.start($('video'), true); } catch (e) { showError('camera-error', t(cam.errorKey(e))); } });
-  $('btn-shutter').addEventListener('click', () => { const cv = cam.capture($('video')); cam.stop(); startWithSource(cv); });
+  $('btn-cam-switch').addEventListener('click', async () => { cancelTimer(); try { await cam.start($('video'), true); } catch (e) { showError('camera-error', t(cam.errorKey(e))); } });
+  $('btn-shutter').addEventListener('click', onShutter);
+  document.querySelectorAll('[data-timer]').forEach((b) => b.addEventListener('click', () => setTimerSecs(+b.dataset.timer)));
+  setTimerSecs(timerSecs);
+  const onOrient = () => { if ($('screen-camera').classList.contains('active') && !countTimer) { const v = $('video'); const vp = v.videoHeight > v.videoWidth; if (v.videoWidth && vp !== cam.isPortrait()) cam.start(v).catch(() => {}); } };
+  window.addEventListener('orientationchange', () => setTimeout(onOrient, 350)); window.addEventListener('resize', () => { clearTimeout(init._o); init._o = setTimeout(onOrient, 450); });
   $('btn-new').addEventListener('click', () => { showScreen('start'); });
+  $('btn-retake').addEventListener('click', openCamera);
+  $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
+  $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl); } finally { state.collageBusy = false; } } });
+  $('btn-random').addEventListener('click', doRandom); $('btn-random-undo').addEventListener('click', undoRandom);
+  if (state.params.text) ensureFont(state.params.textFont);
   $('btn-rerun').addEventListener('click', () => { state.overrides = []; analyze(); });
   $('btn-edit').addEventListener('click', () => setEdit(!editing));
   $('btn-edit-reset').addEventListener('click', () => { state.overrides = []; setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });

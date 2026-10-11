@@ -23,6 +23,12 @@ export const DEFAULT_PARAMS = {
   separation: 3, retention: 45, halftone: 0, halftoneSize: 6, halftoneAngle: 45,
   grain: 25, roughness: 20, misreg: 25, paper: 25, bgTreatment: 'flat', semStrength: 100,
   exportLong: 2048, wakeLock: true,
+  lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
+  text: '', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c',
+  vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
+  collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '',
+  rndOpts: { palette: true, texture: true, background: true, subject: true, lines: true },
+  customPreset: null,
 };
 export const MODE_DEFAULTS = {
   vector: { detail: 62, paletteK: 0, simplify: 30, angularity: 20, outline: 0 },
@@ -30,7 +36,8 @@ export const MODE_DEFAULTS = {
   regions: { detail: 40, paletteK: 8, simplify: 40, angularity: 40, paletteMap: 'nearest' },
   hybrid: { detail: 42, paletteK: 0, simplify: 35, angularity: 25, separation: 3, retention: 45, grain: 25, misreg: 25 },
 };
-export const MODE_PRESETS = { vector: ['natural'], silhouette: ['pop', 'sleeve', 'mono'], regions: ['natural', 'pop', 'sleeve', 'riso', 'duo'], hybrid: ['pop', 'sleeve', 'riso', 'duo', 'mono'] };
+const STYLES = ['pop', 'sleeve', 'riso', 'duo', 'mono', 'unite', 'garden', 'lovepop', 'olive', 'earth', 'field', 'stripes', 'maroon', 'boombox', 'stadium', 'lavender', 'skygreen', 'bluepeach', 'kraft', 'palm', 'typewriter', 'sunhill', 'cyan', 'royal', 'tealpink'];
+export const MODE_PRESETS = { vector: ['natural'], silhouette: STYLES, regions: ['natural', ...STYLES], hybrid: STYLES };
 
 /** detail 0..100 -> target region count (6 .. 900, log scale) */
 export const regionTarget = (detail) => Math.round(6 * Math.pow(150, detail / 100));

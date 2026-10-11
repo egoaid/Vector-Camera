@@ -4,11 +4,13 @@ import { sceneToPDF } from './render-pdf.js';
 import { renderToCanvas } from './render-canvas.js';
 import { sceneHasRaster } from './style-scene.js';
 import { LIMITS } from './config.js';
+import { renderPosterPNG } from './render-strips.js';
 
 export const stamp = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
 export const fileName = (scene, ext) => `vector-camera_${scene.mode}_${stamp()}.${ext}`;
 
-export async function makeBlob(kind, scene, geom, { longPx = 2048 } = {}) {
+export async function makeBlob(kind, scene, geom, { longPx = 2048, onProgress } = {}) {
+  if (kind === 'poster') return renderPosterPNG(scene, geom, longPx, onProgress);
   if (kind === 'svg') {
     const k = longPx / Math.max(scene.w, scene.h);
     return new Blob([await sceneToSVG(scene, geom, { outW: Math.round(scene.w * k), outH: Math.round(scene.h * k) })], { type: 'image/svg+xml' });

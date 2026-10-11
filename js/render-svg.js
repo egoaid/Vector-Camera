@@ -1,34 +1,51 @@
-// render-svg.js - scene -> native SVG (real <path> elements). Hybrid ink layers are embedded PNGs clipped by vector paths.
+// render-svg.js - scene -> native SVG (real <path> elements). Raster ink layers are embedded PNGs clipped by vector paths.
+// Supports per-layer geometry, nonzero fill, stroke-only items, vector clips and transformed groups (collage pieces).
 import { groupPathD } from './vec-geometry.js';
 import { encodePNG, toBase64 } from './render-png.js';
 import { APP_NAME, APP_VERSION } from './version.js';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const n2 = (v) => +v.toFixed(2);
+const polyD = (xy) => { let d = `M${n2(xy[0])} ${n2(xy[1])}`; for (let i = 2; i < xy.length; i += 2) d += `L${n2(xy[i])} ${n2(xy[i + 1])}`; return d + 'Z'; };
+const countRaster = (layers) => layers.reduce((n, l) => n + (l.kind === 'ink' ? 1 : 0) + (l.layers ? countRaster(l.layers) : 0), 0);
+export const sceneRasterCount = countRaster;
 
 /** opts: { outW, outH, title, description } -> SVG string. */
 export async function sceneToSVG(scene, geom, opts = {}) {
-  const { w, h } = scene, outW = opts.outW || w, outH = opts.outH || h, hasRaster = scene.layers.some((l) => l.kind === 'ink');
-  const defs = [], body = [];
-  let clipN = 0;
-  for (const L of scene.layers) {
-    if (L.kind === 'rect') body.push(`<rect id="background" width="${w}" height="${h}" fill="${L.fill}"/>`);
-    else if (L.kind === 'fills') {
-      const [dx, dy] = L.offset, tf = dx || dy ? ` transform="translate(${n2(dx)} ${n2(dy)})"` : '';
-      const paths = L.items.map((it, i) => {
-        let a = `<path id="${esc(L.name)}-${i}" fill="${it.fill}" fill-rule="evenodd"`;
-        if (L.stroke) a += ` stroke="${L.stroke.color}" stroke-width="${n2(L.stroke.w)}" stroke-linejoin="round"`;
-        else if (L.seal) a += ` stroke="${it.fill}" stroke-width="${L.seal}" stroke-linejoin="round"`;
-        return a + ` d="${groupPathD(geom, it.regions)}"/>`;
-      });
-      body.push(`<g id="${esc(L.name)}"${tf}>\n${paths.join('\n')}\n</g>`);
-    } else if (L.kind === 'ink') {
-      const id = `clip-${L.name}-${clipN++}`, b = L.bitmap, png = await encodePNG(b.rgba, b.w, b.h);
-      defs.push(`<clipPath id="${id}"><path clip-rule="evenodd" d="${groupPathD(geom, L.regions)}"/></clipPath>`);
-      const blend = L.blend === 'multiply' ? ' style="mix-blend-mode:multiply"' : '';
-      body.push(`<g id="${esc(L.name)}" clip-path="url(#${id})"${blend}><image x="${n2(b.gx)}" y="${n2(b.gy)}" width="${n2(b.gw)}" height="${n2(b.gh)}" preserveAspectRatio="none" xlink:href="data:image/png;base64,${toBase64(png)}"/></g>`);
+  const { w, h } = scene, outW = opts.outW || w, outH = opts.outH || h, nRaster = countRaster(scene.layers);
+  const defs = [], body = []; let uid = 0;
+  const emit = async (layers, geom0, out, ww, hh) => {
+    for (const L of layers) {
+      const g = L.geom || geom0, name = esc(L.name || L.kind);
+      if (L.kind === 'rect') out.push(`<rect id="background" x="-1" y="-1" width="${ww + 2}" height="${hh + 2}" fill="${L.fill}"/>`);
+      else if (L.kind === 'fills') {
+        const clipId = L.clip ? `clip-${++uid}` : null;
+        if (clipId) defs.push(`<clipPath id="${clipId}"><path clip-rule="evenodd" d="${groupPathD(L.clip.geom || geom0, L.clip.regions)}"/></clipPath>`);
+        const [dx, dy] = L.offset || [0, 0], tf = dx || dy ? ` transform="translate(${n2(dx)} ${n2(dy)})"` : '';
+        const rule = L.rule === 'nonzero' ? 'nonzero' : 'evenodd', blend = L.blend === 'multiply' ? ' style="mix-blend-mode:multiply"' : '';
+        const paths = L.items.map((it, i) => {
+          let a = `<path id="${name}-${i}" fill="${it.fill || 'none'}" fill-rule="${rule}"`;
+          if (L.stroke) a += ` stroke="${L.stroke.color}" stroke-width="${n2(L.stroke.w)}" stroke-linejoin="round" stroke-linecap="round"`;
+          else if (L.seal && it.fill) a += ` stroke="${it.fill}" stroke-width="${L.seal}" stroke-linejoin="round"`;
+          return a + ` d="${groupPathD(g, it.regions, { prec: 2 })}"/>`;
+        });
+        const inner = `<g id="${name}"${tf}${blend}>\n${paths.join('\n')}\n</g>`;
+        out.push(clipId ? `<g clip-path="url(#${clipId})">${inner}</g>` : inner);
+      } else if (L.kind === 'ink') {
+        const id = `clip-${++uid}`, b = L.bitmap, png = await encodePNG(b.rgba, b.w, b.h);
+        defs.push(`<clipPath id="${id}"><path clip-rule="evenodd" d="${groupPathD(g, L.regions)}"/></clipPath>`);
+        const blend = L.blend === 'multiply' ? ' style="mix-blend-mode:multiply"' : '';
+        out.push(`<g id="${name}" clip-path="url(#${id})"${blend}><image x="${n2(b.gx)}" y="${n2(b.gy)}" width="${n2(b.gw)}" height="${n2(b.gh)}" preserveAspectRatio="none" xlink:href="data:image/png;base64,${toBase64(png)}"/></g>`);
+      } else if (L.kind === 'group') {
+        const inner = []; if (L.paper) inner.push(`<rect width="${L.w}" height="${L.h}" fill="${L.paper}"/>`);
+        await emit(L.layers, L.geom || geom0, inner, L.w, L.h);
+        let s = `<g id="${name}"${L.clipPoly ? '' : ''}>`;
+        if (L.clipPoly) { const id = `clip-${++uid}`; defs.push(`<clipPath id="${id}"><path clip-rule="evenodd" d="${polyD(L.clipPoly)}"/></clipPath>`); s = `<g id="${name}" clip-path="url(#${id})">`; }
+        out.push(`${s}<g transform="matrix(${L.tf.map((v) => +v.toFixed(5)).join(' ')})">\n${inner.join('\n')}\n</g></g>`);
+      }
     }
-  }
-  const desc = opts.description || (hasRaster ? 'Hybrid artwork: vector shapes with embedded raster ink layers (raster parts are PNG images clipped by vector paths).' : 'Pure vector artwork: native paths and fills only.');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${w} ${h}" width="${outW}" height="${outH}">\n<title>${esc(opts.title || APP_NAME)}</title>\n<desc>${esc(desc)}</desc>\n<metadata>Generated by ${esc(APP_NAME)} v${esc(APP_VERSION)}; mode=${esc(scene.mode)}; preset=${esc(scene.preset)}; raster-layers=${scene.layers.filter((l) => l.kind === 'ink').length}</metadata>\n${defs.length ? `<defs>\n${defs.join('\n')}\n</defs>\n` : ''}${body.join('\n')}\n</svg>\n`;
+  };
+  await emit(scene.layers, geom || scene.geom, body, w, h);
+  const desc = opts.description || (nRaster ? 'Hybrid artwork: vector shapes with embedded raster ink layers (raster parts are PNG images clipped by vector paths).' : 'Pure vector artwork: native paths and fills only.');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${w} ${h}" width="${outW}" height="${outH}">\n<title>${esc(opts.title || APP_NAME)}</title>\n<desc>${esc(desc)}</desc>\n<metadata>Generated by ${esc(APP_NAME)} v${esc(APP_VERSION)}; mode=${esc(scene.mode)}; preset=${esc(scene.preset)}; raster-layers=${nRaster}</metadata>\n${defs.length ? `<defs>\n${defs.join('\n')}\n</defs>\n` : ''}<rect id="paper" width="${w}" height="${h}" fill="${scene.paper}"/>\n${body.join('\n')}\n</svg>\n`;
 }

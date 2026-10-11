@@ -52,28 +52,42 @@ class PDF {
 export async function sceneToPDF(scene, geom, opts = {}) {
   const longPt = opts.longPt || 841.89, k = longPt / Math.max(scene.w, scene.h), W = scene.w * k, H = scene.h * k;
   const pdf = new PDF(), catalog = pdf.reserve(), pages = pdf.reserve(), page = pdf.reserve(), content = pdf.reserve();
-  const xobj = [], gs = new Map(); let ops = [`q ${num(k)} 0 0 ${num(-k)} 0 ${num(H)} cm`, `${col(scene.paper)} rg`, `0 0 ${num(scene.w)} ${num(scene.h)} re f`];
+  const xobj = [], gs = new Map(); const ops = [`q ${num(k)} 0 0 ${num(-k)} 0 ${num(H)} cm`, `${col(scene.paper)} rg`, `0 0 ${num(scene.w)} ${num(scene.h)} re f`];
   let imN = 0;
-  for (const L of scene.layers) {
-    if (L.kind === 'rect') ops.push(`${col(L.fill)} rg`, `0 0 ${num(scene.w)} ${num(scene.h)} re f`);
-    else if (L.kind === 'fills') {
-      ops.push('q', `1 0 0 1 ${num(L.offset[0])} ${num(L.offset[1])} cm`, '1 j');
-      for (const it of L.items) {
-        ops.push(`${col(it.fill)} rg`, regionOps(geom, it.regions));
-        if (L.stroke) ops.push(`${col(L.stroke.color)} RG ${num(L.stroke.w)} w`, 'B*');
-        else if (L.seal) ops.push(`${col(it.fill)} RG ${num(L.seal)} w`, 'B*'); else ops.push('f*');
+  const poly = (xy) => { const o = [`${num(xy[0])} ${num(xy[1])} m`]; for (let i = 2; i < xy.length; i += 2) o.push(`${num(xy[i])} ${num(xy[i + 1])} l`); o.push('h'); return o.join('\n'); };
+  const emit = async (layers, geom0, ww, hh) => {
+    for (const L of layers) {
+      const g = L.geom || geom0;
+      if (L.kind === 'rect') ops.push(`${col(L.fill)} rg`, `-1 -1 ${num(ww + 2)} ${num(hh + 2)} re f`);
+      else if (L.kind === 'fills') {
+        ops.push('q');
+        if (L.clip) ops.push(regionOps(L.clip.geom || geom0, L.clip.regions), 'W* n');
+        const off = L.offset || [0, 0]; if (off[0] || off[1]) ops.push(`1 0 0 1 ${num(off[0])} ${num(off[1])} cm`);
+        if (L.blend === 'multiply') { if (!gs.has('M')) gs.set('M', '/GSm <</Type/ExtGState/BM/Multiply>>'); ops.push('/GSm gs'); }
+        ops.push('1 j 1 J'); const nz = L.rule === 'nonzero';
+        for (const it of L.items) {
+          const path = regionOps(g, it.regions);
+          if (L.stroke) { ops.push(`${col(L.stroke.color)} RG ${num(L.stroke.w)} w`); if (it.fill) ops.push(`${col(it.fill)} rg`, path, nz ? 'B' : 'B*'); else ops.push(path, 'S'); }
+          else if (it.fill) { ops.push(`${col(it.fill)} rg`, path); if (L.seal) { ops.push(`${col(it.fill)} RG ${num(L.seal)} w`, nz ? 'B' : 'B*'); } else ops.push(nz ? 'f' : 'f*'); }
+        }
+        ops.push('Q');
+      } else if (L.kind === 'ink') {
+        const b = L.bitmap, name = `Im${++imN}`, n = b.w * b.h, rgb = new Uint8Array(n * 3), al = new Uint8Array(n); let opaque = true;
+        for (let i = 0; i < n; i++) { rgb[i * 3] = b.rgba[i * 4]; rgb[i * 3 + 1] = b.rgba[i * 4 + 1]; rgb[i * 3 + 2] = b.rgba[i * 4 + 2]; al[i] = b.rgba[i * 4 + 3]; if (al[i] !== 255) opaque = false; }
+        let sm = ''; if (!opaque) { const sid = pdf.add(`<</Type/XObject/Subtype/Image/Width ${b.w}/Height ${b.h}/ColorSpace/DeviceGray/BitsPerComponent 8/Filter/FlateDecode>>`, await deflate(al)); sm = `/SMask ${sid} 0 R`; }
+        const id = pdf.add(`<</Type/XObject/Subtype/Image/Width ${b.w}/Height ${b.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Interpolate true/Filter/FlateDecode${sm}>>`, await deflate(rgb));
+        xobj.push(`/${name} ${id} 0 R`);
+        let gsn = ''; if (L.blend === 'multiply') { if (!gs.has('M')) gs.set('M', '/GSm <</Type/ExtGState/BM/Multiply>>'); gsn = '/GSm gs'; }
+        ops.push('q', regionOps(g, L.regions), 'W* n', gsn, `${num(b.gw)} 0 0 ${num(-b.gh)} ${num(b.gx)} ${num(b.gy + b.gh)} cm`, `/${name} Do`, 'Q');
+      } else if (L.kind === 'group') {
+        ops.push('q'); if (L.clipPoly) ops.push(poly(L.clipPoly), 'W* n');
+        ops.push(`${L.tf.map((v) => num(v)).join(' ')} cm`);
+        if (L.paper) ops.push(`${col(L.paper)} rg`, `0 0 ${num(L.w)} ${num(L.h)} re f`);
+        await emit(L.layers, L.geom || geom0, L.w, L.h); ops.push('Q');
       }
-      ops.push('Q');
-    } else if (L.kind === 'ink') {
-      const b = L.bitmap, name = `Im${++imN}`, n = b.w * b.h, rgb = new Uint8Array(n * 3), al = new Uint8Array(n); let opaque = true;
-      for (let i = 0; i < n; i++) { rgb[i * 3] = b.rgba[i * 4]; rgb[i * 3 + 1] = b.rgba[i * 4 + 1]; rgb[i * 3 + 2] = b.rgba[i * 4 + 2]; al[i] = b.rgba[i * 4 + 3]; if (al[i] !== 255) opaque = false; }
-      let sm = ''; if (!opaque) { const sid = pdf.add(`<</Type/XObject/Subtype/Image/Width ${b.w}/Height ${b.h}/ColorSpace/DeviceGray/BitsPerComponent 8/Filter/FlateDecode>>`, await deflate(al)); sm = `/SMask ${sid} 0 R`; }
-      const id = pdf.add(`<</Type/XObject/Subtype/Image/Width ${b.w}/Height ${b.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Interpolate true/Filter/FlateDecode${sm}>>`, await deflate(rgb));
-      xobj.push(`/${name} ${id} 0 R`);
-      let g = ''; if (L.blend === 'multiply') { if (!gs.has('M')) gs.set('M', '/GSm <</Type/ExtGState/BM/Multiply>>'); g = '/GSm gs'; }
-      ops.push('q', regionOps(geom, L.regions), 'W* n', g, `${num(b.gw)} 0 0 ${num(-b.gh)} ${num(b.gx)} ${num(b.gy + b.gh)} cm`, `/${name} Do`, 'Q');
     }
-  }
+  };
+  await emit(scene.layers, geom || scene.geom, scene.w, scene.h);
   ops.push('Q');
   const stream = await deflate(enc.encode(ops.join('\n')));
   pdf.set(content, '<</Filter/FlateDecode>>', stream);

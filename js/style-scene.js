@@ -1,7 +1,8 @@
 // style-scene.js - turns pipeline output + style params into a renderer-neutral "scene" (layer list).
 // SVG, Canvas and PDF renderers all consume this same structure, so every output matches.
-import { PRESETS, GROUP_KEYS, mapRegionsToPalette, allPresetColors } from './style-palette.js';
+import { PRESETS, GROUP_KEYS, mapRegionsToPalette, allPresetColors, getPreset } from './style-palette.js';
 import { rgbToHex, hexToRgb } from './color-utils.js';
+import { textLayers } from './style-text.js';
 
 const hexOf = (st, r) => rgbToHex(st.rgb[r * 3], st.rgb[r * 3 + 1], st.rgb[r * 3 + 2]);
 function groupBy(map) { const m = new Map(); for (const [r, fill] of map) { if (!m.has(fill)) m.set(fill, []); m.get(fill).push(r); } return [...m].map(([fill, regions]) => ({ fill, regions })); }
@@ -11,8 +12,30 @@ function groupBy(map) { const m = new Map(); for (const [r, fill] of map) { if (
  * inkFactory(spec) -> bitmap | null (hybrid raster layers; omitted when null).
  */
 export function buildScene(res, groups, p, inkFactory = null) {
+  const scene = buildBase(res, groups, p, inkFactory); addOverlays(scene, res, groups, p); return scene;
+}
+
+/** Overlays shared by every mode: contour lines (region boundaries, optional offset copy) and vector text. */
+export function addLines(scene, res, groups, p) {
+  const { w, h, R } = res, sc = Math.max(w, h) / 640;
+  if (p.lineWidth > 0) {
+    const ids = []; for (let r = 0; r < R; r++) if (p.lineScope === 'all' || (p.lineScope === 'fg' ? groups[r] === 2 : groups[r] >= 1)) ids.push(r);
+    if (ids.length) {
+      const lw = (p.lineWidth / 100) * 3 * sc, off = (p.lineOffset / 100) * 0.02 * Math.max(w, h);
+      if (off > 0.2) scene.layers.push({ kind: 'fills', name: 'lines-offset', offset: [off, off * 0.7], seal: 0, stroke: { w: lw, color: p.lineColor2 }, items: [{ fill: null, regions: ids }] });
+      scene.layers.push({ kind: 'fills', name: 'lines', offset: [0, 0], seal: 0, stroke: { w: lw, color: p.lineColor }, items: [{ fill: null, regions: ids }] });
+    }
+  }
+}
+export function addOverlays(scene, res, groups, p) {
+  addLines(scene, res, groups, p);
+  for (const L of textLayers(p, scene.w, scene.h)) scene.layers.push(L);
+  scene.geom = res.geom;
+}
+
+export function buildBase(res, groups, p, inkFactory) {
   const { w, h, R, stats: st } = res, long = Math.max(w, h), sc = long / 640;
-  const preset = PRESETS[p.preset] || PRESETS.natural;
+  const preset = getPreset(p);
   const scene = { w, h, paper: preset.paper, paperAmount: 0, layers: [], mode: p.mode, preset: preset.id };
   const all = Array.from({ length: R }, (_, i) => i);
   const seal = p.seal && !p.outline ? 0.7 : 0;
@@ -70,18 +93,19 @@ export function buildScene(res, groups, p, inkFactory = null) {
     const common = { levels: p.separation, retention: p.retention / 100, halftone: p.halftone > 0, halftoneSize: p.halftoneSize, halftoneAngle: p.halftoneAngle, grain: p.grain / 100, roughness: p.roughness / 100 };
     if (preset.mode === 'key') {
       const ids = all.filter((r) => (groups[r] === 0 ? p.bgTreatment === 'photo' : pg[GROUP_KEYS[groups[r]]].ink));
-      if (ids.length) { const bmp = inkFactory({ ...common, mode: 'key', regions: ids, color: preset.ink }); if (bmp) scene.layers.push({ kind: 'ink', name: 'key-plate', regions: ids, bitmap: bmp, blend: 'multiply' }); }
+      if (ids.length) { const bmp = inkFactory({ ...common, mode: 'key', regions: ids, color: preset.ink }); if (bmp) scene.layers.push({ kind: 'ink', name: 'key-plate', regions: ids, bitmap: bmp, blend: 'multiply', spec: { mode: 'key', color: preset.ink } }); }
     } else {
       GROUP_KEYS.forEach((gk, g) => {
         if (g === 0 && p.bgTreatment !== 'photo') return;
         const ids = byG[g].filter((r) => st.texStd[r] >= flatThr);
         if (!ids.length) return;
         const bmp = inkFactory({ ...common, mode: 'bands', regions: ids, ramp: pg[gk].ramp, key: gk });
-        if (bmp) scene.layers.push({ kind: 'ink', name: 'tone-' + gk, regions: ids, bitmap: bmp, blend: 'normal' });
+        if (bmp) scene.layers.push({ kind: 'ink', name: 'tone-' + gk, regions: ids, bitmap: bmp, blend: 'normal', spec: { mode: 'bands', ramp: pg[gk].ramp, levels: p.separation } });
       });
     }
   }
   return scene;
 }
-export const sceneHasRaster = (scene) => scene.layers.some((l) => l.kind === 'ink');
+const anyInk = (layers) => layers.some((l) => l.kind === 'ink' || (l.layers && anyInk(l.layers)));
+export const sceneHasRaster = (scene) => anyInk(scene.layers);
 export const sceneStats = (scene) => ({ layers: scene.layers.length, raster: scene.layers.filter((l) => l.kind === 'ink').length });

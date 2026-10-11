@@ -37,6 +37,11 @@ export class PipelineClient {
     if (this.worker) return this._call({ type: 'process', params });
     await new Promise((r) => setTimeout(r, 20)); return this.local.process(params, this.onProgress);
   }
+  /** Trace a label map into vector geometry (used to vectorise raster ink). Own worker-independent: runs wherever the client runs. */
+  async trace(labels, w, h, R, shape) {
+    if (this.worker) { const copy = labels.slice(); try { return await this._call({ type: 'trace', buffer: copy.buffer, w, h, R, shape }, [copy.buffer]); } catch (e) { if (!this.local) throw e; } }
+    const { traceLabels } = await import('./vec-ink.js'); await new Promise((r) => setTimeout(r, 10)); return traceLabels(labels, w, h, R, shape);
+  }
   /** Hard cancel: kill the worker (frees all memory). Caller must call setImage again before the next process(). */
   cancel() { if (this.worker) { this.worker.terminate(); for (const [, p] of this.pending) p.reject(new Error('cancelled')); this.pending.clear(); this._spawn(); } }
   dispose() { if (this.worker) this.worker.terminate(); this.worker = null; this.local = null; }

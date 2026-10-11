@@ -1,7 +1,9 @@
 // i18n.js - tiny dictionary-based localisation (ja / en). Static HTML ships in Japanese for SEO; English is swapped in by JS.
 import { JA } from './i18n-ja.js';
 import { EN } from './i18n-en.js';
-const DICT = { ja: JA, en: EN };
+import { JA2 } from './i18n-ja-v2.js';
+import { EN2 } from './i18n-en-v2.js';
+const DICT = { ja: { ...JA, ...JA2 }, en: { ...EN, ...EN2 } };
 let lang = 'ja';
 export const getLang = () => lang;
 export function detectLang() {

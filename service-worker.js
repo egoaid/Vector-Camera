@@ -1,6 +1,6 @@
 /* service-worker.js - app-shell cache (same-origin only). Models fetched from CDNs are cached by Transformers.js itself. */
-const VERSION = '0.1.0-beta.1';
-const BUILD = '20261011.1';
+const VERSION = '0.2.0-beta.1';
+const BUILD = '20261011.2';
 const CACHE = `vector-camera-${VERSION}-${BUILD}`;
 const SHELL = [
   './', 'index.html', 'manifest.json',
@@ -13,7 +13,8 @@ const SHELL = [
   'js/vec-chains.js', 'js/vec-curves.js', 'js/vec-geometry.js', 'js/style-palette.js', 'js/style-scene.js',
   'js/render-svg.js', 'js/render-canvas.js', 'js/render-ink.js', 'js/render-pdf.js', 'js/render-png.js', 'js/util-deflate.js', 'js/export-files.js',
   'js/pipeline-core.js', 'js/pipeline-worker.js', 'js/pipeline-client.js',
-];
+  'js/i18n-ja-v2.js', 'js/i18n-en-v2.js', 'js/font-ttf.js', 'js/style-text.js', 'js/style-collage.js', 'js/style-random.js', 'js/ui-extras.js', 'js/vec-ink.js', 'js/render-strips.js',
+];  // fonts/*.ttf are fetched on demand and cached at runtime
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('vector-camera-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {

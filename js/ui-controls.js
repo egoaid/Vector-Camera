@@ -1,6 +1,6 @@
 // ui-controls.js - builds mode tabs, style presets and sliders from a definition table.
 import { MODES, MODE_PRESETS, MODE_DEFAULTS } from './config.js';
-import { PRESETS } from './style-palette.js';
+import { PRESETS, getPreset } from './style-palette.js';
 import { t } from './i18n.js';
 import { state, saveSettings } from './state.js';
 const $ = (id) => document.getElementById(id);
@@ -16,7 +16,7 @@ const ADV = [
   { k: 'boundary', modes: ALL }, { k: 'minRegion', modes: ALL }, { k: 'outline', modes: ['vector', 'regions', 'silhouette'] },
   { k: 'semStrength', modes: ALL, when: () => state.engineUsed === 'ai' },
 ];
-function slider(def, onChange) {
+export function slider(def, onChange) {
   const p = state.params, wrap = document.createElement('div'); wrap.className = 'slider';
   const id = 'sl-' + def.k, row = document.createElement('div'); row.className = 'slider-row';
   const lab = document.createElement('label'); lab.htmlFor = id; lab.textContent = t('p.' + def.k);
@@ -27,14 +27,14 @@ function slider(def, onChange) {
   inp.addEventListener('change', saveSettings);
   wrap.append(row, inp); return wrap;
 }
-function select(key, opts, onChange, labelKey) {
+export function select(key, opts, onChange, labelKey) {
   const f = document.createElement('div'); f.className = 'field';
   const l = document.createElement('label'); l.htmlFor = 'se-' + key; l.textContent = t(labelKey); const s = document.createElement('select'); s.id = 'se-' + key;
   for (const [v, k] of opts) { const o = document.createElement('option'); o.value = v; o.textContent = t(k); s.append(o); }
   s.value = String(state.params[key]); s.addEventListener('change', () => { state.params[key] = typeof state.params[key] === 'number' ? +s.value : s.value; saveSettings(); onChange(key); });
   f.append(l, s); return f;
 }
-function check(key, labelKey, onChange) {
+export function check(key, labelKey, onChange) {
   const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params[key];
   const s = document.createElement('span'); s.textContent = t(labelKey); i.addEventListener('change', () => { state.params[key] = i.checked; saveSettings(); onChange(key); }); l.append(i, s); return l;
 }
@@ -46,7 +46,7 @@ export function buildControls(onChange, onMode) {
   $('mode-desc').textContent = t('mode.' + mode + '.desc');
   // presets
   const pr = $('presets'); pr.replaceChildren();
-  const ids = [...MODE_PRESETS[mode], ...(mode === 'silhouette' ? ['custom'] : [])];
+  const ids = [...MODE_PRESETS[mode], ...(mode !== 'vector' && p.customPreset ? ['random'] : []), ...(mode === 'silhouette' ? ['custom'] : [])];
   for (const id of ids) { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t('preset.' + id); b.setAttribute('aria-pressed', String(p.preset === id)); b.addEventListener('click', () => onChange('preset', id)); pr.append(b); }
   pr.closest('.field').hidden = ids.length < 2;
   // controls
@@ -63,5 +63,5 @@ export function buildControls(onChange, onMode) {
   for (const d of ADV) if (d.modes.includes(mode) && (!d.when || d.when(p))) adv.append(slider(d, onChange));
   adv.append(check('seal', 'p.seal', onChange));
 }
-export function presetDefaults(mode, preset) { const pr = PRESETS[preset]; return { bgTreatment: pr && pr.bgTreatment ? pr.bgTreatment : 'flat' }; }
+export function presetDefaults(mode, preset) { const pr = preset === 'random' ? state.params.customPreset : PRESETS[preset]; return { bgTreatment: pr && pr.bgTreatment ? pr.bgTreatment : 'flat' }; }
 export { MODE_DEFAULTS };

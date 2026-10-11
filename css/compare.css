@@ -2,3 +2,7 @@
 .compare-handle { position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; margin-left: -2px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); pointer-events: none; }
 .compare-handle::after { content: "↔"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; line-height: 1; font-size: 1.2rem; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
 .compare-range { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: ew-resize; touch-action: pan-y; }
+/* v0.2: the stage itself is the drag surface; the range is only an accessibility mirror */
+.stage.comparing { cursor: ew-resize; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.compare-range { pointer-events: none; }
+.compare-range:focus-visible { opacity: 1; height: 8px; top: auto; bottom: 6px; inset: auto 8px 6px 8px; width: calc(100% - 16px); }
