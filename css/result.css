@@ -3,7 +3,7 @@
 .stage canvas { display: block; width: 100%; height: auto; }
 .stage .orig { position: absolute; inset: 0; pointer-events: none; clip-path: inset(0 50% 0 0); }
 .stage.editing { cursor: crosshair; outline: 3px dashed var(--accent-2); outline-offset: -3px; }
-.badges { position: absolute; left: 8px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; line-height: 1.2; }
+.badges { position: absolute; left: 8px; top: 8px; max-width: 55%; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; line-height: 1.2; }
 .badge { background: rgba(0,0,0,.72); color: #fff; font-size: .72rem; font-weight: 800; padding: 4px 8px; border-radius: 99px; }
 .badge.warn { background: var(--accent); }
 .retake-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

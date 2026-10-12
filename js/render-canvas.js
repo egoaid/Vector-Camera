@@ -36,7 +36,7 @@ function drawLayers(ctx, layers, geom) {
       }
       ctx.restore();
     } else if (L.kind === 'ink') {
-      const b = L.bitmap; ctx.save(); ctx.clip(L._p2 || (L._p2 = new Path2D(groupPathD(g, L.regions, { prec: 3 }))), 'evenodd');
+      const b = L.bitmap; ctx.save(); if (!L.noClip) ctx.clip(L._p2 || (L._p2 = new Path2D(groupPathD(g, L.regions, { prec: 3 }))), 'evenodd');
       ctx.globalCompositeOperation = L.blend === 'multiply' ? 'multiply' : 'source-over'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(inkCanvas(b), b.gx, b.gy, b.gw, b.gh); ctx.restore();
     } else if (L.kind === 'group') {

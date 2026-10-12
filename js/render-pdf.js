@@ -78,7 +78,7 @@ export async function sceneToPDF(scene, geom, opts = {}) {
         const id = pdf.add(`<</Type/XObject/Subtype/Image/Width ${b.w}/Height ${b.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Interpolate true/Filter/FlateDecode${sm}>>`, await deflate(rgb));
         xobj.push(`/${name} ${id} 0 R`);
         let gsn = ''; if (L.blend === 'multiply') { if (!gs.has('M')) gs.set('M', '/GSm <</Type/ExtGState/BM/Multiply>>'); gsn = '/GSm gs'; }
-        ops.push('q', regionOps(g, L.regions), 'W* n', gsn, `${num(b.gw)} 0 0 ${num(-b.gh)} ${num(b.gx)} ${num(b.gy + b.gh)} cm`, `/${name} Do`, 'Q');
+        ops.push('q', ...(L.noClip ? [] : [regionOps(g, L.regions), 'W* n']), gsn, `${num(b.gw)} 0 0 ${num(-b.gh)} ${num(b.gx)} ${num(b.gy + b.gh)} cm`, `/${name} Do`, 'Q');
       } else if (L.kind === 'group') {
         ops.push('q'); if (L.clipPoly) ops.push(poly(L.clipPoly), 'W* n');
         ops.push(`${L.tf.map((v) => num(v)).join(' ')} cm`);

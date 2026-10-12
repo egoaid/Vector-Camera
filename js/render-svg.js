@@ -33,9 +33,9 @@ export async function sceneToSVG(scene, geom, opts = {}) {
         out.push(clipId ? `<g clip-path="url(#${clipId})">${inner}</g>` : inner);
       } else if (L.kind === 'ink') {
         const id = `clip-${++uid}`, b = L.bitmap, png = await encodePNG(b.rgba, b.w, b.h);
-        defs.push(`<clipPath id="${id}"><path clip-rule="evenodd" d="${groupPathD(g, L.regions)}"/></clipPath>`);
+        if (!L.noClip) defs.push(`<clipPath id="${id}"><path clip-rule="evenodd" d="${groupPathD(g, L.regions)}"/></clipPath>`);
         const blend = L.blend === 'multiply' ? ' style="mix-blend-mode:multiply"' : '';
-        out.push(`<g id="${name}" clip-path="url(#${id})"${blend}><image x="${n2(b.gx)}" y="${n2(b.gy)}" width="${n2(b.gw)}" height="${n2(b.gh)}" preserveAspectRatio="none" xlink:href="data:image/png;base64,${toBase64(png)}"/></g>`);
+        out.push(`<g id="${name}"${L.noClip ? '' : ` clip-path="url(#${id})"`}${blend}><image x="${n2(b.gx)}" y="${n2(b.gy)}" width="${n2(b.gw)}" height="${n2(b.gh)}" preserveAspectRatio="none" xlink:href="data:image/png;base64,${toBase64(png)}"/></g>`);
       } else if (L.kind === 'group') {
         const inner = []; if (L.paper) inner.push(`<rect width="${L.w}" height="${L.h}" fill="${L.paper}"/>`);
         await emit(L.layers, L.geom || geom0, inner, L.w, L.h);

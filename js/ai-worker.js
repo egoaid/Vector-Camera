@@ -3,8 +3,13 @@
 // NOTE: this route needs network access on first use (runtime + model download) and is cached by the browser afterwards.
 import { segmentsToLabelMap } from './seg-semantic.js';
 let seg = null, loading = null;
+async function modelCached(model) {
+  try { for (const name of ['transformers-cache']) { if (!(await caches.has(name))) continue; const c = await caches.open(name); const ks = await c.keys(); if (ks.some((r) => r.url.includes(model))) return true; } } catch { /* ignore */ }
+  return false;
+}
 async function load(cfg, report) {
   if (seg) return seg;
+  report({ status: 'cache', cached: await modelCached(cfg.model) });
   if (!loading) loading = (async () => {
     const tf = await import(/* webpackIgnore: true */ cfg.cdn);
     tf.env.allowLocalModels = false; tf.env.useBrowserCache = true;

@@ -1,12 +1,21 @@
 // style-text.js - typed text -> vector outline layers (TrueType glyph outlines, nonzero fill, optional offset shadow).
 import { parseTTF, contourToPath } from './font-ttf.js';
+import { fxActive, textFxLayers } from './text-fx.js';
 
 export const FONTS = [
-  { id: 'anton', file: 'Anton-Regular.ttf', name: 'Anton' }, { id: 'bebas', file: 'BebasNeue-Regular.ttf', name: 'Bebas Neue' },
-  { id: 'archivo', file: 'ArchivoBlack-Regular.ttf', name: 'Archivo Black' }, { id: 'abril', file: 'AbrilFatface-Regular.ttf', name: 'Abril Fatface' },
-  { id: 'shrikhand', file: 'Shrikhand-Regular.ttf', name: 'Shrikhand' }, { id: 'bungee', file: 'Bungee-Regular.ttf', name: 'Bungee' },
-  { id: 'marker', file: 'PermanentMarker-Regular.ttf', name: 'Permanent Marker' }, { id: 'rocksalt', file: 'RockSalt-Regular.ttf', name: 'Rock Salt' },
-  { id: 'typewriter', file: 'SpecialElite-Regular.ttf', name: 'Special Elite' }, { id: 'pacifico', file: 'Pacifico-Regular.ttf', name: 'Pacifico' },
+  { id: 'anton', file: 'Anton-Regular.ttf', name: 'Anton', cat: 'display' }, { id: 'bebas', file: 'BebasNeue-Regular.ttf', name: 'Bebas Neue', cat: 'display' },
+  { id: 'archivo', file: 'ArchivoBlack-Regular.ttf', name: 'Archivo Black', cat: 'display' }, { id: 'abril', file: 'AbrilFatface-Regular.ttf', name: 'Abril Fatface', cat: 'display' },
+  { id: 'shrikhand', file: 'Shrikhand-Regular.ttf', name: 'Shrikhand', cat: 'display' }, { id: 'bungee', file: 'Bungee-Regular.ttf', name: 'Bungee', cat: 'display' },
+  { id: 'pacifico', file: 'Pacifico-Regular.ttf', name: 'Pacifico', cat: 'display' },
+  { id: 'marker', file: 'PermanentMarker-Regular.ttf', name: 'Permanent Marker', cat: 'hand' }, { id: 'rocksalt', file: 'RockSalt-Regular.ttf', name: 'Rock Salt', cat: 'hand' },
+  { id: 'caveat', file: 'Caveat-Variable.ttf', name: 'Caveat', cat: 'hand' }, { id: 'reenie', file: 'ReenieBeanie.ttf', name: 'Reenie Beanie', cat: 'hand' },
+  { id: 'covered', file: 'CoveredByYourGrace.ttf', name: 'Covered By Your Grace', cat: 'hand' }, { id: 'homemade', file: 'HomemadeApple-Regular.ttf', name: 'Homemade Apple', cat: 'hand' },
+  { id: 'gochi', file: 'GochiHand-Regular.ttf', name: 'Gochi Hand', cat: 'hand' }, { id: 'shadows', file: 'ShadowsIntoLight.ttf', name: 'Shadows Into Light', cat: 'hand' },
+  { id: 'indie', file: 'IndieFlower-Regular.ttf', name: 'Indie Flower', cat: 'hand' }, { id: 'nothing', file: 'NothingYouCouldDo.ttf', name: 'Nothing You Could Do', cat: 'hand' },
+  { id: 'sedgwick', file: 'SedgwickAve-Regular.ttf', name: 'Sedgwick Ave', cat: 'hand' },
+  { id: 'typewriter', file: 'SpecialElite-Regular.ttf', name: 'Special Elite', cat: 'type' }, { id: 'courier', file: 'CourierPrime-Regular.ttf', name: 'Courier Prime', cat: 'type' },
+  { id: 'courierb', file: 'CourierPrime-Bold.ttf', name: 'Courier Prime Bold', cat: 'type' }, { id: 'cutive', file: 'CutiveMono-Regular.ttf', name: 'Cutive Mono', cat: 'type' },
+  { id: 'xanh', file: 'XanhMono-Regular.ttf', name: 'Xanh Mono', cat: 'type' }, { id: 'syne', file: 'SyneMono-Regular.ttf', name: 'Syne Mono', cat: 'type' },
 ];
 const cache = new Map();
 /** Loads + parses a bundled font (same-origin fetch). Resolves the parsed font or null on failure. */
@@ -47,10 +56,11 @@ export function layoutText(font, text, { w, h, size = 20, x = 50, y = 50, angle 
 
 /** Scene layers for the text overlay (shadow first). Returns [] when text is empty or the font is not loaded yet. */
 export function textLayers(p, w, h) {
-  if (!p.text || !p.text.trim()) return [];
+  if (!p.text || !p.text.trim() || p.textShow === false) return [];
   const font = cache.get(p.textFont); if (!font) return [];
   const geom = layoutText(font, p.text, { w, h, size: p.textSize, x: p.textX, y: p.textY, angle: p.textAngle, spacing: p.textSpacing });
   if (!geom) return [];
+  if (fxActive(p)) return textFxLayers(geom, p, w, h, p.fxLong || 1000);
   const ids = Array.from({ length: geom.R }, (_, i) => i), out = [], off = (p.textShadow / 100) * 0.05 * h;
   if (p.textShadow > 0) out.push({ kind: 'fills', name: 'text-shadow', geom, rule: 'nonzero', offset: [off, off], items: [{ fill: p.textShadowColor, regions: ids }] });
   out.push({ kind: 'fills', name: 'text', geom, rule: 'nonzero', offset: [0, 0], items: [{ fill: p.textColor, regions: ids }] });

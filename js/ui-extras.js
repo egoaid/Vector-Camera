@@ -3,7 +3,7 @@ import { t } from './i18n.js';
 import { state, saveSettings } from './state.js';
 import { slider, select, check } from './ui-controls.js';
 import { FONTS, ensureFont, isLatinOnly } from './style-text.js';
-import { LAYOUTS, ASPECTS } from './style-collage.js';
+import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 const $ = (id) => document.getElementById(id);
 
 function colorInput(key, labelKey, onChange) {
@@ -16,7 +16,7 @@ const sl = (k, min, max, onChange) => slider({ k, min, max }, onChange);
 export function buildExtras(onChange, hooks) {
   // --- randomise options
   const ro = $('random-opts'); ro.replaceChildren();
-  for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'font']) {
+  for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'collage', 'textOn', 'font', 'textFx']) {
     const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params.rndOpts[k];
     const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); }); l.append(i, s); ro.append(l);
   }
@@ -31,18 +31,21 @@ export function buildExtras(onChange, hooks) {
   ta.addEventListener('input', () => { state.params.text = ta.value; warn.hidden = isLatinOnly(ta.value); onChange('text'); }); ta.addEventListener('change', saveSettings);
   f.append(lab, ta, warn);
   const fontSel = document.createElement('div'); fontSel.className = 'field'; const fl = document.createElement('label'); fl.htmlFor = 'se-textFont'; fl.textContent = t('tx.font');
-  const fs = document.createElement('select'); fs.id = 'se-textFont'; for (const d of FONTS) { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; fs.append(o); }
+  const fs = document.createElement('select'); fs.id = 'se-textFont'; for (const cat of ['display', 'hand', 'type']) { const og = document.createElement('optgroup'); og.label = t('tx.cat.' + cat); for (const d of FONTS.filter((f) => f.cat === cat)) { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; og.append(o); } fs.append(og); }
   fs.value = state.params.textFont; fs.addEventListener('change', async () => { state.params.textFont = fs.value; saveSettings(); await ensureFont(fs.value); onChange('textFont'); }); fontSel.append(fl, fs);
-  tx.append(f, fontSel, sl('textSize', 4, 60, onChange), sl('textX', 0, 100, onChange), sl('textY', 0, 100, onChange), sl('textAngle', -45, 45, onChange), sl('textSpacing', -5, 30, onChange), sl('textShadow', 0, 100, onChange),
-    colorRow(colorInput('textColor', 'tx.color', onChange), colorInput('textShadowColor', 'tx.shadowcolor', onChange)));
+  tx.append(check('textShow', 'tx.show', onChange), f, fontSel, sl('textSize', 4, 60, onChange), sl('textX', 0, 100, onChange), sl('textY', 0, 100, onChange), sl('textAngle', -45, 45, onChange), sl('textSpacing', -5, 30, onChange), sl('textShadow', 0, 100, onChange),
+    colorRow(colorInput('textColor', 'tx.color', onChange), colorInput('textShadowColor', 'tx.shadowcolor', onChange)),
+    sl('textHalftone', 0, 100, onChange), sl('textHalftoneSize', 2, 14, onChange), sl('textHalftoneAngle', 0, 90, onChange), select('textHalftoneMode', [['down', 'tx.ht.down'], ['up', 'tx.ht.up'], ['right', 'tx.ht.right'], ['flat', 'tx.ht.flat']], onChange, 'tx.ht.mode'), sl('textWear', 0, 100, onChange), sl('textDirt', 0, 100, onChange));
+  const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'btn btn-small'; rs.textContent = t('tx.reseed'); rs.addEventListener('click', () => { state.params.textSeed = (Math.random() * 1e6) | 0; saveSettings(); onChange('textSeed'); }); tx.append(rs);
   // --- collage
   const cc = $('collage-ctl'); cc.replaceChildren();
-  cc.append(select('collageLayout', LAYOUTS.map((l) => [l, 'col.l.' + l]), onChange, 'col.layout'), select('collageAspect', Object.keys(ASPECTS).map((a) => [a, 'col.a.' + a]), onChange, 'col.aspect'),
+  cc.append(select('collageLayout', LAYOUTS.map((l) => [l, 'col.l.' + l]), onChange, 'col.layout'), select('collageEdge', EDGES.map((e) => [e, 'col.e.' + e]), onChange, 'col.edge'), select('collageAspect', Object.keys(ASPECTS).map((a) => [a, 'col.a.' + a]), onChange, 'col.aspect'),
     sl('collageSlots', 0, 16, onChange), sl('collageTorn', 0, 100, onChange), sl('collageGap', 0, 100, onChange), sl('collageRotate', 0, 100, onChange), check('collageVary', 'col.vary', onChange),
     colorRow(colorInput('collagePaper', 'col.paper', onChange)));
   const row = document.createElement('div'); row.className = 'retake-row';
   const b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'btn btn-small'; b1.textContent = t('col.shuffle'); b1.addEventListener('click', hooks.shuffle);
   const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn btn-small'; b2.textContent = t('col.add'); b2.addEventListener('click', hooks.add);
-  row.append(b1, b2); cc.append(row);
+  const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn btn-small'; b3.textContent = t('col.addcam'); b3.addEventListener('click', hooks.addCam);
+  row.append(b1, b2, b3); cc.append(row);
   $('sec-collage').hidden = !state.collage;
 }

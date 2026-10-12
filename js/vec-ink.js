@@ -55,7 +55,7 @@ export function traceLabels(labels, w, h, R, shape = TRACE_SHAPE) { return build
 export function vectorLayer(L, geom, info) {
   const b = L.bitmap, k = b.gw / b.w; scaleGeom(geom, k, b.gx, b.gy);
   const items = []; info.colors.forEach((c, r) => { if (c) items.push({ fill: c, regions: [r] }); });
-  return { kind: 'fills', name: L.name + '-vector', geom, offset: [0, 0], seal: L.blend === 'multiply' ? 0 : 0.5, stroke: null, blend: L.blend === 'multiply' ? 'multiply' : undefined, clip: { regions: L.regions }, items };
+  return { kind: 'fills', name: L.name + '-vector', geom, offset: [0, 0], seal: L.spec && L.spec.mode === 'bands' ? 0.5 : 0, stroke: null, blend: L.blend === 'multiply' ? 'multiply' : undefined, clip: L.noClip ? undefined : { regions: L.regions }, items };
 }
 /**
  * Replace every ink layer of a scene (recursing into groups) with traced vector layers.

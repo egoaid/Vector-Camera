@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Vector Camera｜写真をベクター・シルクスクリーン風に変換する無料カメラアプリ</title>
 <meta name="description" content="Vector Cameraは、写真をSVG・PDFのベクターイラストや、版画（シルクスクリーン）風のハイブリッドアートに変換する無料のWebアプリ。画像は端末内で処理され、サーバーへ送信されません。iPhone・Android対応、インストール不要。">
 <meta name="keywords" content="ベクター変換,写真 ベクター化,SVG 書き出し,ベクターPDF,シルクスクリーン風,ポップアート風,カメラアプリ,ブラウザ,プライバシー,オフライン">
@@ -43,6 +43,7 @@
 <link rel="stylesheet" href="css/camera.css">
 <link rel="stylesheet" href="css/result.css">
 <link rel="stylesheet" href="css/compare.css">
+<link rel="stylesheet" href="css/zoom.css">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -104,11 +105,10 @@
       <p class="tagline" data-i18n="app.tagline">写真を、ベクター＆シルクスクリーン風アートに。端末内で完結。</p>
       <div class="cta">
         <button type="button" class="btn btn-primary btn-xl" id="btn-camera" data-i18n="start.camera">カメラで撮る</button>
-        <button type="button" class="btn btn-accent btn-xl" id="btn-native" data-i18n="start.native">端末の標準カメラで撮る</button>
-        <input type="file" id="file-native" accept="image/*" capture="environment" hidden>
         <button type="button" class="btn btn-secondary btn-xl" id="btn-choose" data-i18n="start.choose">画像を選ぶ</button>
         <input type="file" id="file-input" accept="image/*" hidden>
-        <button type="button" class="btn btn-xl btn-collage" id="btn-collage" data-i18n="start.collage">複数の画像でコラージュ</button>
+        <button type="button" class="btn btn-xl btn-collage" id="btn-collage-cam" data-i18n="start.collage.cam">撮影してコラージュ（連写・複数枚）</button>
+        <button type="button" class="btn btn-xl btn-collage" id="btn-collage" data-i18n="start.collage">画像を選んでコラージュ</button>
         <input type="file" id="file-collage" accept="image/*" multiple hidden>
       </div>
       <p class="hint" data-i18n="start.hint">画像は端末の外へ送信されません。</p>
@@ -183,7 +183,6 @@
     <p id="camera-error" class="error camera-error" role="alert" hidden></p>
     <div class="camera-top">
       <button type="button" class="cam-pill" id="btn-cam-close" data-i18n="camera.close">閉じる</button>
-      <button type="button" class="cam-pill" id="btn-cam-native" data-i18n="camera.native">標準カメラ</button>
       <div class="cam-timer" role="group" data-i18n-aria="camera.timer" aria-label="セルフタイマー">
         <button type="button" class="cam-pill" data-timer="0" aria-pressed="true" data-i18n="camera.timer.off">タイマー切</button>
         <button type="button" class="cam-pill" data-timer="3" aria-pressed="false">3s</button>
@@ -191,8 +190,17 @@
         <button type="button" class="cam-pill" data-timer="10" aria-pressed="false">10s</button>
       </div>
     </div>
+    <div class="camera-multi" id="camera-multi" hidden>
+      <div class="cam-burst" role="group" data-i18n-aria="cam.burst" aria-label="連写枚数">
+        <span class="cam-lab" data-i18n="cam.burst">連写</span>
+        <button type="button" class="cam-pill" data-burst="1" aria-pressed="true">1</button><button type="button" class="cam-pill" data-burst="3" aria-pressed="false">3</button><button type="button" class="cam-pill" data-burst="5" aria-pressed="false">5</button><button type="button" class="cam-pill" data-burst="8" aria-pressed="false">8</button>
+        <span class="cam-lab" data-i18n="cam.gap">間隔</span>
+        <button type="button" class="cam-pill" data-gap="0.5" aria-pressed="false">0.5s</button><button type="button" class="cam-pill" data-gap="1" aria-pressed="true">1s</button><button type="button" class="cam-pill" data-gap="2" aria-pressed="false">2s</button><button type="button" class="cam-pill" data-gap="3" aria-pressed="false">3s</button>
+      </div>
+      <div class="cam-tray" id="cam-tray" aria-live="polite"></div>
+    </div>
     <div class="camera-bar">
-      <span class="cam-spacer" aria-hidden="true"></span>
+      <button type="button" class="cam-done" id="btn-cam-done" hidden data-i18n="cam.done">完了</button><span class="cam-spacer" id="cam-spacer" aria-hidden="true"></span>
       <button type="button" class="shutter" id="btn-shutter" data-i18n-aria="camera.shutter" aria-label="撮影"></button>
       <button type="button" class="cam-round" id="btn-cam-switch" data-i18n-aria="camera.switch" aria-label="カメラ切替"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg></button>
     </div>
@@ -202,16 +210,24 @@
   <section id="screen-result" class="screen" aria-label="Result" hidden>
     <div class="result-layout">
       <div class="stage-col">
-        <div class="stage" id="stage">
-          <canvas id="cv-result" aria-label="Result"></canvas>
-          <canvas id="cv-original" class="orig" aria-hidden="true"></canvas>
-          <div class="compare-handle" id="compare-handle" hidden aria-hidden="true"></div>
+        <div class="stage" id="stage" data-size="m">
+          <div class="zoom-layer" id="zoom-layer">
+            <canvas id="cv-result" aria-label="Result"></canvas>
+            <canvas id="cv-original" class="orig" aria-hidden="true"></canvas>
+            <div class="compare-handle" id="compare-handle" hidden aria-hidden="true"></div>
+          </div>
           <input type="range" id="compare-range" class="compare-range" min="0" max="100" value="50" hidden data-i18n-aria="result.compare" aria-label="比較">
           <div class="badges" id="badges"></div>
+          <div class="zoom-bar" id="zoom-bar" role="group" data-i18n-aria="zoom.group" aria-label="拡大縮小">
+            <button type="button" class="zb" id="zoom-out" data-i18n-aria="zoom.out" aria-label="縮小">−</button>
+            <button type="button" class="zb zb-val" id="zoom-fit" data-i18n-title="zoom.fit" title="画面にフィット">100%</button>
+            <button type="button" class="zb" id="zoom-in" data-i18n-aria="zoom.in" aria-label="拡大">＋</button>
+            <button type="button" class="zb" id="zoom-size" data-i18n-aria="zoom.size" aria-label="枠の高さ">↕</button>
+            <button type="button" class="zb" id="zoom-full" data-i18n-aria="zoom.full" aria-label="全画面">⛶</button>
+          </div>
         </div>
         <div class="retake-row">
           <button type="button" class="btn btn-primary" id="btn-retake" data-i18n="result.retake">📷 カメラで撮り直す</button>
-          <button type="button" class="btn btn-accent" id="btn-retake-native" data-i18n="result.retake.native">端末の標準カメラで撮り直す</button>
           <button type="button" class="btn btn-secondary" id="btn-new" data-i18n="result.new">別の画像を選ぶ</button>
         </div>
         <div class="stage-tools">

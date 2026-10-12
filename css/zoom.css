@@ -1,0 +1,29 @@
+/* zoom.css - preview zoom / pan / fullscreen. The frame (stage) keeps its size; only the inner layer is scaled,
+   so enlarging the preview never covers the parameter panel. */
+.stage { touch-action: none; }
+.zoom-layer { position: relative; transform-origin: 0 0; will-change: transform; line-height: 0; }
+.zoom-layer .orig { position: absolute; inset: 0; }
+.compare-handle { width: calc(4px / var(--z, 1)); margin-left: calc(-2px / var(--z, 1)); }
+.compare-handle::after { transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); }
+.zoom-bar { position: absolute; right: 6px; top: 6px; display: flex; gap: 4px; z-index: 3; line-height: 1; }
+.zb { min-width: 38px; height: 38px; border-radius: 10px; border: 0; background: rgba(0,0,0,.72); color: #fff; font-weight: 800; font-size: 1.05rem; cursor: pointer; padding: 0 8px; touch-action: manipulation; }
+.zb:active { background: var(--accent); }
+.zb-val { font-size: .8rem; min-width: 56px; }
+/* frame height presets (phone: the sticky preview) */
+.stage[data-size="s"] { --maxh: 30dvh; }
+.stage[data-size="m"] { --maxh: 42dvh; }
+.stage[data-size="l"] { --maxh: 60dvh; }
+@media (min-width: 900px) {
+  .stage[data-size="s"] { --maxh: 50dvh; }
+  .stage[data-size="m"] { --maxh: 70dvh; }
+  .stage[data-size="l"] { --maxh: 84dvh; }
+}
+/* fullscreen viewer: view only, ✕ (the ⛶ button) closes it */
+.stage.full { position: fixed !important; inset: 0; width: auto !important; margin: 0; border: 0; border-radius: 0; z-index: 90; background: #111; box-shadow: none; padding-top: var(--safe-t); }
+.stage.full .zoom-layer { width: 100%; height: 100%; }
+.stage.full canvas { width: 100%; height: 100%; object-fit: contain; }
+.stage.full .zb[id="zoom-size"] { display: none; }
+.stage.full .zoom-bar { top: calc(var(--safe-t) + 10px); right: 10px; }
+body.noscroll { overflow: hidden; }
+/* iOS: no double-tap / pinch zoom of the UI */
+html, body { touch-action: manipulation; }

@@ -24,10 +24,10 @@ export const DEFAULT_PARAMS = {
   grain: 25, roughness: 20, misreg: 25, paper: 25, bgTreatment: 'flat', semStrength: 100,
   exportLong: 2048, wakeLock: true,
   lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
-  text: 'Vector Camera', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c',
+  text: 'Vector Camera', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: true, textHalftone: 0, textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
   vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
-  collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '',
-  rndOpts: { palette: true, texture: true, background: true, subject: true, lines: true, font: true },
+  collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '', collageEdge: 'organic',
+  rndOpts: { palette: true, texture: true, background: true, subject: true, lines: true, font: true, textOn: false, textFx: true, collage: true },
   customPreset: null,
 };
 export const MODE_DEFAULTS = {

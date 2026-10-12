@@ -7,6 +7,38 @@ import { textLayers } from './style-text.js';
 
 export const ASPECTS = { '4:5': [1000, 1250], '1:1': [1000, 1000], '3:4': [1000, 1333], '16:9': [1280, 720], '9:16': [720, 1280], '3:2': [1200, 800] };
 export const LAYOUTS = ['torn', 'grid', 'strips', 'mosaic'];
+export const EDGES = ['organic', 'rough', 'cut'];
+
+/** 1-D smooth noise (value noise, cosine-eased) sampled at distance s with wavelength `wl`; knots from rnd. */
+function makeNoise(rnd, n = 256) { const k = Array.from({ length: n + 2 }, () => rnd() * 2 - 1); return (s, wl) => { const f = (s / wl) % n, i = Math.floor(f), u = f - i, e = (1 - Math.cos(Math.PI * u)) / 2; return k[i] * (1 - e) + k[i + 1] * e; }; }
+/**
+ * Hand-torn paper: each side is torn as a person would - a long meandering line (low frequency), fibre jitter that comes
+ * in "runs" (where the paper resisted), bites / notches, plus sometimes a torn-off corner. Returns { poly, rim }:
+ * `rim` is the pale paper-fibre layer that peeks out under the print; its width varies smoothly along the edge.
+ */
+export function organicPolygon(cx, cy, w, h, rot, amp, rnd, tornSides = [1, 1, 1, 1]) {
+  const hw = w / 2, hh = h / 2, C = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]], P = [], R = [];
+  const nLow = makeNoise(rnd), nMid = makeNoise(rnd), nFib = makeNoise(rnd), nRun = makeNoise(rnd), nRim = makeNoise(rnd), cuts = [0, 1, 2, 3].map(() => (rnd() < 0.4 ? 0.04 + rnd() * 0.1 : 0));
+  const bites = []; for (let i = 0; i < 4; i++) { const n = Math.floor(rnd() * 3); for (let k = 0; k < n; k++) bites.push({ side: i, t: 0.1 + rnd() * 0.8, wd: 0.03 + rnd() * 0.07, dp: (rnd() < 0.7 ? 1 : -1) * (0.8 + rnd() * 1.4) }); }
+  let sOff = 0;
+  for (let i = 0; i < 4; i++) {
+    const a = C[i], b = C[(i + 1) % 4], len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, nx = uy, ny = -ux; // outward normal for clockwise rect
+    const torn = tornSides[i] ? 1 : 0.18, step = Math.max(3, len / 140), n = Math.ceil(len / step), corner = cuts[i] * Math.min(w, h);
+    for (let j = 0; j < n; j++) {
+      const t = j / n, s = sOff + t * len, edgeFade = Math.min(1, Math.min(t, 1 - t) * 12 + 0.25);
+      const run = 0.25 + 0.75 * Math.max(0, nRun(s, 90) * 0.5 + 0.5) ** 1.6;                  // fibre runs
+      let d = (nLow(s, 170) * 1.0 + nMid(s, 55) * 0.45) * amp + nFib(s, 5.5) * amp * 0.28 * run + (nFib(s * 3.1, 2.1)) * amp * 0.08 * run;
+      d *= torn * edgeFade; for (const bt of bites) if (bt.side === i) { const q = (t - bt.t) / bt.wd; d -= bt.dp * amp * 1.3 * Math.exp(-q * q) * torn; }
+      let x = a[0] + ux * len * t, y = a[1] + uy * len * t;
+      if (corner > 0) { const ct = corner / len; if (t < ct) d -= (1 - t / ct) * corner * 0.9; else if (t > 1 - ct) d -= ((t - (1 - ct)) / ct) * corner * 0.9; }
+      const rimW = amp * (0.28 + 0.2 * (nRim(s, 120) * 0.5 + 0.5) + 0.25 * Math.max(0, nRim(s * 1.7, 14))) * (tornSides[i] ? 1 : 0.15);
+      P.push(x + nx * d, y + ny * d); R.push(x + nx * (d + rimW), y + ny * (d + rimW));
+    }
+    sOff += len;
+  }
+  const ca = Math.cos(rot), sa = Math.sin(rot), tf = (arr) => { const o = new Float64Array(arr.length); for (let i = 0; i < arr.length; i += 2) { o[i] = cx + arr[i] * ca - arr[i + 1] * sa; o[i + 1] = cy + arr[i] * sa + arr[i + 1] * ca; } return o; };
+  return { poly: tf(P), rim: tf(R) };
+}
 
 /** Value-noise torn edge from (x0,y0) to (x1,y1): returns flat xy (excluding the end point). */
 function tornEdge(x0, y0, x1, y1, amp, rnd, step = 7) {
@@ -80,9 +112,13 @@ export function buildCollageScene(cells, p, { inkLong = 700 } = {}) {
     const sub = buildBase(res, cell.groups, pp, pp.mode === 'hybrid' ? cell.ink(inkLong) : null); addLines(sub, res, cell.groups, pp);
     const sc = Math.max(sl.w / res.w, sl.h / res.h) * (1 + (i % 3 === 1 ? 0.12 : 0)), a = sc * Math.cos(sl.rot), b = sc * Math.sin(sl.rot), c = -b, d = a;
     const e = sl.cx - (a * res.w / 2 + c * res.h / 2), f = sl.cy - (b * res.w / 2 + d * res.h / 2);
-    const tornSides = [1, 1, 1, 1].map(() => (rnd() < 0.75 ? 1 : 0)), amp = tornAmp * (sl.torn || 0);
-    const poly = slotPolygon(sl.cx, sl.cy, sl.w, sl.h, sl.rot, amp, rnd, tornSides);
-    const rim = poly.slice(); { const gx = 1 + (tornAmp * 0.35) / (sl.w / 2), gy = 1 + (tornAmp * 0.35) / (sl.h / 2), ca = Math.cos(-sl.rot), sa = Math.sin(-sl.rot), cr = Math.cos(sl.rot), sr = Math.sin(sl.rot); for (let q = 0; q < rim.length; q += 2) { const dx = rim[q] - sl.cx, dy = rim[q + 1] - sl.cy, u = (dx * ca - dy * sa) * gx, v = (dx * sa + dy * ca) * gy; rim[q] = sl.cx + u * cr - v * sr; rim[q + 1] = sl.cy + u * sr + v * cr; } }
+    const tornSides = [1, 1, 1, 1].map(() => (rnd() < 0.75 ? 1 : 0)), edge = p.collageEdge || 'organic', amp = tornAmp * (edge === 'cut' ? 0 : sl.torn || 0);
+    let poly, rim;
+    if (edge === 'organic' && amp > 0) { ({ poly, rim } = organicPolygon(sl.cx, sl.cy, sl.w, sl.h, sl.rot, amp * 1.6, rnd, tornSides)); }
+    else {
+      poly = slotPolygon(sl.cx, sl.cy, sl.w, sl.h, sl.rot, amp, rnd, tornSides);
+      rim = poly.slice(); { const gx = 1 + (tornAmp * 0.35) / (sl.w / 2), gy = 1 + (tornAmp * 0.35) / (sl.h / 2), ca = Math.cos(-sl.rot), sa = Math.sin(-sl.rot), cr = Math.cos(sl.rot), sr = Math.sin(sl.rot); for (let q = 0; q < rim.length; q += 2) { const dx = rim[q] - sl.cx, dy = rim[q + 1] - sl.cy, u = (dx * ca - dy * sa) * gx, v = (dx * sa + dy * ca) * gy; rim[q] = sl.cx + u * cr - v * sr; rim[q + 1] = sl.cy + u * sr + v * cr; } }
+    }
     if (amp > 0) { polys.push(rim); rimGeoms.push(i); }
     scene.layers.push({ kind: 'group', name: 'piece-' + (i + 1), tf: [a, b, c, d, e, f], clipPoly: poly, paper: sub.paper, w: res.w, h: res.h, geom: res.geom, layers: sub.layers, _rim: amp > 0 ? polys.length - 1 : -1 });
   });

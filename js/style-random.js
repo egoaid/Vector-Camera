@@ -3,6 +3,7 @@
 import { mulberry32, hslToHex } from './color-utils.js';
 import { PRESETS, STYLE_ORDER } from './style-palette.js';
 import { FONTS } from './style-text.js';
+import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 const range = (r, a, b) => Math.round(a + r() * (b - a));
@@ -39,7 +40,7 @@ export function randomOverrides(r, res, groups, n) {
  * opts: { palette, texture, background, subject, lines } booleans. Returns { params: {...patch}, overrides: [...]|null }.
  * `res`/`groups` are only needed for the foreground/background part.
  */
-export function randomize(seed, opts, cur, res = null, groups = null) {
+export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) {
   const r = mulberry32(seed >>> 0), patch = {};
   if (opts.palette) {
     if (r() < 0.25) { patch.preset = pick(r, STYLE_ORDER); patch.customPreset = null; } else { patch.preset = 'random'; patch.customPreset = randomPreset(r); }
@@ -55,10 +56,20 @@ export function randomize(seed, opts, cur, res = null, groups = null) {
     if (r() < 0.4) { const pal = patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop; patch.lineWidth = range(r, 14, 45); patch.lineScope = pick(r, ['mid', 'all', 'fg']); patch.lineOffset = pick(r, [0, 0, range(r, 10, 45)]); patch.lineColor = pal.ink; patch.lineColor2 = pal.groups.fg.block[0]; }
     else patch.lineWidth = 0;
   }
-  if (opts.font) {
-    const pal = patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop;
+  const pal0 = () => patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop;
+  patch.textShow = !!opts.textOn; // default: random results come without text (the text is yours to decide)
+  if (opts.textOn && opts.font) {
+    const pal = pal0();
     patch.textFont = pick(r, FONTS).id; patch.textColor = pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0]]); patch.textShadowColor = pal.ink;
     patch.textShadow = pick(r, [0, 15, 25, 40]); patch.textAngle = pick(r, [0, 0, range(r, -12, 12)]); patch.textSpacing = range(r, 0, 8);
+  }
+  if (opts.textOn && opts.textFx) {
+    patch.textHalftone = r() < 0.4 ? range(r, 35, 100) : 0; if (patch.textHalftone) Object.assign(patch, { textHalftoneSize: range(r, 3, 9), textHalftoneAngle: pick(r, [15, 45, 75]), textHalftoneMode: pick(r, ['down', 'up', 'right', 'flat']) });
+    patch.textWear = r() < 0.5 ? range(r, 15, 70) : 0; patch.textDirt = r() < 0.4 ? range(r, 15, 70) : 0; patch.textSeed = range(r, 1, 99999);
+  }
+  if (opts.collage && ctx.collage) {
+    const pal = pal0();
+    Object.assign(patch, { collageLayout: pick(r, LAYOUTS), collageAspect: pick(r, Object.keys(ASPECTS)), collageEdge: pick(r, ['organic', 'organic', 'organic', 'rough', 'cut']), collageSlots: r() < 0.5 ? 0 : range(r, 3, 10), collageTorn: range(r, 25, 95), collageGap: range(r, 0, 70), collageRotate: range(r, 10, 85), collageVary: r() < 0.5, collageSeed: range(r, 1, 99999), collagePaper: r() < 0.6 ? pal.paper : hslToHex(r() * 360, range(r, 20, 60), range(r, 82, 95)) });
   }
   let overrides = null;
   if (opts.subject && res && groups) overrides = r() < 0.3 ? [] : randomOverrides(r, res, groups, range(r, 1, 4));
