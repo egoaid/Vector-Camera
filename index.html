@@ -77,9 +77,9 @@
       "@type": "FAQPage",
       "mainEntity": [
         { "@type": "Question", "name": "写真はサーバーにアップロードされますか？", "acceptedAnswer": { "@type": "Answer", "text": "いいえ。画像の処理はすべてお使いの端末のブラウザ内で行われ、画像や撮影データは外部へ送信されません。" } },
-        { "@type": "Question", "name": "書き出したSVGやPDFは本当にベクターですか？", "acceptedAnswer": { "@type": "Answer", "text": "ベクター／シルエット／カラー領域モードでは、パスと塗りだけで構成された純粋なベクターです。ハイブリッド（シルクスクリーン）モードのSVG・PDFは、ベクター形状に加工した写真（ラスター画像）を重ねた構成で、写真部分はラスターです。" } },
+        { "@type": "Question", "name": "書き出したSVGやPDFは本当にベクターですか？", "acceptedAnswer": { "@type": "Answer", "text": "ベクター／シルエット／カラー領域モードでは、パスと塗りだけで構成された純粋なベクターです。ハイブリッド（シルクスクリーン）モードのSVG・PDFは、初期設定ではベクター形状に加工した写真（ラスター画像）を重ねた構成で、写真部分はラスターです。ただし書き出しの「ラスター部分もベクター化する」をオンにすると、粒子やインクの部分もトレースして本物のパスに変換し、完全なベクターのSVG・PDFにすることもできます（処理に時間がかかり、ファイルサイズも大きくなります）。" } },
         { "@type": "Question", "name": "インストールや会員登録は必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "不要です。ブラウザで開くだけで使えます。ホーム画面に追加すればアプリのように起動できます。" } },
-        { "@type": "Question", "name": "AI強化エンジンは必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "必須ではありません。標準エンジンだけで動作します。AI強化を選ぶと、初回のみAIモデル（約4.4MB）と実行ランタイムをダウンロードし、端末内で実行します。" } }
+        { "@type": "Question", "name": "被写体判別（領域分割モデル）は必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "必須ではありません。標準エンジンだけで動作します。「被写体判別つき」を選ぶと、初回のみ画像領域分割モデル（SegFormer-B0・約4.4MB）と実行ランタイムをダウンロードし、端末内で実行します。このモデルは背景・人物などを判別するだけで、画像の生成や書き換えは行いません。" } }
       ]
     }
   ]
@@ -120,7 +120,7 @@
         <label for="sel-engine" data-i18n="start.engine">解析エンジン</label>
         <select id="sel-engine">
           <option value="classic" data-i18n="engine.classic">標準（端末内・ダウンロード不要）</option>
-          <option value="ai" data-i18n="engine.ai">AI強化（SegFormer・初回DLあり）</option>
+          <option value="ai" data-i18n="engine.ai">被写体判別つき（領域分割モデル・初回DLあり）</option>
         </select>
         <p class="note" id="engine-note" data-i18n="engine.note.classic"></p>
       </div>
@@ -162,11 +162,11 @@
         <li>インストール不要。ホーム画面に追加すればアプリのように使えます。</li>
       </ul>
       <h2>プライバシー</h2>
-      <p>撮影・選択した画像は端末のブラウザ内でのみ処理されます。アカウント登録、広告、解析用の送信はありません。任意の「AI強化」を選んだ場合に限り、初回にAIモデルとランタイムをダウンロードします（画像は送信されません）。</p>
+      <p>撮影・選択した画像は端末のブラウザ内でのみ処理されます。アカウント登録、広告、解析用の送信はありません。任意の「被写体判別つき」を選んだ場合に限り、初回に領域分割モデルとランタイムをダウンロードします（画像は送信されません）。</p>
       <h2>よくある質問</h2>
-      <details><summary>書き出したSVG・PDFは本当にベクターですか？</summary><p>ベクター／シルエット／カラー領域モードは、パスと塗りだけの純粋なベクターです。シルクスクリーンモードは、ベクターの形状に加工した写真（ラスター）を重ねる構成で、写真部分はラスターです。完成画像はPNG・JPEGで保存できます。</p></details>
-      <details><summary>iPhoneでも使えますか？</summary><p>はい。iPhone（Safari）とAndroid（Chrome）を主な対象にしています。重い場合は「解析サイズ」を「軽量」にしてください。</p></details>
-      <details><summary>オフラインで使えますか？</summary><p>一度読み込んだ後は、標準エンジンはオフラインでも動作します。AI強化は初回のダウンロードが必要です。</p></details>
+      <details><summary>書き出したSVG・PDFは本当にベクターですか？</summary><p>ベクター／シルエット／カラー領域モードは、パスと塗りだけの純粋なベクターです。シルクスクリーンモードは、初期設定ではベクターの形状に加工した写真（ラスター）を重ねる構成で、写真部分はラスターです。書き出し欄の「ラスター部分もベクター化する」をオンにすると、粒子やインクの部分もパスに変換され、完全なベクターのSVG・PDFにできます（時間がかかります）。完成画像はPNG・JPEGでも保存できます。</p></details>
+      <details><summary>iPhoneでも使えますか？</summary><p>はい。iPhone（Safari）とAndroid（Chrome）を主な対象にしています。重い場合は「解析サイズ」を「軽量」にし、書き出しは「軽量PNG／JPEG」を使ってください。</p></details>
+      <details><summary>オフラインで使えますか？</summary><p>一度読み込んだ後は、標準エンジンはオフラインでも動作します。被写体判別つきは初回のダウンロードが必要です。</p></details>
       <section lang="en" class="en-summary">
         <h2>About (English)</h2>
         <p>Vector Camera is a free, privacy-first web app that converts photos into editable vector art (SVG and true vector PDF) and screen-print style hybrid artwork. All processing happens in your browser; images are never uploaded. Works on iPhone Safari, Android Chrome and desktop.</p>
@@ -218,13 +218,12 @@
           </div>
           <input type="range" id="compare-range" class="compare-range" min="0" max="100" value="50" hidden data-i18n-aria="result.compare" aria-label="比較">
           <div class="badges" id="badges"></div>
-          <div class="zoom-bar" id="zoom-bar" role="group" data-i18n-aria="zoom.group" aria-label="拡大縮小">
-            <button type="button" class="zb" id="zoom-out" data-i18n-aria="zoom.out" aria-label="縮小">−</button>
-            <button type="button" class="zb zb-val" id="zoom-fit" data-i18n-title="zoom.fit" title="画面にフィット">100%</button>
-            <button type="button" class="zb" id="zoom-in" data-i18n-aria="zoom.in" aria-label="拡大">＋</button>
-            <button type="button" class="zb" id="zoom-size" data-i18n-aria="zoom.size" aria-label="枠の高さ">↕</button>
+          <div class="zoom-bar" id="zoom-bar" role="group">
+            <button type="button" class="zb" id="stage-grip" data-i18n-aria="zoom.move" aria-label="プレビュー枠を移動" title="">✥</button>
+            <button type="button" class="zb" id="stage-dock" hidden data-i18n-aria="zoom.dock" aria-label="元の位置に戻す">⤒</button>
             <button type="button" class="zb" id="zoom-full" data-i18n-aria="zoom.full" aria-label="全画面">⛶</button>
           </div>
+          <i class="stage-resize" id="stage-resize" role="separator" data-i18n-aria="zoom.resize" aria-label="プレビュー枠の大きさを変える"></i>
         </div>
         <div class="retake-row">
           <button type="button" class="btn btn-primary" id="btn-retake" data-i18n="result.retake">📷 カメラで撮り直す</button>
@@ -265,6 +264,8 @@
             <button type="button" class="btn btn-primary" data-export="pdf" data-i18n="exp.pdf">ベクターPDF</button>
             <button type="button" class="btn btn-secondary" data-export="png" data-i18n="exp.png">PNG</button>
             <button type="button" class="btn btn-secondary" data-export="jpeg" data-i18n="exp.jpeg">JPEG</button>
+            <button type="button" class="btn btn-secondary" data-export="png-lite" data-i18n="exp.pnglite">軽量PNG</button>
+            <button type="button" class="btn btn-secondary" data-export="jpeg-lite" data-i18n="exp.jpeglite">軽量JPEG</button>
           </div>
           <div class="field poster"><label for="sel-poster" data-i18n="exp.poster">ポスター用ラスター書き出し（PNG）</label>
             <select id="sel-poster"><option value="3508">A4 300dpi（3508px）</option><option value="4961" selected>A3 300dpi（4961px）</option><option value="7016">A2 300dpi（7016px）</option><option value="9933">A1 300dpi（9933px）</option><option value="12000">12000px</option></select>
@@ -288,10 +289,10 @@
   </div>
 </div>
 
-<!-- AI confirm -->
+<!-- model download confirm -->
 <dialog id="dlg-ai" aria-labelledby="ai-title">
   <form method="dialog" class="dlg">
-    <h2 id="ai-title" data-i18n="ai.title">AIモデルのダウンロード</h2>
+    <h2 id="ai-title" data-i18n="ai.title">領域分割モデルのダウンロード</h2>
     <p data-i18n="ai.body"></p>
     <p class="note" data-i18n="ai.license"></p>
     <div class="dlg-actions">

@@ -9,22 +9,16 @@ export function initZoom({ onSettle = () => {}, isCompare = () => false } = {}) 
     z = Math.min(MAXZ, Math.max(1, z)); tx = Math.min(0, Math.max(W - W * z, tx)); ty = Math.min(0, Math.max(H - H * z, ty));
     if (z === 1) { tx = 0; ty = 0; }
     layer.style.transform = z === 1 ? '' : `translate(${tx}px,${ty}px) scale(${z})`; layer.style.setProperty('--z', String(z));
-    $('zoom-fit').textContent = Math.round(z * 100) + '%';
-    clearTimeout(timer); timer = setTimeout(() => onSettle(z), 200);
+        clearTimeout(timer); timer = setTimeout(() => onSettle(z), 200);
   };
   const local = (e) => { const r = stage.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   const zoomTo = (nz, cx, cy) => { nz = Math.min(MAXZ, Math.max(1, nz)); const ux = (cx - tx) / z, uy = (cy - ty) / z; z = nz; tx = cx - ux * nz; ty = cy - uy * nz; apply(); };
-  const center = () => [stage.clientWidth / 2, stage.clientHeight / 2];
-  $('zoom-in').addEventListener('click', () => zoomTo(z * 1.5, ...center()));
-  $('zoom-out').addEventListener('click', () => zoomTo(z / 1.5, ...center()));
-  $('zoom-fit').addEventListener('click', () => { z = 1; apply(); });
-  $('zoom-size').addEventListener('click', () => { const i = SIZES.indexOf(stage.dataset.size); stage.dataset.size = SIZES[(i + 1) % 3]; z = 1; apply(); });
   const setFull = (on) => { stage.classList.toggle('full', on); document.body.classList.toggle('noscroll', on); $('zoom-full').textContent = on ? '✕' : '⛶'; z = 1; apply(); };
   $('zoom-full').addEventListener('click', () => setFull(!stage.classList.contains('full')));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && stage.classList.contains('full')) setFull(false); });
-  stage.addEventListener('wheel', (e) => { if (!(e.ctrlKey || e.metaKey)) return; e.preventDefault(); zoomTo(z * Math.exp(-e.deltaY * 0.01), ...local(e)); }, { passive: false });
+  stage.addEventListener('wheel', (e) => { e.preventDefault(); zoomTo(z * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0018)), ...local(e)); }, { passive: false });
   stage.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.zoom-bar') || e.button > 0) return;
+    if (e.target.closest('.zoom-bar,#stage-resize') || e.button > 0) return;
     pts.set(e.pointerId, [e.clientX, e.clientY]); moved = 0;
     if (pts.size === 2) { const [a, b] = [...pts.values()]; pinching = true; pan = null; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z, tx, ty, c: mid(a, b) }; }
     else if (pts.size === 1) pan = { x: e.clientX, y: e.clientY, tx, ty };
@@ -46,6 +40,8 @@ export function initZoom({ onSettle = () => {}, isCompare = () => false } = {}) 
     if (pts.size < 2) { pinch = null; setTimeout(() => { pinching = false; }, 60); }
     if (pts.size === 1) { const [p] = [...pts.values()]; pan = { x: p[0], y: p[1], tx, ty }; } else if (!pts.size) pan = null;
   };
+  let lastType = 'mouse'; stage.addEventListener('pointerdown', (e) => { lastType = e.pointerType; }, true);
+  stage.addEventListener('dblclick', (e) => { if (lastType === 'mouse' && !e.target.closest('.tb,.zoom-bar,#stage-resize')) { z = 1; apply(); } });
   stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
   // iOS Safari: never let the page itself pinch-zoom
   for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });

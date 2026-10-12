@@ -3,6 +3,8 @@
 import { mulberry32, hslToHex } from './color-utils.js';
 import { PRESETS, STYLE_ORDER } from './style-palette.js';
 import { FONTS } from './style-text.js';
+import { TEXT_SLOTS, tkey } from './config.js';
+import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
@@ -48,7 +50,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
   }
   if (opts.texture) {
     Object.assign(patch, { separation: range(r, 2, 5), retention: range(r, 20, 80), grain: range(r, 5, 55), roughness: range(r, 0, 45), misreg: range(r, 0, 60), paper: range(r, 10, 60) });
-    const ht = r() < 0.45; patch.halftone = ht ? 1 : 0; if (ht) Object.assign(patch, { halftoneSize: range(r, 4, 10), halftoneAngle: pick(r, [15, 45, 75, range(r, 0, 90)]) });
+    const ht = r() < 0.45; patch.halftone = ht ? 1 : 0; if (ht) Object.assign(patch, { halftoneType: pick(r, ['dot', 'dot', 'line', 'cross', 'engrave']), halftoneSize: range(r, 4, 10), halftoneAngle: pick(r, [15, 45, 75, range(r, 0, 90)]) });
   }
   if (opts.background) patch.bgTreatment = pick(r, ['flat', 'flat', 'photo', 'paper']);
   if (opts.subject) patch.subjectSize = range(r, 14, 52);
@@ -57,19 +59,29 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
     else patch.lineWidth = 0;
   }
   const pal0 = () => patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop;
-  patch.textShow = !!opts.textOn; // default: random results come without text (the text is yours to decide)
-  if (opts.textOn && opts.font) {
-    const pal = pal0();
-    patch.textFont = pick(r, FONTS).id; patch.textColor = pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0]]); patch.textShadowColor = pal.ink;
-    patch.textShadow = pick(r, [0, 15, 25, 40]); patch.textAngle = pick(r, [0, 0, range(r, -12, 12)]); patch.textSpacing = range(r, 0, 8);
+  // text: only when the "text" option is ticked (default off). Hidden slots / empty slots are never switched on;
+  // the wording itself is always yours. Every slot gets its own font, size, position, tilt, colours and print effects.
+  if (opts.textOn) {
+    const pal = pal0(), lanes = [[70, 90], [10, 30], [38, 62]];
+    for (let i = 0; i < TEXT_SLOTS; i++) {
+      const K = (k) => tkey(k, i); if (!String(cur[K('text')] || '').trim()) continue;
+      patch[K('textShow')] = true;
+      if (opts.font) {
+        Object.assign(patch, { [K('textFont')]: pick(r, FONTS).id, [K('textColor')]: pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0], pal.groups.bg.block[0]]), [K('textShadowColor')]: pal.ink,
+          [K('textShadow')]: pick(r, [0, 15, 25, 40]), [K('textSpacing')]: range(r, 0, 8), [K('textSize')]: range(r, i ? 7 : 11, i ? 16 : 24),
+          [K('textAngle')]: pick(r, [0, 0, 0, range(r, -15, 15), range(r, -90, 90)]), [K('textX')]: range(r, 30, 70), [K('textY')]: range(r, lanes[i][0], lanes[i][1]) });
+      }
+      if (opts.textFx) {
+        const ht = r() < 0.4; Object.assign(patch, { [K('textHalftone')]: ht ? range(r, 35, 100) : 0 });
+        if (ht) Object.assign(patch, { [K('textHalftoneType')]: pick(r, HT_TYPES), [K('textHalftoneSize')]: range(r, 3, 9), [K('textHalftoneAngle')]: pick(r, [15, 45, 75]), [K('textHalftoneMode')]: pick(r, ['down', 'up', 'right', 'flat']) });
+        Object.assign(patch, { [K('textWear')]: r() < 0.5 ? range(r, 15, 70) : 0, [K('textDirt')]: r() < 0.4 ? range(r, 15, 70) : 0, [K('textSeed')]: range(r, 1, 99999) });
+      }
+    }
   }
-  if (opts.textOn && opts.textFx) {
-    patch.textHalftone = r() < 0.4 ? range(r, 35, 100) : 0; if (patch.textHalftone) Object.assign(patch, { textHalftoneSize: range(r, 3, 9), textHalftoneAngle: pick(r, [15, 45, 75]), textHalftoneMode: pick(r, ['down', 'up', 'right', 'flat']) });
-    patch.textWear = r() < 0.5 ? range(r, 15, 70) : 0; patch.textDirt = r() < 0.4 ? range(r, 15, 70) : 0; patch.textSeed = range(r, 1, 99999);
-  }
+  if (opts.aspect && ctx.collage) patch.collageAspect = pick(r, Object.keys(ASPECTS));
   if (opts.collage && ctx.collage) {
     const pal = pal0();
-    Object.assign(patch, { collageLayout: pick(r, LAYOUTS), collageAspect: pick(r, Object.keys(ASPECTS)), collageEdge: pick(r, ['organic', 'organic', 'organic', 'rough', 'cut']), collageSlots: r() < 0.5 ? 0 : range(r, 3, 10), collageTorn: range(r, 25, 95), collageGap: range(r, 0, 70), collageRotate: range(r, 10, 85), collageVary: r() < 0.5, collageSeed: range(r, 1, 99999), collagePaper: r() < 0.6 ? pal.paper : hslToHex(r() * 360, range(r, 20, 60), range(r, 82, 95)) });
+    Object.assign(patch, { collageLayout: pick(r, LAYOUTS), collageEdge: pick(r, ['organic', 'organic', 'organic', 'rough', 'cut']), collageSlots: r() < 0.5 ? 0 : range(r, 3, 10), collageTorn: range(r, 25, 95), collageGap: range(r, 0, 70), collageRotate: range(r, 10, 85), collageVary: r() < 0.5, collageSeed: range(r, 1, 99999), collagePaper: r() < 0.6 ? pal.paper : hslToHex(r() * 360, range(r, 20, 60), range(r, 82, 95)) });
   }
   let overrides = null;
   if (opts.subject && res && groups) overrides = r() < 0.3 ? [] : randomOverrides(r, res, groups, range(r, 1, 4));

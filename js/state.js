@@ -2,7 +2,7 @@
 import { DEFAULT_PARAMS, MODE_DEFAULTS } from './config.js';
 import { SETTINGS_SCHEMA } from './version.js';
 const KEY = 'vc.settings.v' + SETTINGS_SCHEMA;
-export const state = { params: { ...DEFAULT_PARAMS, silColors: { ...DEFAULT_PARAMS.silColors } }, source: null, canvas: null, work: null, result: null, groups: null, scene: null, overrides: [], engineUsed: 'classic', sem: null, busy: false, seq: 0 };
+export const state = { params: { ...DEFAULT_PARAMS, silColors: { ...DEFAULT_PARAMS.silColors } }, source: null, canvas: null, work: null, result: null, groups: null, scene: null, overrides: [], engineUsed: 'classic', sem: null, busy: false, seq: 0, textSlot: 0 };
 export function loadSettings() {
   try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) { const keep = { ...s }; delete keep.mode; state.params = { ...state.params, ...keep, silColors: { ...state.params.silColors, ...(s.silColors || {}) } }; } } catch { /* ignore */ }
 }

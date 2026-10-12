@@ -15,7 +15,7 @@ function render() {
   const d = document.createElement('details'), s = document.createElement('summary'); s.textContent = t('about.modules'); d.append(s);
   const t2 = document.createElement('table'); t2.className = 'about-table'; for (const [k, v] of Object.entries(MODULE_VERSIONS)) t2.append(row(k, v)); d.append(t2); body.append(d);
   const lic = document.createElement('details'), ls = document.createElement('summary'); ls.textContent = t('about.licenses'); lic.append(ls);
-  for (const line of [COPYRIGHT, 'Optional AI route (loaded at runtime only, not bundled): Transformers.js (Apache-2.0), ONNX Runtime Web (MIT), SegFormer-B0 ADE20K weights (NVIDIA licence: research / evaluation use).']) { const q = document.createElement('p'); q.className = 'note'; q.textContent = line; lic.append(q); }
+  for (const line of [COPYRIGHT, 'Optional subject-detection model (image segmentation only; loaded at runtime, not bundled): Transformers.js (Apache-2.0), ONNX Runtime Web (MIT), SegFormer-B0 ADE20K weights (NVIDIA licence: research / evaluation use).']) { const q = document.createElement('p'); q.className = 'note'; q.textContent = line; lic.append(q); }
   body.append(lic);
   const pr = document.createElement('p'); pr.className = 'note'; pr.textContent = t('about.privacy'); body.append(pr);
 }

@@ -27,3 +27,26 @@
 body.noscroll { overflow: hidden; }
 /* iOS: no double-tap / pinch zoom of the UI */
 html, body { touch-action: manipulation; }
+/* text handles */
+#text-overlay { position: absolute; inset: 0; pointer-events: none; }
+.tb { position: absolute; pointer-events: auto; cursor: move; outline: calc(1.5px / var(--z, 1)) dashed rgba(255,255,255,.9); box-shadow: 0 0 0 calc(1px / var(--z, 1)) rgba(0,0,0,.55); touch-action: none; min-width: 12px; min-height: 12px; }
+.tb.active { outline-color: var(--accent, #ff4d7e); outline-style: solid; }
+.tb-h { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2px solid var(--accent, #ff4d7e); box-shadow: 0 1px 4px rgba(0,0,0,.5); transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); touch-action: none; display: grid; place-items: center; font-style: normal; line-height: 1; }
+.tb-sc { left: 100%; top: 100%; cursor: nwse-resize; }
+.tb-rot { left: 50%; top: calc(-30px / var(--z, 1)); cursor: grab; }
+.tb-rot::before { content: ""; position: absolute; left: 50%; top: 100%; width: calc(2px / var(--z, 1)); height: calc(18px / var(--z, 1)); background: var(--accent, #ff4d7e); transform: translateX(-50%); }
+.tb-tag { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); background: var(--accent, #ff4d7e); color: #fff; font: 800 12px/18px var(--font, sans-serif); width: 18px; height: 18px; border-radius: 50%; text-align: center; }
+.stage.editing #text-overlay, .stage.comparing #text-overlay, .stage.full #text-overlay { display: none; }
+.tx-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+/* preview frame: corner resize handle + floating (picture-in-picture) */
+.stage-resize { position: absolute; right: 0; bottom: 0; width: 34px; height: 34px; z-index: 4; cursor: nwse-resize; touch-action: none; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.72) 50%); border-bottom-right-radius: calc(var(--radius, 12px) - 2px); }
+.stage-resize::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 12px; height: 12px; background: linear-gradient(135deg, transparent 45%, #fff 45% 55%, transparent 55% 70%, #fff 70% 80%, transparent 80%); }
+.stage-resize, .zoom-bar { line-height: 0; }
+.stage.float { position: fixed !important; z-index: 40; margin: 0; box-shadow: 0 8px 28px rgba(0,0,0,.45); max-width: calc(100vw - 8px); }
+#stage-ph { grid-column: 1; width: 100%; }
+.stage.full .stage-resize, .stage.full #stage-grip, .stage.full #stage-dock { display: none; }
+/* fullscreen: lift the whole preview column above the sticky header (its stacking context otherwise traps the close button) */
+.stage-col:has(.stage.full) { position: static !important; z-index: 200; }
+body.noscroll .topbar { visibility: hidden; }
+.stage.full { z-index: 200; }
+.zb:focus-visible { outline: 2px solid #fff; }

@@ -1,4 +1,4 @@
-# Vector Camera - public static web app. All crawlers (search engines and AI assistants) are welcome.
+# Vector Camera - public static web app. All crawlers (search engines and assistants) are welcome.
 User-agent: *
 Allow: /
 

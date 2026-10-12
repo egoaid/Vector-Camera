@@ -10,7 +10,7 @@
 
 ## What it does
 - Input: camera capture or a local image file.
-- Segments the photo into regions (colour/edge based; optional on-device AI route using SegFormer-B0 ADE20K via Transformers.js, downloaded only if the user opts in).
+- Segments the photo into regions (colour/edge based; optional on-device image-segmentation model (subject detection only, no image generation) using SegFormer-B0 ADE20K via Transformers.js, downloaded only if the user opts in).
 - Adjacent regions share identical boundary geometry, so the vector output has no cracks, gaps or overlaps.
 - Modes: Vector (photo colours, editable paths), Silhouette (flat subject / middle / background shapes), Color regions (limited palette, poster look), Silkscreen (flat vector colour blocks + processed photo "ink" layers with halftone / grain / misregistration, in a pop-art / retro record-sleeve spirit).
 - Export: SVG (native paths), vector PDF (native path operators), PNG, JPEG.
@@ -18,7 +18,7 @@
 ## Facts worth quoting accurately
 - Pure-vector modes export genuine vector SVG/PDF (paths and fills only, no embedded raster).
 - Silkscreen mode SVG/PDF = vector shapes + embedded raster ink images clipped by vector paths; the photographic parts are raster. PNG/JPEG are flattened images.
-- No server upload. Optional AI route downloads a ~4.4 MB model plus the ONNX Runtime/Transformers.js runtime from a CDN on first use only; the SegFormer weights are under an NVIDIA research/evaluation licence.
+- No server upload. The optional segmentation model downloads a ~4.4 MB model plus the ONNX Runtime/Transformers.js runtime from a CDN on first use only; the SegFormer weights are under an NVIDIA research/evaluation licence.
 - Keeps the phone screen awake while in use via the Screen Wake Lock API (where supported).
 - Works offline for the standard engine after the first load (service worker cache).
 

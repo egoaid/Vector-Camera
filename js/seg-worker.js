@@ -1,4 +1,4 @@
-// ai-worker.js - optional AI route. Loads Transformers.js from a CDN on first use (nothing is bundled) and runs the
+// seg-worker.js - optional subject-detection (image segmentation) model. Loads Transformers.js from a CDN on first use (nothing is bundled) and runs the
 // SegFormer-B0 / ADE20K semantic segmentation model locally (WASM). The image never leaves the device.
 // NOTE: this route needs network access on first use (runtime + model download) and is cached by the browser afterwards.
 import { segmentsToLabelMap } from './seg-semantic.js';

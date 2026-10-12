@@ -3,40 +3,30 @@ import { t } from './i18n.js';
 import { state, saveSettings } from './state.js';
 import { slider, select, check } from './ui-controls.js';
 import { FONTS, ensureFont, isLatinOnly } from './style-text.js';
+import { TEXT_SLOTS, tkey } from './config.js';
+import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 const $ = (id) => document.getElementById(id);
 
-function colorInput(key, labelKey, onChange) {
+export function colorInput(key, labelKey, onChange) {
   const l = document.createElement('label'), i = document.createElement('input'); i.type = 'color'; i.value = state.params[key] || '#ffffff';
   i.addEventListener('input', () => { state.params[key] = i.value; onChange(key); }); i.addEventListener('change', saveSettings); l.append(t(labelKey), i); return l;
 }
 const colorRow = (...items) => { const r = document.createElement('div'); r.className = 'color-row'; r.append(...items); return r; };
-const sl = (k, min, max, onChange) => slider({ k, min, max }, onChange);
+const sl = (k, min, max, onChange, base) => slider({ k, min, max, base }, onChange);
 
 export function buildExtras(onChange, hooks) {
   // --- randomise options
   const ro = $('random-opts'); ro.replaceChildren();
-  for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'collage', 'textOn', 'font', 'textFx']) {
+  for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
     const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params.rndOpts[k];
     const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); }); l.append(i, s); ro.append(l);
   }
   // --- contour lines
   const ln = $('lines-ctl'); ln.replaceChildren();
   ln.append(sl('lineWidth', 0, 100, onChange), select('lineScope', [['mid', 'ln.scope.mid'], ['fg', 'ln.scope.fg'], ['all', 'ln.scope.all']], onChange, 'ln.scope'), sl('lineOffset', 0, 100, onChange), colorRow(colorInput('lineColor', 'ln.color', onChange), colorInput('lineColor2', 'ln.color2', onChange)));
-  // --- text
-  const tx = $('text-ctl'); tx.replaceChildren();
-  const f = document.createElement('div'); f.className = 'field'; const lab = document.createElement('label'); lab.htmlFor = 'in-text'; lab.textContent = t('tx.text');
-  const ta = document.createElement('textarea'); ta.id = 'in-text'; ta.rows = 2; ta.maxLength = 80; ta.value = state.params.text; ta.placeholder = 'HEY BOY\nHEY GIRL';
-  const warn = document.createElement('p'); warn.className = 'note'; warn.hidden = true; warn.textContent = t('tx.latin');
-  ta.addEventListener('input', () => { state.params.text = ta.value; warn.hidden = isLatinOnly(ta.value); onChange('text'); }); ta.addEventListener('change', saveSettings);
-  f.append(lab, ta, warn);
-  const fontSel = document.createElement('div'); fontSel.className = 'field'; const fl = document.createElement('label'); fl.htmlFor = 'se-textFont'; fl.textContent = t('tx.font');
-  const fs = document.createElement('select'); fs.id = 'se-textFont'; for (const cat of ['display', 'hand', 'type']) { const og = document.createElement('optgroup'); og.label = t('tx.cat.' + cat); for (const d of FONTS.filter((f) => f.cat === cat)) { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; og.append(o); } fs.append(og); }
-  fs.value = state.params.textFont; fs.addEventListener('change', async () => { state.params.textFont = fs.value; saveSettings(); await ensureFont(fs.value); onChange('textFont'); }); fontSel.append(fl, fs);
-  tx.append(check('textShow', 'tx.show', onChange), f, fontSel, sl('textSize', 4, 60, onChange), sl('textX', 0, 100, onChange), sl('textY', 0, 100, onChange), sl('textAngle', -45, 45, onChange), sl('textSpacing', -5, 30, onChange), sl('textShadow', 0, 100, onChange),
-    colorRow(colorInput('textColor', 'tx.color', onChange), colorInput('textShadowColor', 'tx.shadowcolor', onChange)),
-    sl('textHalftone', 0, 100, onChange), sl('textHalftoneSize', 2, 14, onChange), sl('textHalftoneAngle', 0, 90, onChange), select('textHalftoneMode', [['down', 'tx.ht.down'], ['up', 'tx.ht.up'], ['right', 'tx.ht.right'], ['flat', 'tx.ht.flat']], onChange, 'tx.ht.mode'), sl('textWear', 0, 100, onChange), sl('textDirt', 0, 100, onChange));
-  const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'btn btn-small'; rs.textContent = t('tx.reseed'); rs.addEventListener('click', () => { state.params.textSeed = (Math.random() * 1e6) | 0; saveSettings(); onChange('textSeed'); }); tx.append(rs);
+  // --- text (3 slots; each has its own wording, font, size, position, tilt, colours and print effects)
+  buildTextPanel(onChange);
   // --- collage
   const cc = $('collage-ctl'); cc.replaceChildren();
   cc.append(select('collageLayout', LAYOUTS.map((l) => [l, 'col.l.' + l]), onChange, 'col.layout'), select('collageEdge', EDGES.map((e) => [e, 'col.e.' + e]), onChange, 'col.edge'), select('collageAspect', Object.keys(ASPECTS).map((a) => [a, 'col.a.' + a]), onChange, 'col.aspect'),
@@ -48,4 +38,35 @@ export function buildExtras(onChange, hooks) {
   const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn btn-small'; b3.textContent = t('col.addcam'); b3.addEventListener('click', hooks.addCam);
   row.append(b1, b2, b3); cc.append(row);
   $('sec-collage').hidden = !state.collage;
+}
+
+let rebuildTextCb = null;
+/** Rebuilds the text panel (e.g. after a handle drag changed values). */
+export function rebuildText() { if (rebuildTextCb) rebuildTextCb(); }
+export function buildTextPanel(onChange) {
+  rebuildTextCb = () => buildTextPanel(onChange);
+  const tx = $('text-ctl'); tx.replaceChildren();
+  const i = Math.max(0, Math.min(TEXT_SLOTS - 1, state.textSlot | 0)), K = (k) => tkey(k, i);
+  const tabs = document.createElement('div'); tabs.className = 'tx-tabs'; tabs.setAttribute('role', 'tablist');
+  for (let n = 0; n < TEXT_SLOTS; n++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(n === i));
+    b.textContent = t('tx.slot', { n: n + 1 }) + (state.params[tkey('textShow', n)] && String(state.params[tkey('text', n)] || '').trim() ? ' ●' : '');
+    b.addEventListener('click', () => { state.textSlot = n; buildTextPanel(onChange); onChange('textSlot'); }); tabs.append(b);
+  }
+  const f = document.createElement('div'); f.className = 'field'; const lab = document.createElement('label'); lab.htmlFor = 'in-text'; lab.textContent = t('tx.text');
+  const ta = document.createElement('textarea'); ta.id = 'in-text'; ta.rows = 2; ta.maxLength = 80; ta.value = state.params[K('text')] || ''; ta.placeholder = 'HEY BOY\nHEY GIRL';
+  const warn = document.createElement('p'); warn.className = 'note'; warn.hidden = true; warn.textContent = t('tx.latin');
+  ta.addEventListener('input', () => { state.params[K('text')] = ta.value; warn.hidden = isLatinOnly(ta.value); onChange(K('text')); }); ta.addEventListener('change', saveSettings);
+  f.append(lab, ta, warn);
+  const fontSel = document.createElement('div'); fontSel.className = 'field'; const fl = document.createElement('label'); fl.htmlFor = 'se-textFont'; fl.textContent = t('tx.font');
+  const fs = document.createElement('select'); fs.id = 'se-textFont'; for (const cat of ['display', 'hand', 'type']) { const og = document.createElement('optgroup'); og.label = t('tx.cat.' + cat); for (const d of FONTS.filter((x) => x.cat === cat)) { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; og.append(o); } fs.append(og); }
+  fs.value = state.params[K('textFont')]; fs.addEventListener('change', async () => { state.params[K('textFont')] = fs.value; saveSettings(); await ensureFont(fs.value); onChange(K('textFont')); }); fontSel.append(fl, fs);
+  const S = (b, min, max) => sl(K(b), min, max, onChange, b), C = (b, lk) => colorInput(K(b), lk, onChange);
+  const showCb = check(K('textShow'), 'tx.show', (k) => { onChange(k); buildTextPanel(onChange); });
+  tx.append(tabs, showCb, f, fontSel, S('textSize', 4, 60), S('textX', 0, 100), S('textY', 0, 100), S('textAngle', -90, 90), S('textSpacing', -5, 30), S('textShadow', 0, 100),
+    colorRow(C('textColor', 'tx.color'), C('textShadowColor', 'tx.shadowcolor')),
+    S('textHalftone', 0, 100), select(K('textHalftoneType'), HT_TYPES.map((x) => [x, 'ht.' + x]), onChange, 'p.htype'), S('textHalftoneSize', 2, 14), S('textHalftoneAngle', 0, 90),
+    select(K('textHalftoneMode'), [['down', 'tx.ht.down'], ['up', 'tx.ht.up'], ['right', 'tx.ht.right'], ['flat', 'tx.ht.flat']], onChange, 'tx.ht.mode'), S('textWear', 0, 100), S('textDirt', 0, 100));
+  const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'btn btn-small'; rs.textContent = t('tx.reseed'); rs.addEventListener('click', () => { state.params[K('textSeed')] = (Math.random() * 1e6) | 0; saveSettings(); onChange(K('textSeed')); }); tx.append(rs);
+  const hint = document.createElement('p'); hint.className = 'note'; hint.textContent = t('tx.drag.hint'); tx.append(hint);
 }

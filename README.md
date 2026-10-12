@@ -24,13 +24,15 @@
 - **スタイル25種**: ポップ、レトロ・スリーブ、リソ、デュオトーン、モノクロに加え、ユナイト・ブルー、ガーデン、ラブ・ポップ、オリーブ、アース、フィールド、セピア・ストライプ、マルーン、ブームボックス、スタジアム、ラベンダー、スカイグリーン、ブルー＆ピーチ、クラフト、パーム、タイプライター、サンヒル、シアノ、ロイヤル、ティール＆ピンク。
 - **🎲 ランダム生成**: 配色・質感（段数／粒子／ハーフトーン／版ズレ／紙）・背景の扱い・被写体の大きさと前景/背景の割り当て・輪郭線を一括でランダムに決められます。「戻す」で一つ前へ。対象はチェックで選べます。
 - **コラージュ**: 複数の画像を選ぶと、ちぎった紙を重ねたもの・グリッド（繰り返し）・ストリップ・モザイクに配置します。ピースごとに配色を変えることもできます。SVG / PDF もベクターのまま書き出せます。
-- **文字（ベクター）**: 太字ディスプレイ系・手書き系・タイプライター系など24書体から選べます（英数字・記号のみ対応）。文字には **ハーフトーン・かすれ（ドライブラシ）・印刷の汚れ** を重ねられ、ベクター化して書き出せます。「文字を表示する」で表示／非表示を切り替えられ、ランダム生成では既定で文字を出しません。
+- **文字（ベクター）**: 最大3つの文字を入れられ、それぞれ別の書体（24書体）・大きさ・色・影・傾き（±90°まで）・ハーフトーン・かすれ・印刷の汚れを設定できます。プレビュー上の文字枠をドラッグで動かし、●ハンドルで拡大縮小・回転できます。文字の初期状態はオフで、ランダム生成でも勝手にオンにはなりません（オンにした場合のみ、文章はそのままで書体・色・位置などをランダム化）。
+- **ハーフトーン**: ドット／ライン／クロスハッチング／エングレービング（紙幣風）から選べます（写真・文字の両方）。
 - **コラージュ**: 複数の写真を、人の手でちぎったような「手ちぎり（有機的）」などの縁でコラージュできます。ランダム生成はコラージュの全パラメータに反映されます。
 - **輪郭線**: 領域の境界に線を重ね、少しずらした線（版ズレ）を添えることもできます。
 - **ラスター部分のベクター化**: シルクスクリーンの粒子・写真インクを、トレースして本物のパスに変換できます（SVG / PDFが完全にベクターになります。時間がかかります）。
 - **ポスター用ラスター書き出し**: A4〜A1（300dpi）や12000pxのPNGを、分割描画で書き出せます。ベクター部分は大きなサイズでもシャープなままです。
 - カメラ: 画面いっぱいの映像の上にシャッターとカメラ切替が重なって表示され、縦・横どちらの向きでも撮影できます。セルフタイマー（3/5/10秒）付き。コラージュ用には **連写（枚数・間隔を選択）** と、落ち着いて何枚も撮れる撮影トレイ（不要な写真は✕で削除）があります。結果画面からいつでも「カメラで撮り直す」ができます。
-- プレビュー: ＋／−ボタン、ピンチ操作、ドラッグ移動で拡大でき、「100%」でフィット、↕で枠の高さ切替、⛶で全画面表示ができます。拡大しても枠の大きさは変わらないので、パラメータが隠れません。iPhoneでも画面全体は拡大されません。
+- プレビュー: ピンチ操作（パソコンではマウスホイール）で拡大縮小、ドラッグで移動できます。⛶で全画面表示、右下のハンドルで枠の大きさを変更、✥で好きな位置に移動（ピクチャーインピクチャー風。⤒で元の位置へ）。拡大しても枠の大きさは変わらないので、パラメータが隠れません。iPhoneでも画面全体は拡大されません。
+- 書き出し: SVG・ベクターPDF・PNG・JPEGに加え、処理能力の低い端末向けの「軽量PNG／軽量JPEG」（長辺1280px）があります。
 - 「比較」の境界線は、画像の上をなぞって左右に動かせます。
 - 日本語／English。
 
@@ -45,8 +47,8 @@
 ## プライバシー
 
 - 撮影・選択した画像は、お使いのブラウザの中でのみ処理されます。アップロード、アカウント、広告、解析用の通信はありません。
-- 任意の **「AI強化」** を選んだ場合に限り、初回に AI モデル（SegFormer-B0、約4.4MB）と実行ランタイムを公開CDNからダウンロードします（以降はブラウザに保存され、再起動後も読み込み済みデータを使います。ただしブラウザやOSが保存領域を整理した場合は、再ダウンロードになることがあります）。このときも **画像は送信されません**。AI強化は初期設定ではオフです。
-- 一度読み込んだ後は、標準エンジンはオフラインでも動作します（AI強化は初回ダウンロードが必要です）。
+- 任意の **「被写体判別つき」** を選んだ場合に限り、初回に画像領域分割モデル（SegFormer-B0、約4.4MB）と実行ランタイムを公開CDNからダウンロードします（以降はブラウザに保存され、再起動後も読み込み済みデータを使います。ただしブラウザやOSが保存領域を整理した場合は、再ダウンロードになることがあります）。このときも **画像は送信されません**。被写体判別つきは初期設定ではオフです。このモデルは写真の中の背景・人物などの領域を判別するだけで、画像の生成や書き換えは一切行いません。
+- 一度読み込んだ後は、標準エンジンはオフラインでも動作します（被写体判別つきは初回ダウンロードが必要です）。
 
 ## 動作環境
 
@@ -57,7 +59,7 @@
 ## 制限事項（正直な説明）
 
 - 自動の領域分割は完璧ではありません。写真によっては境界が合わないことがあり、その場合は「詳細度」「輪郭の感度」や、手動の「前景/背景を直す」で調整してください。
-- 「標準エンジン」は色と輪郭を手がかりにした分割で、物体を意味的に理解するものではありません。被写体判定は位置・コントラスト等に基づく推定です。AI強化を使うと、AIが推定した領域の境界を優先します。
+- 「標準エンジン」は色と輪郭を手がかりにした分割で、物体を意味的に理解するものではありません。被写体判定は位置・コントラスト等に基づく推定です。「被写体判別つき」を使うと、領域分割モデルが判別した境界を優先します。
 - シルクスクリーンモードの SVG / PDF では、初期設定では写真由来のインク層はラスター画像です。「ラスター部分もベクターに変換」をオンにすると完全なベクターになりますが、時間とファイルサイズが増え、細かな階調は段階的な色面になります。
 - コラージュでは、各画像の前景/背景は自動判定のみです（手動修正は1枚の画像のときだけ）。画像を変えるとピースの解析をやり直すため、スライダー操作後に少し待つことがあります。
 - 文字は同梱フォントの英数字・記号のみです。日本語の文字は表示されません。
@@ -74,7 +76,7 @@
 
 © 2026 egoaid. All rights reserved.
 
-任意の「AI強化」は、実行時に以下を読み込みます（本リポジトリには含まれません）。
+任意の「被写体判別つき」は、実行時に以下を読み込みます（本リポジトリには含まれません）。
 
 - [Transformers.js](https://github.com/huggingface/transformers.js)（Apache-2.0）
 - [ONNX Runtime Web](https://github.com/microsoft/onnxruntime)（MIT）
@@ -88,6 +90,6 @@
 
 ## English
 
-Vector Camera is a free, privacy-first web app that turns photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. Everything runs in your browser — images are never uploaded. Modes: Vector, Silhouette, Color regions, Silkscreen (flat vector colour blocks + processed photo "ink" layers). Pure-vector modes export genuine paths and fills; the Silkscreen mode embeds raster ink layers clipped by vector paths (PNG / JPEG export the flattened result). The optional AI boost downloads a ~4.4 MB model plus runtime on first use only. The screen is kept awake while you use the app (Screen Wake Lock API, where supported).
+Vector Camera is a free, privacy-first web app that turns photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. Everything runs in your browser — images are never uploaded. Modes: Vector, Silhouette, Color regions, Silkscreen (flat vector colour blocks + processed photo "ink" layers). Pure-vector modes export genuine paths and fills; the Silkscreen mode embeds raster ink layers clipped by vector paths (PNG / JPEG export the flattened result). The optional subject-detection model (image segmentation only; it never generates or alters images) downloads ~4.4 MB plus runtime on first use only. The screen is kept awake while you use the app (Screen Wake Lock API, where supported).
 
 © 2026 egoaid. All rights reserved.

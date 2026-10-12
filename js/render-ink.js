@@ -1,6 +1,7 @@
 // render-ink.js - raster "ink" layers for the hybrid / screen-print mode (tone mapping, posterise, halftone, grain).
 // Pure typed-array code (no DOM) so it is unit-testable. Output is cropped to the bbox of the eligible regions and
 // is meant to be clipped by VECTOR paths of those regions.
+import { htThreshold } from './halftone-types.js';
 import { hexToRgb, mulberry32 } from './color-utils.js';
 
 function hash(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -54,7 +55,7 @@ export function makeInkFactory(src, res, targetLong) {
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0; for (let k = -rad; k <= rad && !v; k++) { const yy = y + k; if (yy >= 0 && yy < H && tmp[yy * W + x]) v = 1; } dil[y * W + x] = v; }
     const n = Math.max(2, Math.min(8, spec.levels | 0)), ret = spec.retention, grain = spec.grain, rough = spec.roughness;
     const cell = Math.max(2, spec.halftoneSize * (tw / 640)), ang = (spec.halftoneAngle * Math.PI) / 180, ca = Math.cos(ang), sa = Math.sin(ang);
-    const screen = (x, y) => { const u = (x * ca + y * sa) / cell, v = (-x * sa + y * ca) / cell; return 0.5 + 0.25 * (Math.cos(2 * Math.PI * u) + Math.cos(2 * Math.PI * v)); };
+    const htType = spec.halftoneType || 'dot', screen = (x, y) => htThreshold(htType, x, y, cell, ang);
     const inkRGB = spec.mode === 'key' ? hexToRgb(spec.color) : null, stops = spec.mode === 'bands' ? spec.ramp.map(hexToRgb) : null, grainScale = Math.max(1, tw / 900);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const p = y * W + x; if (!dil[p]) continue;
@@ -63,7 +64,7 @@ export function makeInkFactory(src, res, targetLong) {
       if (spec.mode === 'key') {
         const d = 1 - t, dq = Math.round(d * (n - 1)) / (n - 1), dd = dq + (d - dq) * ret * 0.7;
         let s = 0.5 + wn * (grain * 0.3 + ret * 0.1) + ln * rough * 0.4;
-        if (spec.halftone) s = s * 0.35 + screen(gx, gy) * 0.65;
+        if (spec.halftone) s = htType === 'dot' ? s * 0.35 + screen(gx, gy) * 0.65 : s * 0.12 + screen(gx, gy) * 0.88;
         const a = smooth(s - 0.04, s + 0.04, dd);
         out[o] = inkRGB[0]; out[o + 1] = inkRGB[1]; out[o + 2] = inkRGB[2]; out[o + 3] = Math.round(a * 255);
       } else {

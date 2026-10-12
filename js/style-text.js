@@ -1,6 +1,7 @@
 // style-text.js - typed text -> vector outline layers (TrueType glyph outlines, nonzero fill, optional offset shadow).
 import { parseTTF, contourToPath } from './font-ttf.js';
 import { fxActive, textFxLayers } from './text-fx.js';
+import { TEXT_SLOTS, slotView } from './config.js';
 
 export const FONTS = [
   { id: 'anton', file: 'Anton-Regular.ttf', name: 'Anton', cat: 'display' }, { id: 'bebas', file: 'BebasNeue-Regular.ttf', name: 'Bebas Neue', cat: 'display' },
@@ -54,15 +55,33 @@ export function layoutText(font, text, { w, h, size = 20, x = 50, y = 50, angle 
   return { w, h, R: loops.length, chains, loops, maxW };
 }
 
-/** Scene layers for the text overlay (shadow first). Returns [] when text is empty or the font is not loaded yet. */
-export function textLayers(p, w, h) {
-  if (!p.text || !p.text.trim() || p.textShow === false) return [];
-  const font = cache.get(p.textFont); if (!font) return [];
-  const geom = layoutText(font, p.text, { w, h, size: p.textSize, x: p.textX, y: p.textY, angle: p.textAngle, spacing: p.textSpacing });
+/** Scene layers of one text slot (shadow first). Returns [] when the slot is hidden/empty or its font is not loaded yet. */
+export function slotLayers(q, w, h, fxLong) {
+  if (!q.text || !q.text.trim() || q.textShow === false) return [];
+  const font = cache.get(q.textFont); if (!font) return [];
+  const geom = layoutText(font, q.text, { w, h, size: q.textSize, x: q.textX, y: q.textY, angle: q.textAngle, spacing: q.textSpacing });
   if (!geom) return [];
-  if (fxActive(p)) return textFxLayers(geom, p, w, h, p.fxLong || 1000);
-  const ids = Array.from({ length: geom.R }, (_, i) => i), out = [], off = (p.textShadow / 100) * 0.05 * h;
-  if (p.textShadow > 0) out.push({ kind: 'fills', name: 'text-shadow', geom, rule: 'nonzero', offset: [off, off], items: [{ fill: p.textShadowColor, regions: ids }] });
-  out.push({ kind: 'fills', name: 'text', geom, rule: 'nonzero', offset: [0, 0], items: [{ fill: p.textColor, regions: ids }] });
+  if (fxActive(q)) return textFxLayers(geom, q, w, h, fxLong || 1000);
+  const ids = Array.from({ length: geom.R }, (_, i) => i), out = [], off = (q.textShadow / 100) * 0.05 * h;
+  if (q.textShadow > 0) out.push({ kind: 'fills', name: 'text-shadow', geom, rule: 'nonzero', offset: [off, off], items: [{ fill: q.textShadowColor, regions: ids }] });
+  out.push({ kind: 'fills', name: 'text', geom, rule: 'nonzero', offset: [0, 0], items: [{ fill: q.textColor, regions: ids }] });
   return out;
+}
+/** Scene layers for all text slots (slot 1 keeps the names text / text-shadow; slots 2, 3 use text2 / text3). */
+export function textLayers(p, w, h) {
+  const out = [];
+  for (let i = 0; i < TEXT_SLOTS; i++) for (const L of slotLayers(slotView(p, i), w, h, p.fxLong)) { if (i) L.name = L.name.replace('text', 'text' + (i + 1)); out.push(L); }
+  return out;
+}
+/** Box of a text slot in scene units: {cx,cy,w,h,angle(deg)} or null (used for the drag / rotate / scale handles). */
+export function textBox(p, i, w, h) {
+  const q = slotView(p, i); if (!q.text || !q.text.trim()) return null; const font = cache.get(q.textFont); if (!font) return null;
+  const lines = String(q.text).split('\n').slice(0, 6), em = (q.textSize / 100) * h, sc = em / font.unitsPerEm, sp = (q.textSpacing / 100) * em;
+  let maxW = 0; for (const ln of lines) { let wd = 0; for (const ch of ln) wd += font.advance(font.glyphIndex(ch.codePointAt(0))) * sc + sp; maxW = Math.max(maxW, wd - sp); }
+  return { cx: (q.textX / 100) * w, cy: (q.textY / 100) * h, w: Math.max(em * 0.5, maxW), h: em * 1.05 * lines.length, angle: q.textAngle };
+}
+/** Loads the fonts of every text slot that has text. */
+export async function ensureFonts(p) {
+  const ids = new Set(); for (let i = 0; i < TEXT_SLOTS; i++) { const q = slotView(p, i); if (q.text && q.text.trim()) ids.add(q.textFont); }
+  await Promise.all([...ids].map((id) => ensureFont(id)));
 }

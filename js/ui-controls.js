@@ -2,6 +2,7 @@
 import { MODES, MODE_PRESETS, MODE_DEFAULTS } from './config.js';
 import { PRESETS, getPreset } from './style-palette.js';
 import { t } from './i18n.js';
+import { HT_TYPES } from './halftone-types.js';
 import { state, saveSettings } from './state.js';
 const $ = (id) => document.getElementById(id);
 const ALL = MODES;
@@ -19,7 +20,7 @@ const ADV = [
 export function slider(def, onChange) {
   const p = state.params, wrap = document.createElement('div'); wrap.className = 'slider';
   const id = 'sl-' + def.k, row = document.createElement('div'); row.className = 'slider-row';
-  const lab = document.createElement('label'); lab.htmlFor = id; lab.textContent = t('p.' + def.k);
+  const lab = document.createElement('label'); lab.htmlFor = id; lab.textContent = t('p.' + (def.base || def.k));
   const out = document.createElement('output'); out.htmlFor = id; out.textContent = String(p[def.k]);
   row.append(lab, out);
   const inp = document.createElement('input'); inp.type = 'range'; inp.id = id; inp.min = def.min ?? 0; inp.max = def.max ?? 100; inp.step = 1; inp.value = p[def.k];
@@ -59,6 +60,7 @@ export function buildControls(onChange, onMode) {
   if (mode === 'silhouette') main.append(check('silSample', 'sil.sample', onChange));
   for (const d of MAIN) if (d.modes.includes(mode)) main.append(slider(d, onChange));
   if (mode === 'hybrid') main.append(select('bgTreatment', [['flat', 'bg.flat'], ['photo', 'bg.photo'], ['paper', 'bg.paper']], onChange, 'p.bg'), select('halftone', [[0, 'p.off'], [1, 'p.on']], (k) => { onChange(k); buildControls(onChange, onMode); }, 'p.halftone'));
+  if (mode === 'hybrid' && p.halftone > 0) main.append(select('halftoneType', HT_TYPES.map((x) => [x, 'ht.' + x]), onChange, 'p.htype'));
   if (mode === 'regions') main.append(select('paletteMap', [['luma', 'map.luma'], ['nearest', 'map.nearest']], onChange, 'p.map'));
   for (const d of ADV) if (d.modes.includes(mode) && (!d.when || d.when(p))) adv.append(slider(d, onChange));
   adv.append(check('seal', 'p.seal', onChange));

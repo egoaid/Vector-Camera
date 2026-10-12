@@ -1,11 +1,11 @@
-// seg-segformer.js - main-thread client for the optional AI worker.
+// seg-segformer.js - main-thread client for the optional segmentation worker.
 import { AI } from './config.js';
 let worker = null, seq = 0; const pending = new Map();
 function ensure() {
   if (worker) return worker;
-  worker = new Worker(new URL('./ai-worker.js', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL('./seg-worker.js', import.meta.url), { type: 'module' });
   worker.onmessage = (e) => { const m = e.data, p = pending.get(m.id); if (!p) return; if (m.type === 'progress') return p.onProgress && p.onProgress(m.d); pending.delete(m.id); m.type === 'error' ? p.reject(new Error(m.message)) : p.resolve(m); };
-  worker.onerror = (e) => { for (const [, p] of pending) p.reject(new Error(e.message || 'ai-worker-failed')); pending.clear(); worker = null; };
+  worker.onerror = (e) => { for (const [, p] of pending) p.reject(new Error(e.message || 'seg-worker-failed')); pending.clear(); worker = null; };
   return worker;
 }
 export const isSupported = () => typeof Worker !== 'undefined' && typeof WebAssembly === 'object';

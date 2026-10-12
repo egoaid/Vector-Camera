@@ -48,7 +48,7 @@ export function buildDendrogram(sp, w, h, n, L, A, B, edge, { wEdge = 0.5, semW 
     const sizeF = Math.pow(Math.max(0.15, Math.min(area[a], area[b]) / A0), 0.3);
     const ef = 1 + wEdge * 3 * Math.min(1, r.e / Math.max(1, r.c));
     let c = (dE + 0.05) * sizeF * ef;
-    if (sem && semMaj[a] !== semMaj[b]) c = c * (1 + semW * 6) + semW * 30 + (semW >= 0.99 ? 1e4 : 0); // semW=1: never merge across AI labels until forced
+    if (sem && semMaj[a] !== semMaj[b]) c = c * (1 + semW * 6) + semW * 30 + (semW >= 0.99 ? 1e4 : 0); // semW=1: never merge across detected-labels until forced
     return c;
   };
   const heap = new Heap();

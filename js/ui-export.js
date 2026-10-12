@@ -5,6 +5,7 @@ import { releaseScene } from './render-canvas.js';
 import { sceneHasRaster } from './style-scene.js';
 import { toast } from './ui-toast.js';
 import { state, saveSettings } from './state.js';
+import { LIMITS } from './config.js';
 const $ = (id) => document.getElementById(id);
 
 export function initExport(getExportScene) {
@@ -21,8 +22,8 @@ export function initExport(getExportScene) {
     let built = null;
     try {
       built = await getExportScene(kind);
-      const poster = kind === 'poster', longPx = poster ? +$('sel-poster').value : state.params.exportLong;
-      const blob = await makeBlob(kind, built.scene, built.geom, { longPx, onProgress: (f) => { $('export-note').textContent = t('exp.poster.working', { pct: Math.round(f * 100) }); } }), ext = kind === 'jpeg' ? 'jpg' : kind === 'poster' ? 'png' : kind, name = fileName(built.scene, ext).replace(/\.png$/, poster ? '_poster.png' : '.png');
+      const lite = /-lite$/.test(kind), base = kind.replace('-lite', ''), poster = base === 'poster', longPx = poster ? +$('sel-poster').value : lite ? LIMITS.liteLong : state.params.exportLong;
+      const blob = await makeBlob(base, built.scene, built.geom, { longPx, onProgress: (f) => { $('export-note').textContent = t('exp.poster.working', { pct: Math.round(f * 100) }); } }), ext = base === 'jpeg' ? 'jpg' : base === 'poster' ? 'png' : base, name = fileName(built.scene, ext).replace(/\.(png|jpg)$/, (m, e) => (poster ? '_poster' : lite ? '_lite' : '') + '.' + e);
       if ($('chk-share').checked && canShareFiles(blob, name)) await share(blob, name); else download(blob, name);
       $('export-note').textContent = t('exp.done', { name });
     } catch (e) { if (e && (e.name === 'AbortError' || e.message === 'cancelled')) $('export-note').textContent = ''; else { $('export-note').textContent = t('err.generic'); console.error(e); toast(t('err.generic')); } }

@@ -15,13 +15,15 @@ import { vectorizeScene } from './vec-ink.js';
 import { TRACE_SHAPE } from './vec-ink.js';
 import { randomize, History } from './style-random.js';
 import { buildExtras } from './ui-extras.js';
-import { ensureFont } from './style-text.js';
+import { ensureFonts } from './style-text.js';
 import { makeInkFactory } from './render-ink.js';
 import { drawScene, releaseScene } from './render-canvas.js';
 import { showScreen, showProcessing, hideProcessing, showError } from './ui-views.js';
 import { buildControls, presetDefaults } from './ui-controls.js';
 import { initCompare } from './ui-compare.js';
 import { initZoom } from './ui-zoom.js';
+import { initStageFrame } from './ui-stage.js';
+import { initTextHandles } from './ui-textbox.js';
 import { initExport, updateExportNote } from './ui-export.js';
 import { initAbout } from './ui-about.js';
 import { registerSW } from './pwa.js';
@@ -31,7 +33,7 @@ import { PRESETS, getPreset } from './style-palette.js';
 const $ = (id) => document.getElementById(id);
 const STAGE_KEY = { segment: 'proc.segment', merge: 'proc.merge', regions: 'proc.regions', vectorize: 'proc.vectorize', done: 'proc.done' };
 const history = new History();
-let client, compare, zoom, lastKey = '', pipeStale = false, inkCache = null, debounce = 0, editing = false, aiConsent = false, cancelled = false;
+let client, compare, zoom, handles, lastKey = '', pipeStale = false, inkCache = null, debounce = 0, editing = false, aiConsent = false, cancelled = false;
 
 /* ---------- processing helpers ---------- */
 const onPipeProgress = (stage, f) => { if (!$('processing').hidden && !state.collageBusy) showProcessing(STAGE_KEY[stage] || 'proc.segment', 0.4 + 0.55 * f); };
@@ -61,7 +63,7 @@ async function analyze() {
   showProcessing('proc.segment', 0.4);
   try { await runPipeline(true); } catch (e) { if (cancelled) return; console.error(e); hideProcessing(); toast(t('err.generic')); if (!state.result) showScreen('start'); return; }
   if (cancelled) return;
-  hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFont(state.params.textFont); await yieldUI(); redraw(); drawOriginal();
+  hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); drawOriginal();
 }
 async function tryAI() {
   if (!aiConsent) {
@@ -80,7 +82,7 @@ async function tryAI() {
       else if (d.status === 'inference') showProcessing('proc.ai', 0.36);
     });
     state.sem = sem; await client.setSemantic(sem); state.engineUsed = 'ai';
-  } catch (e) { if (cancelled) return; console.warn('AI route failed', e); state.engineUsed = 'classic'; toast(t('err.ai'), { ms: 7000 }); }
+  } catch (e) { if (cancelled) return; console.warn('segmentation model failed', e); state.engineUsed = 'classic'; toast(t('err.ai'), { ms: 7000 }); }
 }
 function askAI() {
   return new Promise((resolve) => { const d = $('dlg-ai'); d.addEventListener('close', () => resolve(d.returnValue === 'go'), { once: true }); d.returnValue = 'no'; d.showModal(); });
@@ -113,7 +115,7 @@ async function addCollageFiles(files, append = true) {
   } catch (e) { console.error(e); hideProcessing(); toast(t('err.load')); if (!cells.length) showScreen('start'); return; }
   state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false;
   if (state.params.mode === 'vector' || state.params.mode === 'silhouette') { /* all modes work per piece */ }
-  hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFont(state.params.textFont); await yieldUI(); redraw();
+  hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw();
 }
 async function reprocessCollage(mySeq) {
   for (let i = 0; i < state.collage.cells.length; i++) {
@@ -155,7 +157,7 @@ function paint() {
   const cv = $('cv-result'), box = $('stage').getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1), boost = Math.min(4, Math.max(1, Math.ceil(zoom ? zoom.getZoom() : 1)));
   const long = Math.min(boost > 1 ? 4096 : 2048, Math.max(400, Math.round(Math.max(box.width, 300) * dpr * boost))), k = long / Math.max(r.w, r.h);
   cv.width = Math.round(r.w * k); cv.height = Math.round(r.h * k); $('stage').style.setProperty('--ar', String(r.w / r.h));
-  drawScene(cv, r, state.result.geom);
+  drawScene(cv, r, state.result.geom); if (handles) handles.update();
 }
 function drawOriginal() {
   const cv = $('cv-original'), r = state.result; if (!r) return; const src = state.canvas, k = Math.min(1, 1600 / Math.max(r.w, r.h));
@@ -174,8 +176,8 @@ function buildUI() {
   $('btn-compare').hidden = !single; if (!single) compare.off(); $('btn-rerun').hidden = !single; $('btn-edit-reset').hidden = !single || !state.overrides.length; $('btn-random-undo').disabled = !history.size;
 }
 async function onControl(key, value) {
-  if (key === 'textFont') await ensureFont(state.params.textFont);
-  if (key === 'preset') { state.params.preset = value; if (state.params.mode === 'hybrid' || state.params.mode === 'regions') Object.assign(state.params, presetDefaults(state.params.mode, value)); buildUI(); saveSettings(); }
+  if (key === 'textFont') await ensureFonts(state.params);
+  if (key === 'preset') { state.params.preset = value; if (state.collage && state.params.collageVary) { state.params.collageVary = false; toast(t('col.bulk')); } if (state.params.mode === 'hybrid' || state.params.mode === 'regions') Object.assign(state.params, presetDefaults(state.params.mode, value)); buildUI(); saveSettings(); }
   clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130);
 }
 async function refresh() {
@@ -198,9 +200,10 @@ function onStageClick(ev) {
   const cur = state.groups[r.labels[y * r.w + x]]; state.overrides.push({ x, y, g: (cur + 1) % 3 }); $('btn-edit-reset').hidden = false; redraw();
 }
 async function getExportScene(kind) {
+  const lite = /-lite$/.test(kind); if (lite) kind = kind.replace('-lite', '');
   const poster = kind === 'poster', vec = poster || (state.params.vecInk && (kind === 'svg' || kind === 'pdf'));
-  await ensureFont(state.params.textFont);
-  const want = vec ? (poster ? Math.max(state.params.vecInkLong, 1400) : state.params.vecInkLong) : (kind === 'svg' || kind === 'pdf' ? LIMITS.hybridRasterMax : state.params.exportLong);
+  await ensureFonts(state.params);
+  const want = vec ? (poster ? Math.max(state.params.vecInkLong, 1400) : state.params.vecInkLong) : (kind === 'svg' || kind === 'pdf' ? LIMITS.hybridRasterMax : lite ? LIMITS.liteLong : state.params.exportLong);
   let scene, geom = null;
   if (state.collage) { scene = buildCollageScene(collageCells(() => want), { ...state.params, fxLong: want }, { inkLong: want }); }
   else {
@@ -237,12 +240,12 @@ async function doRandom() {
   const out = randomize(seed, { ...o }, state.params, solo ? state.result : null, solo ? state.groups : null, { collage: !!state.collage });
   Object.assign(state.params, out.params);
   if (out.overrides && solo) state.overrides = out.overrides;
-  if (out.params.textFont) await ensureFont(out.params.textFont);
+  await ensureFonts({ ...state.params, ...out.params });
   saveSettings(); buildUI(); await refresh();
 }
 async function undoRandom() {
   const snap = history.pop(); if (!snap) return;
-  state.params = snap.params; state.overrides = snap.overrides; await ensureFont(state.params.textFont); saveSettings(); buildUI(); await refresh();
+  state.params = snap.params; state.overrides = snap.overrides; await ensureFonts(state.params); saveSettings(); buildUI(); await refresh();
 }
 
 /* ---------- init ---------- */
@@ -253,7 +256,7 @@ function init() {
   $('btn-lang').addEventListener('click', () => setLang(getLang() === 'ja' ? 'en' : 'ja'));
   $('sel-engine').addEventListener('change', (e) => { state.params.engine = e.target.value; note(); saveSettings(); });
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });
-  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initAbout(); initExport(getExportScene);
+  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
   camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => showScreen(state.result ? 'result' : 'start'), toast });
   $('btn-camera').addEventListener('click', () => openCamera('single'));
   $('btn-collage-cam').addEventListener('click', () => { state.collage = null; openCamera('multi', false); });
@@ -264,7 +267,7 @@ function init() {
   $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
   $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, !!state.collage); } finally { state.collageBusy = false; } } });
   $('btn-random').addEventListener('click', doRandom); $('btn-random-undo').addEventListener('click', undoRandom);
-  if (state.params.text) ensureFont(state.params.textFont);
+  ensureFonts(state.params);
   $('btn-rerun').addEventListener('click', () => { state.overrides = []; analyze(); });
   $('btn-edit').addEventListener('click', () => setEdit(!editing));
   $('btn-edit-reset').addEventListener('click', () => { state.overrides = []; setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });
