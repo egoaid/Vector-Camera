@@ -23,6 +23,7 @@ import { buildControls, presetDefaults } from './ui-controls.js';
 import { initCompare } from './ui-compare.js';
 import { initZoom } from './ui-zoom.js';
 import { initStageFrame } from './ui-stage.js';
+import { initSheet } from './ui-sheet.js';
 import { initTextHandles } from './ui-textbox.js';
 import { initExport, updateExportNote } from './ui-export.js';
 import { initAbout } from './ui-about.js';
@@ -163,11 +164,7 @@ function drawOriginal() {
   const cv = $('cv-original'), r = state.result; if (!r) return; const src = state.canvas, k = Math.min(1, 1600 / Math.max(r.w, r.h));
   cv.width = Math.round(r.w * k) || r.w; cv.height = Math.round(r.h * k) || r.h; cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
 }
-function updateBadges() {
-  const b = $('badges'); b.replaceChildren(); const add = (txt, warn) => { const s = document.createElement('span'); s.className = 'badge' + (warn ? ' warn' : ''); s.textContent = txt; b.append(s); };
-  add(t(sceneHasRaster(state.scene) ? 'badge.hybrid' : 'badge.vector'), sceneHasRaster(state.scene));
-  if (state.collage) add(t('badge.collage', { n: state.collage.cells.length })); else { add(t(state.engineUsed === 'ai' ? 'badge.ai' : 'badge.classic')); add(t('badge.regions', { n: state.result.R })); }
-}
+function updateBadges() { $('badges').replaceChildren(); } // the info chips were removed from the preview (v0.5)
 
 /* ---------- UI wiring ---------- */
 function buildUI() {
@@ -256,7 +253,7 @@ function init() {
   $('btn-lang').addEventListener('click', () => setLang(getLang() === 'ja' ? 'en' : 'ja'));
   $('sel-engine').addEventListener('change', (e) => { state.params.engine = e.target.value; note(); saveSettings(); });
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });
-  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
+  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); initSheet(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
   camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => showScreen(state.result ? 'result' : 'start'), toast });
   $('btn-camera').addEventListener('click', () => openCamera('single'));
   $('btn-collage-cam').addEventListener('click', () => { state.collage = null; openCamera('multi', false); });

@@ -9,6 +9,8 @@ self.onmessage = (ev) => {
     else if (m.type === 'semantic') { if (m.sem) pl.setSemantic({ labels: new Uint8Array(m.sem.buffer), names: m.sem.names, C: m.sem.C }); else pl.clearSemantic(); self.postMessage({ type: 'ready', id: m.id }); }
     else if (m.type === 'process') {
       const res = pl.process(m.params, (stage, f) => self.postMessage({ type: 'progress', id: m.id, stage, f }));
+      // the stage-D geometry stays cached in the worker, so send copies (transferring the cached buffers would detach them for the next identical request)
+      res.geom = { ...res.geom, chains: res.geom.chains.map((c) => ({ ...c, cmds: c.cmds.slice(), pts: c.pts.slice() })) };
       const tr = [res.labels.buffer, ...res.geom.chains.flatMap((c) => [c.cmds.buffer, c.pts.buffer])];
       self.postMessage({ type: 'result', id: m.id, res }, tr);
     }

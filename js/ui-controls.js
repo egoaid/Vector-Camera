@@ -7,12 +7,16 @@ import { state, saveSettings } from './state.js';
 const $ = (id) => document.getElementById(id);
 const ALL = MODES;
 const MAIN = [
-  { k: 'detail', modes: ALL }, { k: 'simplify', modes: ALL }, { k: 'angularity', modes: ALL },
-  { k: 'paletteK', modes: ['regions'], min: 2, max: 24 }, { k: 'subjectSize', modes: ['silhouette', 'hybrid'], min: 5, max: 70 },
-  { k: 'separation', modes: ['hybrid'], min: 2, max: 6 }, { k: 'retention', modes: ['hybrid'] }, { k: 'grain', modes: ['hybrid'] }, { k: 'misreg', modes: ['hybrid'] },
+  { k: 'detail', modes: ALL, g: 'shape' }, { k: 'simplify', modes: ALL, g: 'shape' }, { k: 'angularity', modes: ALL, g: 'shape' },
+  { k: 'paletteK', modes: ['regions'], min: 2, max: 24, g: 'shape' }, { k: 'subjectSize', modes: ['silhouette', 'hybrid'], min: 5, max: 70, g: 'subject' },
+  { k: 'separation', modes: ['hybrid'], min: 2, max: 6, g: 'tone' }, { k: 'retention', modes: ['hybrid'], g: 'tone' }, { k: 'grain', modes: ['hybrid'], g: 'tone' }, { k: 'misreg', modes: ['hybrid'], g: 'tone' },
 ];
+const GROUP_ORDER = ['shape', 'subject', 'tone'], openGroups = new Set(['shape']);
+function group(id, content) {
+  const d = document.createElement('details'); d.className = 'grp'; d.open = openGroups.has(id); const sm = document.createElement('summary'); sm.textContent = t('grp.' + id);
+  d.addEventListener('toggle', () => { d.open ? openGroups.add(id) : openGroups.delete(id); }); d.append(sm, ...content); return d;
+}
 const ADV = [
-  { k: 'halftoneSize', modes: ['hybrid'], min: 3, max: 14, when: (p) => p.halftone > 0 }, { k: 'halftoneAngle', modes: ['hybrid'], min: 0, max: 90, when: (p) => p.halftone > 0 },
   { k: 'roughness', modes: ['hybrid'] }, { k: 'paper', modes: ['hybrid'] },
   { k: 'boundary', modes: ALL }, { k: 'minRegion', modes: ALL }, { k: 'outline', modes: ['vector', 'regions', 'silhouette'] },
   { k: 'semStrength', modes: ALL, when: () => state.engineUsed === 'ai' },
@@ -58,12 +62,27 @@ export function buildControls(onChange, onMode) {
     main.append(row);
   }
   if (mode === 'silhouette') main.append(check('silSample', 'sil.sample', onChange));
-  for (const d of MAIN) if (d.modes.includes(mode)) main.append(slider(d, onChange));
-  if (mode === 'hybrid') main.append(select('bgTreatment', [['flat', 'bg.flat'], ['photo', 'bg.photo'], ['paper', 'bg.paper']], onChange, 'p.bg'), select('halftone', [[0, 'p.off'], [1, 'p.on']], (k) => { onChange(k); buildControls(onChange, onMode); }, 'p.halftone'));
-  if (mode === 'hybrid' && p.halftone > 0) main.append(select('halftoneType', HT_TYPES.map((x) => [x, 'ht.' + x]), onChange, 'p.htype'));
+  for (const g of GROUP_ORDER) { const items = MAIN.filter((d) => d.g === g && d.modes.includes(mode)).map((d) => slider(d, onChange)); if (g === 'tone' && mode === 'hybrid') items.unshift(select('bgTreatment', [['flat', 'bg.flat'], ['photo', 'bg.photo'], ['paper', 'bg.paper']], onChange, 'p.bg')); if (items.length) main.append(group(g, items)); }
+  buildHalftone(onChange, mode);
   if (mode === 'regions') main.append(select('paletteMap', [['luma', 'map.luma'], ['nearest', 'map.nearest']], onChange, 'p.map'));
   for (const d of ADV) if (d.modes.includes(mode) && (!d.when || d.when(p))) adv.append(slider(d, onChange));
   adv.append(check('seal', 'p.seal', onChange));
 }
 export function presetDefaults(mode, preset) { const pr = preset === 'random' ? state.params.customPreset : PRESETS[preset]; return { bgTreatment: pr && pr.bgTreatment ? pr.bgTreatment : 'flat' }; }
 export { MODE_DEFAULTS };
+
+/** Halftone section: on/off, type and the detail controls of the chosen type (hybrid mode only). */
+export function buildHalftone(onChange, mode = state.params.mode) {
+  const box = $('halftone-ctl'); if (!box) return; box.replaceChildren(); const p = state.params;
+  if (mode !== 'hybrid') { const n = document.createElement('p'); n.className = 'note'; n.textContent = t('ht.hybridonly'); box.append(n); return; }
+  const re = (k) => { onChange(k); buildHalftone(onChange, mode); };
+  box.append(select('halftone', [[0, 'p.off'], [1, 'p.on']], re, 'p.halftone'));
+  if (!(p.halftone > 0)) return;
+  box.append(select('halftoneType', HT_TYPES.map((x) => [x, 'ht.' + x]), re, 'p.htype'));
+  const n = document.createElement('p'); n.className = 'note'; n.textContent = t('ht.desc.' + (p.halftoneType || 'dot')); box.append(n);
+  const S = (k, min, max) => slider({ k, min, max }, onChange), ty = p.halftoneType || 'dot';
+  box.append(S('halftoneSize', 3, 14), S('halftoneAngle', 0, 90), S('htWeight', 0, 100));
+  if (ty === 'line') box.append(S('htCurve', 0, 100));
+  if (ty === 'cross') box.append(S('htLayers', 2, 3), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100));
+  if (ty === 'engrave') box.append(S('htWave', 0, 100), S('htWaveLen', 0, 100), S('htGuilloche', 0, 100), S('htCurve', 0, 100));
+}

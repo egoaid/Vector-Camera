@@ -37,7 +37,7 @@ export function buildExtras(onChange, hooks) {
   const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn btn-small'; b2.textContent = t('col.add'); b2.addEventListener('click', hooks.add);
   const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn btn-small'; b3.textContent = t('col.addcam'); b3.addEventListener('click', hooks.addCam);
   row.append(b1, b2, b3); cc.append(row);
-  $('sec-collage').hidden = !state.collage;
+  $('sec-collage').hidden = !state.collage; $('tb-compose').hidden = !state.collage; document.dispatchEvent(new CustomEvent('vc:sheet'));
 }
 
 let rebuildTextCb = null;
@@ -54,7 +54,7 @@ export function buildTextPanel(onChange) {
     b.addEventListener('click', () => { state.textSlot = n; buildTextPanel(onChange); onChange('textSlot'); }); tabs.append(b);
   }
   const f = document.createElement('div'); f.className = 'field'; const lab = document.createElement('label'); lab.htmlFor = 'in-text'; lab.textContent = t('tx.text');
-  const ta = document.createElement('textarea'); ta.id = 'in-text'; ta.rows = 2; ta.maxLength = 80; ta.value = state.params[K('text')] || ''; ta.placeholder = 'HEY BOY\nHEY GIRL';
+  const ta = document.createElement('textarea'); ta.id = 'in-text'; ta.rows = 2; ta.maxLength = 80; ta.value = state.params[K('text')] || ''; ta.placeholder = 'Vector Camera';
   const warn = document.createElement('p'); warn.className = 'note'; warn.hidden = true; warn.textContent = t('tx.latin');
   ta.addEventListener('input', () => { state.params[K('text')] = ta.value; warn.hidden = isLatinOnly(ta.value); onChange(K('text')); }); ta.addEventListener('change', saveSettings);
   f.append(lab, ta, warn);

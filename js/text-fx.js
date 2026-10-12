@@ -4,7 +4,7 @@
 // layer path, it can be traced back into vector paths (SVG/PDF "convert raster to vector") like the photo ink.
 // Pure typed-array code (no DOM) so it runs in Node tests.
 import { hexToRgb } from './color-utils.js';
-import { htThreshold } from './halftone-types.js';
+import { makeScreen, htOptsFrom } from './halftone-types.js';
 
 function hash(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 function vnoise(x, y, cx, cy, s) {
@@ -63,7 +63,7 @@ export const fxActive = (p) => p.textHalftone > 0 || p.textWear > 0 || p.textDir
 export function applyTextFx(m, p, scale, sceneLong) {
   const { W, H, cov } = m, seed = (p.textSeed | 0) + 7, out = new Float32Array(W * H);
   const cell = Math.max(2, p.textHalftoneSize * (sceneLong * scale) / 640), ang = (p.textHalftoneAngle * Math.PI) / 180, htType = p.textHalftoneType || 'dot';
-  const screen = (x, y) => htThreshold(htType, x, y, cell, ang);
+  const screen = makeScreen(htType, cell, ang, htOptsFrom(p));
   const amt = p.textHalftone / 100, wear = p.textWear / 100, dirt = p.textDirt / 100, k = Math.max(1, (sceneLong * scale) / 1000);
   // text extent (for the tone gradient)
   let minx = W, maxx = 0, miny = H, maxy = 0; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (cov[y * W + x] > 0.5) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }

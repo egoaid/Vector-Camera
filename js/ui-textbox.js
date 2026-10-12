@@ -28,7 +28,7 @@ export function initTextHandles({ onChange }) {
       if (state.textSlot !== i) { state.textSlot = i; box.querySelectorAll('.tb').forEach((x) => x.classList.toggle('active', x === el)); }
       const r = layer.getBoundingClientRect(), s0 = { x: P[K('textX')], y: P[K('textY')], size: P[K('textSize')], ang: P[K('textAngle')], px: e.clientX, py: e.clientY };
       const ctr = [r.left + (P[K('textX')] / 100) * r.width, r.top + (P[K('textY')] / 100) * r.height], d0 = Math.hypot(e.clientX - ctr[0], e.clientY - ctr[1]) || 1;
-      const mv = (ev) => { fn(ev, { r, s0, ctr, d0 }); frame(); };
+      const mv = (ev) => { if (ev.pointerType === 'mouse' && ev.buttons === 0) return up(); fn(ev, { r, s0, ctr, d0 }); frame(); };
       const up = () => { target.removeEventListener('pointermove', mv); target.removeEventListener('pointerup', up); target.removeEventListener('pointercancel', up); saveSettings(); dragging = false; rebuildText(); update(); };
       target.addEventListener('pointermove', mv); target.addEventListener('pointerup', up); target.addEventListener('pointercancel', up);
     });

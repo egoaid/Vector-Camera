@@ -20,7 +20,7 @@ export const DEFAULT_PARAMS = {
   paletteK: 8, paletteMap: 'luma',
   seal: true, outline: 0, outlineColor: '#111111', background: 'auto',
   silColors: { bg: '#f2d934', mid: '#e1456d', fg: '#17121c' }, silSample: false,
-  separation: 3, retention: 45, halftone: 0, halftoneType: 'dot', halftoneSize: 6, halftoneAngle: 45,
+  separation: 3, retention: 45, halftone: 0, halftoneType: 'dot', htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, halftoneSize: 6, halftoneAngle: 45,
   grain: 25, roughness: 20, misreg: 25, paper: 25, bgTreatment: 'flat', semStrength: 100,
   exportLong: 2048, wakeLock: true,
   lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
@@ -38,7 +38,8 @@ export const TEXT_BASE = ['text', 'textFont', 'textSize', 'textX', 'textY', 'tex
 /** Parameter key of text slot `i` (0..2): slot 0 uses the plain key, others get _1 / _2. */
 export const tkey = (k, i) => (i ? `${k}_${i}` : k);
 /** A view of slot `i` with the plain key names (what style-text / text-fx read). */
-export const slotView = (p, i) => { const o = {}; for (const k of TEXT_BASE) o[k] = p[tkey(k, i)]; return o; };
+export const slotView = (p, i) => { const o = {}; for (const k of TEXT_BASE) o[k] = p[tkey(k, i)]; for (const k of HT_KEYS) o[k] = p[k]; return o; };
+export const HT_KEYS = ['htWeight', 'htLayers', 'htSpread', 'htCurve', 'htSketch', 'htWave', 'htWaveLen', 'htGuilloche'];
 export const MODE_DEFAULTS = {
   vector: { detail: 62, paletteK: 0, simplify: 30, angularity: 20, outline: 0 },
   silhouette: { detail: 24, paletteK: 0, simplify: 45, angularity: 35, subjectSize: 30 },

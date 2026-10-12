@@ -20,8 +20,10 @@ export function initStageFrame() {
   const drag = (el, onMove, begin) => el.addEventListener('pointerdown', (e) => {
     if (e.button > 0 || stage.classList.contains('full')) return; e.preventDefault(); e.stopPropagation(); float(); el.setPointerCapture(e.pointerId);
     const r = stage.getBoundingClientRect(), s0 = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, w: r.width };
-    const mv = (ev) => onMove(ev, s0), up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
-    el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    // listen on window and stop as soon as no button is held, so a lost pointerup can never leave the frame "stuck" to the cursor
+    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('blur', up); try { el.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ } };
+    const mv = (ev) => { if (ev.pointerId !== e.pointerId) return; if (ev.pointerType === 'mouse' && ev.buttons === 0) return up(); onMove(ev, s0); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up); window.addEventListener('blur', up);
   });
   drag(grip, (ev, s) => place(s.l + ev.clientX - s.x, s.t + ev.clientY - s.y, s.w));
   drag(handle, (ev, s) => place(s.l, s.t, s.w + (ev.clientX - s.x) + (ev.clientY - s.y) * 0.5));

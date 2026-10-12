@@ -1,7 +1,7 @@
 // render-ink.js - raster "ink" layers for the hybrid / screen-print mode (tone mapping, posterise, halftone, grain).
 // Pure typed-array code (no DOM) so it is unit-testable. Output is cropped to the bbox of the eligible regions and
 // is meant to be clipped by VECTOR paths of those regions.
-import { htThreshold } from './halftone-types.js';
+import { makeScreen, htGain } from './halftone-types.js';
 import { hexToRgb, mulberry32 } from './color-utils.js';
 
 function hash(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -33,7 +33,7 @@ const smooth = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1
  */
 export function makeInkFactory(src, res, targetLong) {
   const img = downscale(src, targetLong), tw = img.w, th = img.h, { w: gw0, h: gh0, labels } = res;
-  const lum = new Float32Array(tw * th);
+  const lum = new Float32Array(tw * th), blurMemo = new Map();
   for (let i = 0, j = 0; i < lum.length; i++, j += 4) lum[i] = (0.2126 * img.data[j] + 0.7152 * img.data[j + 1] + 0.0722 * img.data[j + 2]) / 255;
   const lab = new Int32Array(tw * th);
   for (let y = 0; y < th; y++) { const sy = Math.min(gh0 - 1, Math.floor((y * gh0) / th)) * gw0; for (let x = 0; x < tw; x++) lab[y * tw + x] = labels[sy + Math.min(gw0 - 1, Math.floor((x * gw0) / tw))]; }
@@ -55,14 +55,16 @@ export function makeInkFactory(src, res, targetLong) {
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0; for (let k = -rad; k <= rad && !v; k++) { const yy = y + k; if (yy >= 0 && yy < H && tmp[yy * W + x]) v = 1; } dil[y * W + x] = v; }
     const n = Math.max(2, Math.min(8, spec.levels | 0)), ret = spec.retention, grain = spec.grain, rough = spec.roughness;
     const cell = Math.max(2, spec.halftoneSize * (tw / 640)), ang = (spec.halftoneAngle * Math.PI) / 180, ca = Math.cos(ang), sa = Math.sin(ang);
-    const htType = spec.halftoneType || 'dot', screen = (x, y) => htThreshold(htType, x, y, cell, ang);
+    const htType = spec.halftoneType || 'dot', hopts = spec.halftoneOpts || {}, scr = makeScreen(htType, cell, ang, hopts), gain = htGain(hopts);
+    const blur = spec.halftone && htType !== 'dot' && (hopts.curve == null || hopts.curve > 0) ? (() => { const r = Math.max(2, Math.round(cell * 0.9)); if (!blurMemo.has(r)) blurMemo.set(r, boxBlur(lum, tw, th, r)); return blurMemo.get(r); })() : null; // tone image for form-following lines
+    const screen = (x, y) => scr(x, y, blur ? blur[y * tw + x] - 0.5 : 0);
     const inkRGB = spec.mode === 'key' ? hexToRgb(spec.color) : null, stops = spec.mode === 'bands' ? spec.ramp.map(hexToRgb) : null, grainScale = Math.max(1, tw / 900);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const p = y * W + x; if (!dil[p]) continue;
       const gx = x + x0, gy = y + y0, t = Math.max(0, Math.min(1, (lum[gy * tw + gx] - lo) / (hi - lo)));
       const wn = hash(gx, gy, 11) - 0.5, ln = vnoise(gx, gy, 3 * grainScale, 5) - 0.5, o = p * 4;
       if (spec.mode === 'key') {
-        const d = 1 - t, dq = Math.round(d * (n - 1)) / (n - 1), dd = dq + (d - dq) * ret * 0.7;
+        const d = 1 - t, dq = Math.round(d * (n - 1)) / (n - 1); let dd = dq + (d - dq) * ret * 0.7; if (spec.halftone) dd = Math.min(1, dd * gain);
         let s = 0.5 + wn * (grain * 0.3 + ret * 0.1) + ln * rough * 0.4;
         if (spec.halftone) s = htType === 'dot' ? s * 0.35 + screen(gx, gy) * 0.65 : s * 0.12 + screen(gx, gy) * 0.88;
         const a = smooth(s - 0.04, s + 0.04, dd);
@@ -77,6 +79,13 @@ export function makeInkFactory(src, res, targetLong) {
     const k = gw0 / tw;
     return { w: W, h: H, rgba: out, gx: x0 * k, gy: y0 * k, gw: W * k, gh: H * k, opaque: spec.mode === 'bands' };
   };
+}
+/** Separable box blur of a Float32/Float64 tone image (running sums). */
+function boxBlur(src, w, h, r) {
+  const tmp = new Float32Array(w * h), out = new Float32Array(w * h), n = 2 * r + 1;
+  for (let y = 0; y < h; y++) { let acc = 0; const o = y * w; for (let x = -r; x <= r; x++) acc += src[o + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x++) { tmp[o + x] = acc / n; acc += src[o + Math.min(w - 1, x + r + 1)] - src[o + Math.max(0, x - r)]; } }
+  for (let x = 0; x < w; x++) { let acc = 0; for (let y = -r; y <= r; y++) acc += tmp[Math.min(h - 1, Math.max(0, y)) * w + x]; for (let y = 0; y < h; y++) { out[y * w + x] = acc / n; acc += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x]; } }
+  return out;
 }
 /** Deterministic paper-grain amount in [0,1] for a pixel (used by the canvas renderer). */
 export const paperNoise = (x, y) => hash(x, y, 3) * 0.6 + vnoise(x, y, 4, 9) * 0.4;

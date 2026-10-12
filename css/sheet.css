@@ -1,0 +1,26 @@
+/* sheet.css - bottom toolbar + edit sheet (phone: sheet slides up above the toolbar; desktop: side column) */
+:root { --tb-h: 64px; }
+#toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; gap: 2px; background: var(--panel); border-top: 1px solid var(--border); padding: 4px 6px calc(4px + var(--safe-b)); justify-content: center; }
+.tb-btn { flex: 1 1 0; max-width: 92px; min-width: 0; display: grid; justify-items: center; align-content: center; gap: 2px; border: 0; background: transparent; color: var(--muted); font-size: .6rem; font-weight: 800; padding: 6px 0; border-radius: 12px; min-height: 52px; cursor: pointer; touch-action: manipulation; }
+.tb-btn svg { width: 24px; height: 24px; }
+.tb-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-btn[aria-pressed="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.tb-right { margin-left: 6px; border-left: 1px solid var(--border); border-radius: 0 12px 12px 0; padding-left: 8px; }
+.page { display: none; }
+.page.on { display: block; }
+.sheet-head { display: none; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+#screen-result { padding-bottom: calc(var(--tb-h) + var(--safe-b) + 16px); }
+@media (max-width: 899px) {
+  #sheet { position: fixed; left: 0; right: 0; bottom: calc(var(--tb-h) + var(--safe-b)); max-height: 40dvh; overflow-y: auto; background: var(--panel); border-top: 2px solid var(--text); border-radius: 18px 18px 0 0; padding: 6px var(--gutter) 16px; z-index: 29; transform: translateY(105%); visibility: hidden; transition: transform .22s ease, visibility .22s; box-shadow: 0 -10px 24px -10px rgba(0,0,0,.35); overscroll-behavior: contain; }
+  #sheet.open { transform: none; visibility: visible; }
+  .sheet-head { display: flex; position: sticky; top: -6px; z-index: 2; background: var(--panel); padding: 6px 0; }
+  body.sheet-open .stage { --maxh: 30dvh; }
+  body.sheet-open .stage[data-size="l"] { --maxh: 36dvh; }
+}
+@media (min-width: 900px) {
+  #sheet { position: sticky; top: 64px; max-height: calc(100dvh - 64px - var(--tb-h) - 24px); overflow-y: auto; padding-right: 4px; }
+  .tb-btn { max-width: 110px; }
+}
+.grp { margin: 0 0 10px; }
+.grp > summary { font-weight: 800; }
+@media (max-width: 899px) { .retake-row .btn-primary { flex: 1 1 140px; min-height: 44px; } .retake-row .btn { min-height: 44px; } .stage-tools { margin-top: 8px; } }

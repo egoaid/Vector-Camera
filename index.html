@@ -44,6 +44,7 @@
 <link rel="stylesheet" href="css/result.css">
 <link rel="stylesheet" href="css/compare.css">
 <link rel="stylesheet" href="css/zoom.css">
+<link rel="stylesheet" href="css/sheet.css">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -238,22 +239,27 @@
         <p class="note" id="edit-hint" hidden data-i18n="result.edit.hint"></p>
       </div>
 
-      <div class="panel-col">
-        <div class="modes" role="tablist" id="modes"></div>
-        <p class="note" id="mode-desc"></p>
-        <div class="field"><span class="label" data-i18n="preset.label">スタイル</span><div class="chips" id="presets" role="group"></div></div>
-        <div class="random-row">
-          <button type="button" class="btn btn-primary" id="btn-random" data-i18n="rnd.go">🎲 ランダム生成</button>
-          <button type="button" class="btn btn-secondary" id="btn-random-undo" disabled data-i18n="rnd.undo">↩ 戻す</button>
-        </div>
-        <details class="advanced" id="sec-random"><summary data-i18n="rnd.opts">ランダム生成の対象</summary><div id="random-opts"></div></details>
-        <div id="controls"></div>
-        <details class="advanced" id="sec-collage" hidden><summary data-i18n="col.title">コラージュ</summary><div id="collage-ctl"></div></details>
-        <details class="advanced" id="sec-lines"><summary data-i18n="ln.title">輪郭線</summary><div id="lines-ctl"></div></details>
-        <details class="advanced" id="sec-text"><summary data-i18n="tx.title">文字（ベクター）</summary><div id="text-ctl"></div></details>
-        <details class="advanced" id="advanced"><summary data-i18n="adv">詳細設定</summary><div id="controls-adv"></div></details>
+      <div class="panel-col" id="sheet" data-page="style">
+        <div class="sheet-head"><strong id="sheet-title"></strong><button type="button" class="btn btn-ghost" id="sheet-close" data-i18n-aria="tb.close" aria-label="閉じる">✕</button></div>
+        <section class="page" data-page="compose" id="sec-collage" hidden><div id="collage-ctl"></div></section>
+        <section class="page" data-page="style">
+          <div class="modes" role="tablist" id="modes"></div>
+          <p class="note" id="mode-desc"></p>
+          <div class="field"><span class="label" data-i18n="preset.label">スタイル</span><div class="chips" id="presets" role="group"></div></div>
+        </section>
+        <section class="page" data-page="adjust"><div id="controls"></div><details class="advanced" id="advanced"><summary data-i18n="adv">詳細設定</summary><div id="controls-adv"></div></details></section>
+        <section class="page" data-page="halftone"><div id="halftone-ctl"></div></section>
+        <section class="page" data-page="lines" id="sec-lines"><div id="lines-ctl"></div></section>
+        <section class="page" data-page="text" id="sec-text"><div id="text-ctl"></div></section>
+        <section class="page" data-page="random" id="sec-random">
+          <div class="random-row">
+            <button type="button" class="btn btn-primary" id="btn-random" data-i18n="rnd.go">🎲 ランダム生成</button>
+            <button type="button" class="btn btn-secondary" id="btn-random-undo" disabled data-i18n="rnd.undo">↩ 戻す</button>
+          </div>
+          <p class="label" data-i18n="rnd.opts">ランダム生成の対象</p><div id="random-opts"></div>
+        </section>
+        <section class="page" data-page="export">
         <div class="export" id="export">
-          <h2 data-i18n="exp.title">書き出し</h2>
           <div class="field"><label for="sel-export-size" data-i18n="exp.size">出力サイズ（長辺）</label>
             <select id="sel-export-size"><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="3072">3072 px</option></select></div>
           <label class="check"><input type="checkbox" id="chk-vecink"><span data-i18n="exp.vecink">写真・粒子のラスター部分もベクターに変換（SVG/PDF・時間がかかります）</span></label>
@@ -274,8 +280,10 @@
           <label class="check" id="share-wrap" hidden><input type="checkbox" id="chk-share"><span data-i18n="exp.share">共有</span></label>
           <p class="note" id="export-note" role="status"></p>
         </div>
+        </section>
       </div>
     </div>
+    <nav id="toolbar" aria-label="編集メニュー"><button type="button" class="tb-btn" data-tool="compose" id="tb-compose" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/></svg><span data-i18n="tb.compose">compose</span></button><button type="button" class="tb-btn" data-tool="style" id="tb-style" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.3"/><circle cx="12" cy="7.5" r="1.3"/><circle cx="16" cy="10" r="1.3"/><path d="M12 21c-2 0-2-2-1-3s0-3 2-3h3"/></svg><span data-i18n="tb.style">style</span></button><button type="button" class="tb-btn" data-tool="adjust" id="tb-adjust" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span data-i18n="tb.adjust">adjust</span></button><button type="button" class="tb-btn" data-tool="halftone" id="tb-halftone" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="1.2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2.8"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2.8"/><circle cx="6" cy="18" r="2.8"/><circle cx="12" cy="18" r="2"/><circle cx="18" cy="12" r="1.2"/></svg><span data-i18n="tb.halftone">halftone</span></button><button type="button" class="tb-btn" data-tool="lines" id="tb-lines" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c4-10 7 6 11-4s5-6 7-8"/></svg><span data-i18n="tb.lines">lines</span></button><button type="button" class="tb-btn" data-tool="text" id="tb-text" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span data-i18n="tb.text">text</span></button><button type="button" class="tb-btn" data-tool="random" id="tb-random" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg><span data-i18n="tb.random">random</span></button><button type="button" class="tb-btn tb-right" data-tool="export" id="tb-export" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"/></svg><span data-i18n="tb.export">export</span></button></nav>
   </section>
 </main>
 
