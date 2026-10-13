@@ -3,6 +3,7 @@
 // is meant to be clipped by VECTOR paths of those regions.
 import { makeScreen, htGain } from './halftone-types.js';
 import { hexToRgb, mulberry32 } from './color-utils.js';
+import { etchMask } from './etching.js';
 
 function hash(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 function vnoise(x, y, cell, s) {
@@ -56,9 +57,16 @@ export function makeInkFactory(src, res, targetLong) {
     const n = Math.max(2, Math.min(8, spec.levels | 0)), ret = spec.retention, grain = spec.grain, rough = spec.roughness;
     const cell = Math.max(2, spec.halftoneSize * (tw / 640)), ang = (spec.halftoneAngle * Math.PI) / 180, ca = Math.cos(ang), sa = Math.sin(ang);
     const htType = spec.halftoneType || 'dot', hopts = spec.halftoneOpts || {}, scr = makeScreen(htType, cell, ang, hopts), gain = htGain(hopts);
-    const blur = spec.halftone && htType !== 'dot' && (hopts.curve == null || hopts.curve > 0) ? (() => { const r = Math.max(2, Math.round(cell * 0.9)); if (!blurMemo.has(r)) blurMemo.set(r, boxBlur(lum, tw, th, r)); return blurMemo.get(r); })() : null; // tone image for form-following lines
+    const etch = spec.halftone && htType === 'etching';
+    const blur = spec.halftone && htType !== 'dot' && !etch && (hopts.curve == null || hopts.curve > 0) ? (() => { const r = Math.max(2, Math.round(cell * 0.9)); if (!blurMemo.has(r)) blurMemo.set(r, boxBlur(lum, tw, th, r)); return blurMemo.get(r); })() : null; // tone image for form-following lines
     const screen = (x, y) => scr(x, y, blur ? blur[y * tw + x] - 0.5 : 0);
     const inkRGB = spec.mode === 'key' ? hexToRgb(spec.color) : null, stops = spec.mode === 'bands' ? spec.ramp.map(hexToRgb) : null, grainScale = Math.max(1, tw / 900);
+    let em = null; // etching: strokes are drawn for the whole region first (they depend on their neighbours), then read per pixel
+    if (etch) {
+      const D = new Float32Array(W * H);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const p = y * W + x; if (dil[p]) D[p] = Math.min(1, Math.max(0, (1 - (lum[(y + y0) * tw + x + x0] - lo) / (hi - lo)) * gain)); }
+      em = etchMask(D, W, H, dil, { cell, angle: ang, layers: hopts.layers, spread: hopts.spread, curve: hopts.curve, sketch: hopts.sketch, len: hopts.len, weight: hopts.weight, seed: 7 });
+    }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const p = y * W + x; if (!dil[p]) continue;
       const gx = x + x0, gy = y + y0, t = Math.max(0, Math.min(1, (lum[gy * tw + gx] - lo) / (hi - lo)));
@@ -67,10 +75,10 @@ export function makeInkFactory(src, res, targetLong) {
         const d = 1 - t, dq = Math.round(d * (n - 1)) / (n - 1); let dd = dq + (d - dq) * ret * 0.7; if (spec.halftone) dd = Math.min(1, dd * gain);
         let s = 0.5 + wn * (grain * 0.3 + ret * 0.1) + ln * rough * 0.4;
         if (spec.halftone) s = htType === 'dot' ? s * 0.35 + screen(gx, gy) * 0.65 : s * 0.12 + screen(gx, gy) * 0.88;
-        const a = smooth(s - 0.04, s + 0.04, dd);
+        const a = em ? em[p] : smooth(s - 0.04, s + 0.04, dd);
         out[o] = inkRGB[0]; out[o + 1] = inkRGB[1]; out[o + 2] = inkRGB[2]; out[o + 3] = Math.round(a * 255);
       } else {
-        let tt = t + wn * grain * 0.28 + ln * rough * 0.2; if (spec.halftone) tt += (screen(gx, gy) - 0.5) * 0.45;
+        let tt = t + wn * grain * 0.28 + ln * rough * 0.2; if (em) tt -= em[p] * 0.4; else if (spec.halftone) tt += (screen(gx, gy) - 0.5) * 0.45;
         tt = Math.max(0, Math.min(0.9999, tt));
         const q = (Math.floor(tt * n) + 0.5) / n, v = q + (t - q) * ret * 0.75, c = rampColor(stops, v);
         out[o] = c[0]; out[o + 1] = c[1]; out[o + 2] = c[2]; out[o + 3] = 255;

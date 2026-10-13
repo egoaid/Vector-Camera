@@ -50,7 +50,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
   }
   if (opts.texture) {
     Object.assign(patch, { separation: range(r, 2, 5), retention: range(r, 20, 80), grain: range(r, 5, 55), roughness: range(r, 0, 45), misreg: range(r, 0, 60), paper: range(r, 10, 60) });
-    const ht = r() < 0.45; patch.halftone = ht ? 1 : 0; if (ht) Object.assign(patch, { halftoneType: pick(r, ['dot', 'dot', 'line', 'cross', 'engrave']), halftoneSize: range(r, 4, 10), halftoneAngle: pick(r, [15, 45, 75, range(r, 0, 90)]) });
+    const ht = r() < 0.45; patch.halftone = ht ? 1 : 0; if (ht) Object.assign(patch, { halftoneType: pick(r, ['dot', 'dot', 'line', 'cross', 'engrave', 'etching']), halftoneSize: range(r, 4, 10), halftoneAngle: pick(r, [15, 45, 75, range(r, 0, 90)]) });
   }
   if (opts.background) patch.bgTreatment = pick(r, ['flat', 'flat', 'photo', 'paper']);
   if (opts.subject) patch.subjectSize = range(r, 14, 52);

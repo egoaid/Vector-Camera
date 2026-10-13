@@ -26,7 +26,7 @@ export const EN = {
   'p.off': 'Off', 'p.on': 'On', 'sil.bg': 'Background', 'sil.mid': 'Middle', 'sil.fg': 'Subject', 'sil.sample': 'Sample colours from photo', 'p.seal': 'Seam sealing', 'adv': 'Advanced',
   'exp.title': 'Export', 'exp.size': 'Output size (long edge)', 'exp.svg': 'SVG', 'exp.pdf': 'Vector PDF', 'exp.png': 'PNG', 'exp.jpeg': 'JPEG', 'exp.share': 'Share', 'exp.working': 'Exporting…', 'exp.done': 'Saved: {name}',
   'exp.note.vector': 'SVG and PDF are pure vector (paths and fills).', 'exp.note.hybrid': 'SVG and PDF contain vector shapes plus embedded raster images (the photo parts are raster). PNG / JPEG are flattened images.',
-  'about.title': 'About', 'about.close': 'Close', 'about.version': 'Version', 'about.modules': 'Module versions', 'about.models': 'Models', 'about.clear': 'Clear cache and reload', 'about.clear.done': 'Cache cleared.', 'about.licenses': 'Licences', 'about.privacy': 'Images are processed on your device and never sent to a server.',
+  'about.title': 'About', 'about.close': 'Close', 'about.version': 'Version', 'about.clear': 'Clear cache and reload', 'about.clear.done': 'Cache cleared.', 'about.thirdparty': 'Optional subject-detection model (image segmentation only; loaded at runtime, not bundled): Transformers.js (Apache-2.0), ONNX Runtime Web (MIT), SegFormer-B0 ADE20K weights (NVIDIA licence: research / evaluation use). Bundled fonts follow their own licences (fonts/LICENSES.txt).', 'about.licenses': 'Licences', 'about.privacy': 'Images are processed on your device and never sent to a server.',
   'toast.update': 'A new version is available. Reload to update.', 'toast.offline': 'Already-loaded features keep working offline.', 'lang.toggle': '日本語',
   'sw.reload': 'Reload',
 };

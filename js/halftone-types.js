@@ -1,4 +1,4 @@
-// halftone-types.js - threshold fields for the screen types: dot, line, cross-hatch (pen drawing) and engraving (banknote).
+// halftone-types.js - threshold fields for the screen types: dot, line, cross-hatch (pen drawing), engraving (banknote) and etching (hand-drawn, see etching.js).
 // Every type returns s in [0,1]; ink is laid down where the darkness `d` exceeds s, so darker tones thicken lines /
 // add hatch layers / swell dots. Pure math (no DOM), shared by the photo ink renderer and the text effects.
 //
@@ -11,10 +11,11 @@
 //   wave     engrave: amplitude of the swelling waves
 //   waveLen  engrave: wave length
 //   guilloche engrave: amount of interlaced lace (guilloche) curves
-export const HT_TYPES = ['dot', 'line', 'cross', 'engrave'];
-export const HT_DEFAULTS = { htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40 };
+//   len      etching: stroke length (the real etching ink is drawn by etching.js; here it is only a threshold approximation for text)
+export const HT_TYPES = ['dot', 'line', 'cross', 'engrave', 'etching'];
+export const HT_DEFAULTS = { htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50 };
 /** Extracts the halftone detail options from a params object. */
-export const htOptsFrom = (p) => ({ weight: p.htWeight ?? 50, layers: p.htLayers ?? 3, spread: p.htSpread ?? 60, curve: p.htCurve ?? 40, sketch: p.htSketch ?? 40, wave: p.htWave ?? 50, waveLen: p.htWaveLen ?? 50, guilloche: p.htGuilloche ?? 40 });
+export const htOptsFrom = (p) => ({ weight: p.htWeight ?? 50, layers: p.htLayers ?? 3, spread: p.htSpread ?? 60, curve: p.htCurve ?? 40, sketch: p.htSketch ?? 40, wave: p.htWave ?? 50, waveLen: p.htWaveLen ?? 50, guilloche: p.htGuilloche ?? 40, len: p.htLen ?? 50 });
 /** Darkness gain from the weight slider (50 = x1). */
 export const htGain = (opts) => 0.45 + ((opts && opts.weight != null ? opts.weight : 50) / 100) * 1.1;
 
@@ -25,7 +26,7 @@ const TAU = Math.PI * 2;
 
 /** Builds a fast screen function f(x, y, warp = 0) -> threshold in [0,1]. `warp` = (smoothed tone - 0.5), lets lines follow the form. */
 export function makeScreen(type, cell, angleRad, opts = {}) {
-  const o = { ...HT_DEFAULTS, weight: 50, layers: 3, spread: 60, curve: 40, sketch: 40, wave: 50, waveLen: 50, guilloche: 40, ...opts };
+  const o = { ...HT_DEFAULTS, weight: 50, layers: 3, spread: 60, curve: 40, sketch: 40, wave: 50, waveLen: 50, guilloche: 40, len: 50, ...opts };
   const dirs = (a) => [Math.cos(a), Math.sin(a)];
   const [ca, sa] = dirs(angleRad), curve = (o.curve / 100) * 2.2;
   if (type === 'line') return (x, y, w = 0) => tri((x * ca + y * sa) / cell + w * curve);
@@ -40,6 +41,7 @@ export function makeScreen(type, cell, angleRad, opts = {}) {
       return s;
     };
   }
+  if (type === 'etching') return makeScreen('cross', cell, angleRad, { ...opts, layers: 3, sketch: Math.max(70, opts.sketch ?? 0), curve: Math.min(30, opts.curve ?? 30) });
   if (type === 'engrave') {
     const amp = 0.15 + (o.wave / 100) * 0.95, len = cell * (6 + (o.waveLen / 100) * 18), g = o.guilloche / 100, [cc, cs] = dirs(angleRad + Math.PI / 2), gl = cell * 22;
     return (x, y, w = 0) => {

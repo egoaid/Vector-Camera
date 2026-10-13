@@ -26,7 +26,7 @@ export const JA = {
   'p.off': 'オフ', 'p.on': 'オン', 'sil.bg': '背景', 'sil.mid': '中景', 'sil.fg': '被写体', 'sil.sample': '写真から色を取る', 'p.seal': '継ぎ目の隙間対策', 'adv': '詳細設定',
   'exp.title': '書き出し', 'exp.size': '出力サイズ（長辺）', 'exp.svg': 'SVG', 'exp.pdf': 'ベクターPDF', 'exp.png': 'PNG', 'exp.jpeg': 'JPEG', 'exp.share': '共有', 'exp.working': '書き出し中…', 'exp.done': '保存しました：{name}',
   'exp.note.vector': 'SVG・PDFは純粋なベクター（パスと塗り）です。', 'exp.note.hybrid': 'SVG・PDFはベクターの形状＋埋め込みラスター画像です（写真部分はラスター）。PNG/JPEGは完成画像です。',
-  'about.title': 'バージョン情報', 'about.close': '閉じる', 'about.version': 'バージョン', 'about.modules': 'モジュール別バージョン', 'about.models': 'モデル', 'about.clear': 'キャッシュを削除して再読み込み', 'about.clear.done': 'キャッシュを削除しました。', 'about.licenses': 'ライセンス', 'about.privacy': '画像は端末内で処理され、サーバーへ送信されません。',
+  'about.title': 'バージョン情報', 'about.close': '閉じる', 'about.version': 'バージョン', 'about.clear': 'キャッシュを削除して再読み込み', 'about.clear.done': 'キャッシュを削除しました。', 'about.thirdparty': '任意の被写体判別モデル（画像の領域分割のみ・実行時に取得し本体には同梱しません）: Transformers.js（Apache-2.0）、ONNX Runtime Web（MIT）、SegFormer-B0 ADE20K重み（NVIDIAライセンス：研究・評価用途）。同梱フォントは各ライセンス（fonts/LICENSES.txt）に従います。', 'about.licenses': 'ライセンス', 'about.privacy': '画像は端末内で処理され、サーバーへ送信されません。',
   'toast.update': '新しいバージョンがあります。再読み込みで更新されます。', 'toast.offline': 'オフラインでも、読み込み済みの機能は使えます。', 'lang.toggle': 'English',
   'sw.reload': '再読み込み',
 };

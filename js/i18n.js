@@ -3,7 +3,9 @@ import { JA } from './i18n-ja.js';
 import { EN } from './i18n-en.js';
 import { JA2 } from './i18n-ja-v2.js';
 import { EN2 } from './i18n-en-v2.js';
-const DICT = { ja: { ...JA, ...JA2 }, en: { ...EN, ...EN2 } };
+import { MANUAL_JA } from './i18n-manual-ja.js';
+import { MANUAL_EN } from './i18n-manual-en.js';
+const DICT = { ja: { ...JA, ...JA2, ...MANUAL_JA }, en: { ...EN, ...EN2, ...MANUAL_EN } };
 let lang = 'ja';
 export const getLang = () => lang;
 export function detectLang() {
@@ -17,6 +19,7 @@ export function t(key, vars) {
 }
 export function applyDom(root = document) {
   root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  root.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); }); // trusted dictionary strings only
   root.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
   root.querySelectorAll('[data-i18n-title]').forEach((el) => el.setAttribute('title', t(el.dataset.i18nTitle)));
   document.documentElement.lang = lang;

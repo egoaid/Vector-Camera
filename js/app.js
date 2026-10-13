@@ -191,14 +191,16 @@ async function setMode(mode) {
   if (state.params.preset === 'custom' && mode !== 'silhouette') state.params.preset = list[0];
   Object.assign(state.params, presetDefaults(mode, state.params.preset)); saveSettings(); buildUI(); refresh();
 }
-function setEdit(on) { editing = on; $('btn-edit').setAttribute('aria-pressed', String(on)); $('stage').classList.toggle('editing', on); $('edit-hint').hidden = !on; $('btn-edit-reset').hidden = !on && !state.overrides.length; }
+let hintTimer = 0;
+const hideHint = () => { clearTimeout(hintTimer); $('edit-hint').hidden = true; };
+function setEdit(on) { editing = on; $('btn-edit').setAttribute('aria-pressed', String(on)); $('stage').classList.toggle('editing', on); if (on) { $('edit-hint').hidden = false; clearTimeout(hintTimer); hintTimer = setTimeout(hideHint, 6000); } else hideHint(); $('btn-edit-reset').hidden = !on && !state.overrides.length; }
 function onStageClick(ev) {
   if (!editing || !state.result || compare.isOn() || zoom.swallowClick() || ev.target.closest('.zoom-bar')) return;
   const cv = $('cv-result'), box = cv.getBoundingClientRect(), r = state.result, sc = Math.min(box.width / r.w, box.height / r.h), cw = r.w * sc, ch = r.h * sc;
   const rc = { left: box.left + (box.width - cw) / 2, top: box.top + (box.height - ch) / 2, width: cw, height: ch };
   const x = Math.floor(((ev.clientX - rc.left) / rc.width) * r.w), y = Math.floor(((ev.clientY - rc.top) / rc.height) * r.h);
   if (x < 0 || y < 0 || x >= r.w || y >= r.h) return;
-  const cur = state.groups[r.labels[y * r.w + x]]; trackDiscrete(); state.overrides.push({ x, y, g: (cur + 1) % 3 }); $('btn-edit-reset').hidden = false; base = snapshot(); redraw();
+  const cur = state.groups[r.labels[y * r.w + x]]; trackDiscrete(); hideHint(); state.overrides.push({ x, y, g: (cur + 1) % 3 }); $('btn-edit-reset').hidden = false; base = snapshot(); redraw();
 }
 async function getExportScene(kind) {
   const lite = /-lite$/.test(kind); if (lite) kind = kind.replace('-lite', '');
@@ -253,7 +255,7 @@ function trackChange() {
 }
 function trackDiscrete() { undoH.push(snapshot()); redoH.clear(); lastT = 0; syncUndo(); } // call BEFORE the change
 function resetHistory() { undoH.clear(); redoH.clear(); lastT = 0; base = snapshot(); syncUndo(); }
-function syncUndo() { $('sheet-undo').disabled = !undoH.size; $('sheet-redo').disabled = !redoH.size; $('btn-random-undo').disabled = !undoH.size; }
+function syncUndo() { $('sheet-undo').disabled = !undoH.size; $('sheet-redo').disabled = !redoH.size; }
 async function stepHistory(from, to) {
   const snap = from.pop(); if (!snap) return;
   to.push(snapshot()); state.params = snap.params; state.overrides = snap.overrides; lastT = 0;
@@ -279,12 +281,12 @@ function init() {
   $('btn-retake').addEventListener('click', () => openCamera('single'));
   $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
   $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, !!state.collage); } finally { state.collageBusy = false; } } });
-  $('btn-random').addEventListener('click', doRandom); $('btn-random-undo').addEventListener('click', undo); $('sheet-undo').addEventListener('click', undo); $('sheet-redo').addEventListener('click', redo);
+  $('btn-random').addEventListener('click', doRandom); $('sheet-undo').addEventListener('click', undo); $('sheet-redo').addEventListener('click', redo);
   ensureFonts(state.params);
   $('btn-rerun').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); analyze(); });
   $('btn-edit').addEventListener('click', () => setEdit(!editing));
   $('btn-edit-reset').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });
-  $('stage').addEventListener('click', onStageClick);
+  $('stage').addEventListener('click', onStageClick); $('toolbar').addEventListener('click', hideHint);
   $('btn-proc-cancel').addEventListener('click', () => { cancelled = true; state.seq++; client.cancel(); cancelAI(); pipeStale = !!state.work; hideProcessing(); toast(t('proc.cancelled')); showScreen(state.result ? 'result' : 'start'); });
   $('chk-wake').addEventListener('change', (e) => setWake(e.target.checked));
   wake.init(); wake.onChange(updateWakeUI); setWake(state.params.wakeLock);

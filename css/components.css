@@ -39,10 +39,8 @@ dialog::backdrop { background: rgba(8, 6, 10, .75); }
 .dlg { padding: 18px 20px; }
 .dlg h2 { margin-top: 0; }
 .dlg-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin-top: 16px; }
-.toast { position: fixed; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); z-index: 60; background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 999px; font-weight: 700; max-width: calc(100% - 24px); box-shadow: 4px 4px 0 var(--accent); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); z-index: 60; background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 22px; font-weight: 700; width: max-content; max-width: calc(100% - 24px); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; text-align: center; box-shadow: 4px 4px 0 var(--accent); }
 .feature-list, .steps { padding-left: 1.3em; } .feature-list li, .steps li { margin-bottom: .5em; }
-.about-table { width: 100%; border-collapse: collapse; font-size: .85rem; } .about-table td { padding: 3px 6px; border-bottom: 1px solid var(--border); } .about-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-.en-summary { margin-top: 1.5em; color: var(--muted); }
 /* v0.2 additions */
 .random-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
 .random-row .btn-primary { flex: 1 1 180px; min-height: 52px; font-size: 1.05rem; }
@@ -51,3 +49,5 @@ textarea { width: 100%; padding: 10px 12px; border-radius: var(--radius-s); back
 .cta { flex-wrap: wrap; }
 .poster select { margin-bottom: 8px; }
 .btn-accent { background: #fff; border-color: var(--ink); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.toast .btn { background: var(--bg); color: var(--text); border-color: var(--bg); box-shadow: none; }
+#about-body h3 { font-size: .95rem; margin: 1em 0 .3em; }

@@ -142,38 +142,34 @@
     </div>
 
     <div class="content" id="about-content">
-      <h2>Vector Cameraとは</h2>
-      <p>Vector Cameraは、写真を<strong>ベクターイラスト</strong>や<strong>シルクスクリーン（版画）風のアート</strong>に変換する無料のWebアプリです。カメラで撮影するか、手持ちの画像を選ぶだけ。画像は端末内で処理され、サーバーには送信されません。</p>
-      <h2>4つの変換モード</h2>
+      <h2 data-i18n-html="m.h1">Vector Cameraとは</h2>
+      <p data-i18n-html="m.p1">Vector Cameraは、写真を<strong>ベクターイラスト</strong>や<strong>シルクスクリーン（版画）風のアート</strong>に変換する無料のWebアプリです。カメラで撮影するか、手持ちの画像を選ぶだけ。画像は端末内で処理され、サーバーには送信されません。</p>
+      <h2 data-i18n-html="m.h2">4つの変換モード</h2>
       <ul class="feature-list">
-        <li><strong>ベクター</strong>：写真の色を保ったまま、輪郭に沿った領域に分割。SVG・ベクターPDFとして書き出せます。</li>
-        <li><strong>シルエット</strong>：被写体・中景・背景を単色の形に。構図と輪郭を強調したグラフィックに。</li>
-        <li><strong>カラー領域</strong>：色数を絞って大きな色面にまとめた、ポスター風の仕上がり。</li>
-        <li><strong>シルクスクリーン</strong>：ベクターの形状の中に、ハーフトーンやグレインで加工した写真を重ねる、ポップアート／レトロな版画風。</li>
+        <li data-i18n-html="m.l1"><strong>ベクター</strong>：写真の色を保ったまま、輪郭に沿った領域に分割。SVG・ベクターPDFとして書き出せます。</li>
+        <li data-i18n-html="m.l2"><strong>シルエット</strong>：被写体・中景・背景を単色の形に。構図と輪郭を強調したグラフィックに。</li>
+        <li data-i18n-html="m.l3"><strong>カラー領域</strong>：色数を絞って大きな色面にまとめた、ポスター風の仕上がり。</li>
+        <li data-i18n-html="m.l4"><strong>シルクスクリーン</strong>：ベクターの形状の中に、ハーフトーンやグレインで加工した写真を重ねる、ポップアート／レトロな版画風。</li>
       </ul>
-      <h2>使い方</h2>
+      <h2 data-i18n-html="m.h3">使い方</h2>
       <ol class="steps">
-        <li>「カメラで撮る」または「画像を選ぶ」をタップ。</li>
-        <li>自動で領域が分割されます。モードとスタイル、スライダーで好みの見た目に調整。</li>
-        <li>SVG・ベクターPDF・PNG・JPEGで書き出し。</li>
+        <li data-i18n-html="m.s1">「カメラで撮る」または「画像を選ぶ」をタップ。</li>
+        <li data-i18n-html="m.s2">自動で領域が分割されます。モードとスタイル、スライダーで好みの見た目に調整。</li>
+        <li data-i18n-html="m.s3">SVG・ベクターPDF・PNG・JPEGで書き出し。</li>
       </ol>
-      <h2>特長</h2>
+      <h2 data-i18n-html="m.h4">特長</h2>
       <ul class="feature-list">
-        <li>隣り合う領域は同じ境界線を共有するため、スキマや重なりのない綺麗なベクターになります。</li>
-        <li>スライダー操作では重い解析をやり直さず、必要な段階だけを再計算します。</li>
-        <li>使用中は画面が自動スリープしないよう、Screen Wake Lock APIで抑制します（対応ブラウザ）。</li>
-        <li>インストール不要。ホーム画面に追加すればアプリのように使えます。</li>
+        <li data-i18n-html="m.f1">隣り合う領域は同じ境界線を共有するため、スキマや重なりのない綺麗なベクターになります。</li>
+        <li data-i18n-html="m.f2">スライダー操作では重い解析をやり直さず、必要な段階だけを再計算します。</li>
+        <li data-i18n-html="m.f3">使用中は画面が自動スリープしないよう、Screen Wake Lock APIで抑制します（対応ブラウザ）。</li>
+        <li data-i18n-html="m.f4">インストール不要。ホーム画面に追加すればアプリのように使えます。</li>
       </ul>
-      <h2>プライバシー</h2>
-      <p>撮影・選択した画像は端末のブラウザ内でのみ処理されます。アカウント登録、広告、解析用の送信はありません。任意の「被写体判別つき」を選んだ場合に限り、初回に領域分割モデルとランタイムをダウンロードします（画像は送信されません）。</p>
-      <h2>よくある質問</h2>
-      <details><summary>書き出したSVG・PDFは本当にベクターですか？</summary><p>ベクター／シルエット／カラー領域モードは、パスと塗りだけの純粋なベクターです。シルクスクリーンモードは、初期設定ではベクターの形状に加工した写真（ラスター）を重ねる構成で、写真部分はラスターです。書き出し欄の「ラスター部分もベクター化する」をオンにすると、粒子やインクの部分もパスに変換され、完全なベクターのSVG・PDFにできます（時間がかかります）。完成画像はPNG・JPEGでも保存できます。</p></details>
-      <details><summary>iPhoneでも使えますか？</summary><p>はい。iPhone（Safari）とAndroid（Chrome）を主な対象にしています。重い場合は「解析サイズ」を「軽量」にし、書き出しは「軽量PNG／JPEG」を使ってください。</p></details>
-      <details><summary>オフラインで使えますか？</summary><p>一度読み込んだ後は、標準エンジンはオフラインでも動作します。被写体判別つきは初回のダウンロードが必要です。</p></details>
-      <section lang="en" class="en-summary">
-        <h2>About (English)</h2>
-        <p>Vector Camera is a free, privacy-first web app that converts photos into editable vector art (SVG and true vector PDF) and screen-print style hybrid artwork. All processing happens in your browser; images are never uploaded. Works on iPhone Safari, Android Chrome and desktop.</p>
-      </section>
+      <h2 data-i18n-html="m.h5">プライバシー</h2>
+      <p data-i18n-html="m.p2">撮影・選択した画像は端末のブラウザ内でのみ処理されます。アカウント登録、広告、解析用の送信はありません。任意の「被写体判別つき」を選んだ場合に限り、初回に領域分割モデルとランタイムをダウンロードします（画像は送信されません）。</p>
+      <h2 data-i18n-html="m.h6">よくある質問</h2>
+      <details><summary data-i18n-html="m.q1">書き出したSVG・PDFは本当にベクターですか？</summary><p data-i18n-html="m.a1">ベクター／シルエット／カラー領域モードは、パスと塗りだけの純粋なベクターです。シルクスクリーンモードは、初期設定ではベクターの形状に加工した写真（ラスター）を重ねる構成で、写真部分はラスターです。書き出し欄の「ラスター部分もベクター化する」をオンにすると、粒子やインクの部分もパスに変換され、完全なベクターのSVG・PDFにできます（時間がかかります）。完成画像はPNG・JPEGでも保存できます。</p></details>
+      <details><summary data-i18n-html="m.q2">iPhoneでも使えますか？</summary><p data-i18n-html="m.a2">はい。iPhone（Safari）とAndroid（Chrome）を主な対象にしています。重い場合は「解析サイズ」を「軽量」にし、書き出しは「軽量PNG／JPEG」を使ってください。</p></details>
+      <details><summary data-i18n-html="m.q3">オフラインで使えますか？</summary><p data-i18n-html="m.a3">一度読み込んだ後は、標準エンジンはオフラインでも動作します。被写体判別つきは初回のダウンロードが必要です。</p></details>
       <p class="copyright">© 2026 egoaid. All rights reserved.</p>
     </div>
   </section>
@@ -258,7 +254,6 @@
         <section class="page" data-page="random" id="sec-random">
           <div class="random-row">
             <button type="button" class="btn btn-primary" id="btn-random" data-i18n="rnd.go">🎲 ランダム生成</button>
-            <button type="button" class="btn btn-secondary" id="btn-random-undo" disabled data-i18n="rnd.undo">↩ 戻す</button>
           </div>
           <p class="label" data-i18n="rnd.opts">ランダム生成の対象</p><div id="random-opts"></div>
         </section>
