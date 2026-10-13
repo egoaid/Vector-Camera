@@ -9,6 +9,7 @@ export const EN2 = {
   'tb.random': 'Random',
   'tb.export': 'Export',
   'tb.close': 'Close',
+  'tb.more': 'Menu', 'hist.undo': 'Undo', 'hist.redo': 'Redo',
   'grp.shape': 'Shape & detail',
   'grp.subject': 'Subject',
   'grp.tone': 'Colour & texture',

@@ -92,5 +92,6 @@ export class History {
   constructor(max = 30) { this.max = max; this.stack = []; }
   push(snap) { this.stack.push(JSON.parse(JSON.stringify(snap))); if (this.stack.length > this.max) this.stack.shift(); }
   pop() { return this.stack.pop() || null; }
+  clear() { this.stack.length = 0; }
   get size() { return this.stack.length; }
 }

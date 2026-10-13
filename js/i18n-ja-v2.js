@@ -9,6 +9,7 @@ export const JA2 = {
   'tb.random': 'ランダム',
   'tb.export': '書き出し',
   'tb.close': '閉じる',
+  'tb.more': 'メニュー', 'hist.undo': '元に戻す', 'hist.redo': 'やり直す',
   'grp.shape': '形・分割（詳細度など）',
   'grp.subject': '被写体',
   'grp.tone': '色・質感（段数・粒状感など）',

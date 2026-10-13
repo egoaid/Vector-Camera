@@ -24,6 +24,7 @@ import { initCompare } from './ui-compare.js';
 import { initZoom } from './ui-zoom.js';
 import { initStageFrame } from './ui-stage.js';
 import { initSheet } from './ui-sheet.js';
+import { initLayout } from './ui-layout.js';
 import { initTextHandles } from './ui-textbox.js';
 import { initExport, updateExportNote } from './ui-export.js';
 import { initAbout } from './ui-about.js';
@@ -33,7 +34,8 @@ import { PRESETS, getPreset } from './style-palette.js';
 
 const $ = (id) => document.getElementById(id);
 const STAGE_KEY = { segment: 'proc.segment', merge: 'proc.merge', regions: 'proc.regions', vectorize: 'proc.vectorize', done: 'proc.done' };
-const history = new History();
+const undoH = new History(60), redoH = new History(60);
+let base = null, lastT = 0;
 let client, compare, zoom, handles, lastKey = '', pipeStale = false, inkCache = null, debounce = 0, editing = false, aiConsent = false, cancelled = false;
 
 /* ---------- processing helpers ---------- */
@@ -49,7 +51,7 @@ async function startWithSource(fileOrCanvas) {
   showProcessing('proc.prepare', 0.03); await yieldUI();
   try {
     const { source, canvas } = await loadSource(fileOrCanvas);
-    state.source = source; state.canvas = canvas; state.overrides = []; editing = false; state.collage = null;
+    state.source = source; state.canvas = canvas; state.overrides = []; editing = false; state.collage = null; resetHistory();
     await analyze();
   } catch (e) { console.error(e); hideProcessing(); showScreen('start'); showError('start-error', t(/memory|alloc/i.test(String(e && e.message)) ? 'err.memory' : 'err.load')); }
 }
@@ -114,7 +116,7 @@ async function addCollageFiles(files, append = true) {
       const { source, canvas } = await loadSource(list[i]); const cell = { source, canvas }; await processCell(cell); if (cancelled || mySeq !== state.seq) return; cells.push(cell);
     }
   } catch (e) { console.error(e); hideProcessing(); toast(t('err.load')); if (!cells.length) showScreen('start'); return; }
-  state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false;
+  state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false; resetHistory();
   if (state.params.mode === 'vector' || state.params.mode === 'silhouette') { /* all modes work per piece */ }
   hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw();
 }
@@ -170,9 +172,10 @@ function updateBadges() { $('badges').replaceChildren(); } // the info chips wer
 function buildUI() {
   buildControls(onControl, setMode); buildExtras(onControl, { shuffle: () => { state.params.collageSeed = (Math.random() * 1e6) | 0; saveSettings(); redraw(); }, add: () => $('file-collage').click(), addCam: () => openCamera('multi', true) });
   const single = !state.collage; $('btn-edit').hidden = !single || !['silhouette', 'hybrid'].includes(state.params.mode); if ($('btn-edit').hidden) setEdit(false);
-  $('btn-compare').hidden = !single; if (!single) compare.off(); $('btn-rerun').hidden = !single; $('btn-edit-reset').hidden = !single || !state.overrides.length; $('btn-random-undo').disabled = !history.size;
+  $('btn-compare').hidden = !single; if (!single) compare.off(); $('btn-rerun').hidden = !single; $('btn-edit-reset').hidden = !single || !state.overrides.length; base = snapshot(); syncUndo();
 }
 async function onControl(key, value) {
+  trackChange();
   if (key === 'textFont') await ensureFonts(state.params);
   if (key === 'preset') { state.params.preset = value; if (state.collage && state.params.collageVary) { state.params.collageVary = false; toast(t('col.bulk')); } if (state.params.mode === 'hybrid' || state.params.mode === 'regions') Object.assign(state.params, presetDefaults(state.params.mode, value)); buildUI(); saveSettings(); }
   clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130);
@@ -182,6 +185,7 @@ async function refresh() {
   try { if (state.collage) { if (!(await reprocessCollage(mySeq))) return; } else { await runPipeline(); } if (mySeq !== state.seq) return; redraw(); } catch (e) { console.error(e); toast(t('err.generic')); } finally { $('stage').style.opacity = ''; }
 }
 async function setMode(mode) {
+  trackDiscrete();
   applyModeDefaults(mode); const list = MODE_PRESETS[mode];
   if (!list.includes(state.params.preset) && state.params.preset !== 'custom' && !(state.params.preset === 'random' && state.params.customPreset)) state.params.preset = list[0];
   if (state.params.preset === 'custom' && mode !== 'silhouette') state.params.preset = list[0];
@@ -194,7 +198,7 @@ function onStageClick(ev) {
   const rc = { left: box.left + (box.width - cw) / 2, top: box.top + (box.height - ch) / 2, width: cw, height: ch };
   const x = Math.floor(((ev.clientX - rc.left) / rc.width) * r.w), y = Math.floor(((ev.clientY - rc.top) / rc.height) * r.h);
   if (x < 0 || y < 0 || x >= r.w || y >= r.h) return;
-  const cur = state.groups[r.labels[y * r.w + x]]; state.overrides.push({ x, y, g: (cur + 1) % 3 }); $('btn-edit-reset').hidden = false; redraw();
+  const cur = state.groups[r.labels[y * r.w + x]]; trackDiscrete(); state.overrides.push({ x, y, g: (cur + 1) % 3 }); $('btn-edit-reset').hidden = false; base = snapshot(); redraw();
 }
 async function getExportScene(kind) {
   const lite = /-lite$/.test(kind); if (lite) kind = kind.replace('-lite', '');
@@ -231,7 +235,7 @@ const openCamera = (mode = 'single', append = false) => camUI.open(mode, append)
 const snapshot = () => ({ params: JSON.parse(JSON.stringify(state.params)), overrides: state.overrides.slice() });
 async function doRandom() {
   if (!state.result) return;
-  history.push(snapshot());
+  trackDiscrete();
   const o = state.params.rndOpts, solo = !state.collage; if (solo) computeGroups();
   const seed = (Math.random() * 4294967296) >>> 0;
   const out = randomize(seed, { ...o }, state.params, solo ? state.result : null, solo ? state.groups : null, { collage: !!state.collage });
@@ -240,10 +244,22 @@ async function doRandom() {
   await ensureFonts({ ...state.params, ...out.params });
   saveSettings(); buildUI(); await refresh();
 }
-async function undoRandom() {
-  const snap = history.pop(); if (!snap) return;
-  state.params = snap.params; state.overrides = snap.overrides; await ensureFonts(state.params); saveSettings(); buildUI(); await refresh();
+/* ---------- undo / redo (edit sheet header) ----------
+   `base` is the state before the current edit gesture; a pause of 600 ms starts a new undo step, so a slider drag is one step. */
+function trackChange() {
+  const now = performance.now();
+  if (base && now - lastT > 600) { undoH.push(base); redoH.clear(); }
+  lastT = now; base = snapshot(); syncUndo();
 }
+function trackDiscrete() { undoH.push(snapshot()); redoH.clear(); lastT = 0; syncUndo(); } // call BEFORE the change
+function resetHistory() { undoH.clear(); redoH.clear(); lastT = 0; base = snapshot(); syncUndo(); }
+function syncUndo() { $('sheet-undo').disabled = !undoH.size; $('sheet-redo').disabled = !redoH.size; $('btn-random-undo').disabled = !undoH.size; }
+async function stepHistory(from, to) {
+  const snap = from.pop(); if (!snap) return;
+  to.push(snapshot()); state.params = snap.params; state.overrides = snap.overrides; lastT = 0;
+  await ensureFonts(state.params); saveSettings(); buildUI(); await refresh();
+}
+const undo = () => stepHistory(undoH, redoH), redo = () => stepHistory(redoH, undoH);
 
 /* ---------- init ---------- */
 function init() {
@@ -253,7 +269,7 @@ function init() {
   $('btn-lang').addEventListener('click', () => setLang(getLang() === 'ja' ? 'en' : 'ja'));
   $('sel-engine').addEventListener('change', (e) => { state.params.engine = e.target.value; note(); saveSettings(); });
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });
-  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); initSheet(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
+  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); initSheet(); initLayout(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
   camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => showScreen(state.result ? 'result' : 'start'), toast });
   $('btn-camera').addEventListener('click', () => openCamera('single'));
   $('btn-collage-cam').addEventListener('click', () => { state.collage = null; openCamera('multi', false); });
@@ -263,11 +279,11 @@ function init() {
   $('btn-retake').addEventListener('click', () => openCamera('single'));
   $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
   $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, !!state.collage); } finally { state.collageBusy = false; } } });
-  $('btn-random').addEventListener('click', doRandom); $('btn-random-undo').addEventListener('click', undoRandom);
+  $('btn-random').addEventListener('click', doRandom); $('btn-random-undo').addEventListener('click', undo); $('sheet-undo').addEventListener('click', undo); $('sheet-redo').addEventListener('click', redo);
   ensureFonts(state.params);
-  $('btn-rerun').addEventListener('click', () => { state.overrides = []; analyze(); });
+  $('btn-rerun').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); analyze(); });
   $('btn-edit').addEventListener('click', () => setEdit(!editing));
-  $('btn-edit-reset').addEventListener('click', () => { state.overrides = []; setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });
+  $('btn-edit-reset').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });
   $('stage').addEventListener('click', onStageClick);
   $('btn-proc-cancel').addEventListener('click', () => { cancelled = true; state.seq++; client.cancel(); cancelAI(); pipeStale = !!state.work; hideProcessing(); toast(t('proc.cancelled')); showScreen(state.result ? 'result' : 'start'); });
   $('chk-wake').addEventListener('change', (e) => setWake(e.target.checked));

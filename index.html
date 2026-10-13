@@ -45,6 +45,7 @@
 <link rel="stylesheet" href="css/compare.css">
 <link rel="stylesheet" href="css/zoom.css">
 <link rel="stylesheet" href="css/sheet.css">
+<link rel="stylesheet" href="css/phone.css">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -93,6 +94,7 @@
 <header class="topbar">
   <a class="brand" href="./" aria-label="Vector Camera"><span class="brand-dot" aria-hidden="true"></span><span class="brand-name">Vector Camera</span></a>
   <div class="topbar-actions">
+    <button type="button" class="btn btn-ghost" id="btn-more" aria-haspopup="true" aria-expanded="false" data-i18n-aria="tb.more" aria-label="メニュー">⋯</button>
     <button type="button" class="btn btn-ghost" id="btn-lang" data-i18n="lang.toggle">English</button>
     <button type="button" class="btn btn-ghost" id="btn-about" data-i18n-aria="about.title" aria-label="バージョン情報">ⓘ</button>
   </div>
@@ -210,7 +212,7 @@
   <!-- RESULT -->
   <section id="screen-result" class="screen" aria-label="Result" hidden>
     <div class="result-layout">
-      <div class="stage-col">
+      <div class="stage-col" id="stage-col">
         <div class="stage" id="stage" data-size="m">
           <div class="zoom-layer" id="zoom-layer">
             <canvas id="cv-result" aria-label="Result"></canvas>
@@ -226,6 +228,7 @@
           </div>
           <i class="stage-resize" id="stage-resize" role="separator" data-i18n-aria="zoom.resize" aria-label="プレビュー枠の大きさを変える"></i>
         </div>
+        <div class="stage-menu" id="stage-menu">
         <div class="retake-row">
           <button type="button" class="btn btn-primary" id="btn-retake" data-i18n="result.retake">📷 カメラで撮り直す</button>
           <button type="button" class="btn btn-secondary" id="btn-new" data-i18n="result.new">別の画像を選ぶ</button>
@@ -236,11 +239,12 @@
           <button type="button" class="btn btn-small" id="btn-edit-reset" hidden data-i18n="result.edit.reset">手動修正をリセット</button>
           <button type="button" class="btn btn-small" id="btn-rerun" data-i18n="result.rerun">再解析</button>
         </div>
+        </div>
         <p class="note" id="edit-hint" hidden data-i18n="result.edit.hint"></p>
       </div>
 
       <div class="panel-col" id="sheet" data-page="style">
-        <div class="sheet-head"><strong id="sheet-title"></strong><button type="button" class="btn btn-ghost" id="sheet-close" data-i18n-aria="tb.close" aria-label="閉じる">✕</button></div>
+        <div class="sheet-head"><span class="sheet-hist"><button type="button" class="sh-btn" id="sheet-undo" disabled data-i18n-aria="hist.undo" aria-label="元に戻す"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" class="sh-btn" id="sheet-redo" disabled data-i18n-aria="hist.redo" aria-label="やり直す"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button></span><strong id="sheet-title"></strong><button type="button" class="btn btn-ghost" id="sheet-close" data-i18n-aria="tb.close" aria-label="閉じる">✕</button></div>
         <section class="page" data-page="compose" id="sec-collage" hidden><div id="collage-ctl"></div></section>
         <section class="page" data-page="style">
           <div class="modes" role="tablist" id="modes"></div>
