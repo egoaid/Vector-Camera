@@ -37,7 +37,6 @@ html, body { touch-action: manipulation; }
 .tb-rot::before { content: ""; position: absolute; left: 50%; top: 100%; width: calc(2px / var(--z, 1)); height: calc(18px / var(--z, 1)); background: var(--accent, #ff4d7e); transform: translateX(-50%); }
 .tb-tag { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%) scale(calc(1 / var(--z, 1))); background: var(--accent, #ff4d7e); color: #fff; font: 800 12px/18px var(--font, sans-serif); width: 18px; height: 18px; border-radius: 50%; text-align: center; }
 .stage.editing #text-overlay, .stage.comparing #text-overlay, .stage.full #text-overlay { display: none; }
-.tx-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 /* preview frame: corner resize handle + floating (picture-in-picture) */
 .stage-resize { position: absolute; right: 0; bottom: 0; width: 34px; height: 34px; z-index: 4; cursor: nwse-resize; touch-action: none; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.72) 50%); border-bottom-right-radius: calc(var(--radius, 12px) - 2px); }
 .stage-resize::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 12px; height: 12px; background: linear-gradient(135deg, transparent 45%, #fff 45% 55%, transparent 55% 70%, #fff 70% 80%, transparent 80%); }

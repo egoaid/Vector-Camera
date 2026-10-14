@@ -6,6 +6,7 @@ import { FONTS } from './style-text.js';
 import { TEXT_SLOTS, tkey } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
+import { tendencyPatch } from './style-tendency.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 const range = (r, a, b) => Math.round(a + r() * (b - a));
@@ -39,33 +40,36 @@ export function randomOverrides(r, res, groups, n) {
   return out;
 }
 /**
- * opts: { palette, texture, background, subject, lines } booleans. Returns { params: {...patch}, overrides: [...]|null }.
+ * opts: { palette, texture, background, subject, lines } booleans, and optionally `tendency` ('etching' | 'silver' | 'silkscreen' | 'popart'; off / missing = fully random). Returns { params: {...patch}, overrides: [...]|null }.
  * `res`/`groups` are only needed for the foreground/background part.
  */
 export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) {
   const r = mulberry32(seed >>> 0), patch = {};
+  const tend = opts.tendency && opts.tendency !== 'off' ? opts.tendency : null; // a look to stay inside (etching, silver-gelatin, silkscreen, pop art); off = fully random
+  if (tend) Object.assign(patch, tendencyPatch(tend, r, opts, cur));
+  else {
   if (opts.palette) {
-    if (r() < 0.25) { patch.preset = pick(r, STYLE_ORDER); patch.customPreset = null; } else { patch.preset = 'random'; patch.customPreset = randomPreset(r); }
-    const pr = patch.preset === 'random' ? patch.customPreset : PRESETS[patch.preset]; if (pr && pr.bgTreatment && !opts.background) patch.bgTreatment = pr.bgTreatment;
-  }
-  if (opts.texture) {
-    Object.assign(patch, { separation: range(r, 2, 5), retention: range(r, 20, 80), grain: range(r, 5, 55), roughness: range(r, 0, 45), misreg: range(r, 0, 60), paper: range(r, 10, 60) });
-    const ht = r() < 0.45; patch.halftone = ht ? 1 : 0; if (ht) Object.assign(patch, { halftoneType: pick(r, ['dot', 'dot', 'line', 'cross', 'engrave', 'etching']), halftoneSize: range(r, 4, 10), halftoneAngle: pick(r, [15, 45, 75, range(r, 0, 90)]) });
-  }
-  if (opts.background) patch.bgTreatment = pick(r, ['flat', 'flat', 'photo', 'paper']);
-  if (opts.subject) patch.subjectSize = range(r, 14, 52);
-  if (opts.lines) {
-    if (r() < 0.4) { const pal = patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop; patch.lineWidth = range(r, 14, 45); patch.lineScope = pick(r, ['mid', 'all', 'fg']); patch.lineOffset = pick(r, [0, 0, range(r, 10, 45)]); patch.lineColor = pal.ink; patch.lineColor2 = pal.groups.fg.block[0]; }
-    else patch.lineWidth = 0;
+      if (r() < 0.25) { patch.preset = pick(r, STYLE_ORDER); patch.customPreset = null; } else { patch.preset = 'random'; patch.customPreset = randomPreset(r); }
+      const pr = patch.preset === 'random' ? patch.customPreset : PRESETS[patch.preset]; if (pr && pr.bgTreatment && !opts.background) patch.bgTreatment = pr.bgTreatment;
+    }
+    if (opts.texture) {
+      Object.assign(patch, { separation: range(r, 2, 5), retention: range(r, 20, 80), grain: range(r, 5, 55), roughness: range(r, 0, 45), misreg: range(r, 0, 60), paper: range(r, 10, 60) });
+      const ht = r() < 0.45; patch.halftone = ht ? 1 : 0; if (ht) Object.assign(patch, { halftoneType: pick(r, ['dot', 'dot', 'line', 'cross', 'engrave', 'etching']), halftoneSize: range(r, 4, 10), halftoneAngle: pick(r, [15, 45, 75, range(r, 0, 90)]) });
+    }
+    if (opts.background) patch.bgTreatment = pick(r, ['flat', 'flat', 'photo', 'paper']);
+    if (opts.subject) patch.subjectSize = range(r, 14, 52);
+    if (opts.lines) {
+      if (r() < 0.4) { const pal = patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop; patch.lineWidth = range(r, 14, 45); patch.lineScope = pick(r, ['mid', 'all', 'fg']); patch.lineOffset = pick(r, [0, 0, range(r, 10, 45)]); patch.lineColor = pal.ink; patch.lineColor2 = pal.groups.fg.block[0]; }
+      else patch.lineWidth = 0;
+    }
   }
   const pal0 = () => patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop;
-  // text: only when the "text" option is ticked (default off). Hidden slots / empty slots are never switched on;
+  // text: only when the "text" option is ticked (default off). Hidden slots / empty slots are never touched or switched on;
   // the wording itself is always yours. Every slot gets its own font, size, position, tilt, colours and print effects.
   if (opts.textOn) {
     const pal = pal0(), lanes = [[70, 90], [10, 30], [38, 62]];
     for (let i = 0; i < TEXT_SLOTS; i++) {
-      const K = (k) => tkey(k, i); if (!String(cur[K('text')] || '').trim()) continue;
-      patch[K('textShow')] = true;
+      const K = (k) => tkey(k, i); if (!cur[K('textShow')] || !String(cur[K('text')] || '').trim()) continue; // only slots that are shown right now; visibility is never changed
       if (opts.font) {
         Object.assign(patch, { [K('textFont')]: pick(r, FONTS).id, [K('textColor')]: pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0], pal.groups.bg.block[0]]), [K('textShadowColor')]: pal.ink,
           [K('textShadow')]: pick(r, [0, 15, 25, 40]), [K('textSpacing')]: range(r, 0, 8), [K('textSize')]: range(r, i ? 7 : 11, i ? 16 : 24),

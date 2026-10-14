@@ -3,9 +3,10 @@ import { JA } from './i18n-ja.js';
 import { EN } from './i18n-en.js';
 import { JA2 } from './i18n-ja-v2.js';
 import { EN2 } from './i18n-en-v2.js';
+import { STYLES_JA, STYLES_EN } from './i18n-styles.js';
 import { MANUAL_JA } from './i18n-manual-ja.js';
 import { MANUAL_EN } from './i18n-manual-en.js';
-const DICT = { ja: { ...JA, ...JA2, ...MANUAL_JA }, en: { ...EN, ...EN2, ...MANUAL_EN } };
+const DICT = { ja: { ...JA, ...JA2, ...STYLES_JA, ...MANUAL_JA }, en: { ...EN, ...EN2, ...STYLES_EN, ...MANUAL_EN } };
 let lang = 'ja';
 export const getLang = () => lang;
 export function detectLang() {

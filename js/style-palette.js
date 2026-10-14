@@ -46,7 +46,16 @@ Object.assign(PRESETS, {
   royal: K('royal', '#2a1030', '#fbe8f1', G(['#e0188a'], false), G(['#f8b8d8', '#7aa8e0']), G(['#fbe8f1', '#f8d0e0', '#e8c04a']), 'flat', { lines: { color: '#2a1030', width: 28, offset: 0 } }),
   tealpink: K('tealpink', '#0a3a48', '#f4efe6', G(['#0e8fa0'], false), G(['#f2459b', '#8ad0b4']), G(['#f2459b', '#8ad0b4', '#f6e6d6', '#ff7a3a']), 'flat', { lines: { color: '#ff7a3a', width: 24, offset: 18 } }),
 });
-export const STYLE_ORDER = ['pop', 'sleeve', 'riso', 'duo', 'mono', 'unite', 'garden', 'lovepop', 'olive', 'earth', 'field', 'stripes', 'maroon', 'boombox', 'stadium', 'lavender', 'skygreen', 'bluepeach', 'kraft', 'palm', 'typewriter', 'sunhill', 'cyan', 'royal', 'tealpink'];
+// ---- v0.7 palettes for etching / silver-gelatin looks ----
+Object.assign(PRESETS, {
+  etching: K('etching', '#2a2018', '#efe5cf', G(['#efe5cf']), G(['#efe5cf']), G(['#efe5cf']), 'photo'),
+  etchblue: K('etchblue', '#1d2a46', '#eceee6', G(['#eceee6']), G(['#eceee6']), G(['#eceee6']), 'photo'),
+  sanguine: K('sanguine', '#7b2b1b', '#f1e2cc', G(['#f1e2cc']), G(['#f1e2cc']), G(['#f1e2cc']), 'photo'),
+  silver: B('silver', '#f3f1ec', ['#8a8a8c'], { bg: ['#0c0c0e', '#6f6f72', '#e4e4e2'], mid: ['#0a0a0c', '#7a7a7d', '#ecebe8'], fg: ['#08080a', '#808083', '#f6f5f1'] }),
+  sepia: B('sepia', '#f1e6d0', ['#8a6a48'], { bg: ['#1a110a', '#7a5a3c', '#e6d2b0'], mid: ['#180f08', '#84623f', '#eddcbc'], fg: ['#160d07', '#8c6a46', '#f4e7cc'] }),
+  selenium: B('selenium', '#eef0f2', ['#6a7078'], { bg: ['#0b0e14', '#5d6672', '#dfe4ea'], mid: ['#090c12', '#667080', '#e6eaef'], fg: ['#070a10', '#6e7888', '#f1f4f7'] }),
+});
+export const STYLE_ORDER = ['pop', 'sleeve', 'riso', 'duo', 'mono', 'unite', 'garden', 'lovepop', 'olive', 'earth', 'field', 'stripes', 'maroon', 'boombox', 'stadium', 'lavender', 'skygreen', 'bluepeach', 'kraft', 'palm', 'typewriter', 'sunhill', 'cyan', 'royal', 'tealpink', 'etching', 'etchblue', 'sanguine', 'silver', 'sepia', 'selenium'];
 /** Resolves the active preset: built-in id, or the user's randomised palette (params.customPreset). */
 export const getPreset = (p) => (p.preset === 'random' && p.customPreset ? p.customPreset : PRESETS[p.preset] || PRESETS.natural);
 export const GROUP_KEYS = ['bg', 'mid', 'fg'];

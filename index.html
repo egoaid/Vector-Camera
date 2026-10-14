@@ -45,6 +45,8 @@
 <link rel="stylesheet" href="css/compare.css">
 <link rel="stylesheet" href="css/zoom.css">
 <link rel="stylesheet" href="css/sheet.css">
+<link rel="stylesheet" href="css/text-panel.css">
+<link rel="stylesheet" href="css/style-lib.css">
 <link rel="stylesheet" href="css/phone.css">
 <script type="application/ld+json">
 {
@@ -243,9 +245,10 @@
         <div class="sheet-head"><span class="sheet-hist"><button type="button" class="sh-btn" id="sheet-undo" disabled data-i18n-aria="hist.undo" aria-label="元に戻す"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" class="sh-btn" id="sheet-redo" disabled data-i18n-aria="hist.redo" aria-label="やり直す"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button></span><strong id="sheet-title"></strong><button type="button" class="btn btn-ghost" id="sheet-close" data-i18n-aria="tb.close" aria-label="閉じる">✕</button></div>
         <section class="page" data-page="compose" id="sec-collage" hidden><div id="collage-ctl"></div></section>
         <section class="page" data-page="style">
+          <div class="field style-lib" id="style-lib"></div>
           <div class="modes" role="tablist" id="modes"></div>
           <p class="note" id="mode-desc"></p>
-          <div class="field"><span class="label" data-i18n="preset.label">スタイル</span><div class="chips" id="presets" role="group"></div></div>
+          <div class="field"><span class="label" data-i18n="preset.label">配色</span><div class="chips" id="presets" role="group"></div></div>
         </section>
         <section class="page" data-page="adjust"><div id="controls"></div><details class="advanced" id="advanced"><summary data-i18n="adv">詳細設定</summary><div id="controls-adv"></div></details></section>
         <section class="page" data-page="halftone"><div id="halftone-ctl"></div></section>
@@ -255,6 +258,7 @@
           <div class="random-row">
             <button type="button" class="btn btn-primary" id="btn-random" data-i18n="rnd.go">🎲 ランダム生成</button>
           </div>
+          <div class="field"><label for="sel-rnd-style" data-i18n="rnd.tend">画風の傾向</label><select id="sel-rnd-style"></select><p class="note" data-i18n="rnd.tend.note">傾向を選ぶと、その画風として成立しやすい配色・質感・背景・線を選びます。オフは完全ランダムです。</p></div>
           <p class="label" data-i18n="rnd.opts">ランダム生成の対象</p><div id="random-opts"></div>
         </section>
         <section class="page" data-page="export">
@@ -320,6 +324,20 @@
     </div>
   </div>
 </dialog>
+
+<!-- name / confirm dialog (my styles) -->
+<dialog id="dlg-name" aria-labelledby="name-title">
+  <form method="dialog" class="dlg" id="form-name">
+    <h2 id="name-title"></h2>
+    <p id="name-msg" hidden></p>
+    <input type="text" id="inp-name" maxlength="40" autocomplete="off">
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-secondary" id="name-cancel" data-i18n="st.cancel">キャンセル</button>
+      <button type="submit" class="btn btn-primary" id="name-ok" data-i18n="st.ok">OK</button>
+    </div>
+  </form>
+</dialog>
+<input type="file" id="file-style" accept=".json,application/json" hidden>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 

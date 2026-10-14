@@ -63,9 +63,15 @@ export function makeInkFactory(src, res, targetLong) {
     const inkRGB = spec.mode === 'key' ? hexToRgb(spec.color) : null, stops = spec.mode === 'bands' ? spec.ramp.map(hexToRgb) : null, grainScale = Math.max(1, tw / 900);
     let em = null; // etching: strokes are drawn for the whole region first (they depend on their neighbours), then read per pixel
     if (etch) {
-      const D = new Float32Array(W * H);
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const p = y * W + x; if (dil[p]) D[p] = Math.min(1, Math.max(0, (1 - (lum[(y + y0) * tw + x + x0] - lo) / (hi - lo)) * gain)); }
-      em = etchMask(D, W, H, dil, { cell, angle: ang, layers: hopts.layers, spread: hopts.spread, curve: hopts.curve, sketch: hopts.sketch, len: hopts.len, weight: hopts.weight, seed: 7 });
+      const D = new Float32Array(W * H); // darkness of the whole bbox (outlines need the tone just outside the regions too)
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) D[y * W + x] = Math.min(1, Math.max(0, (1 - (lum[(y + y0) * tw + x + x0] - lo) / (hi - lo)) * gain));
+      let depthMap = null; // 0 far .. 1 near: the group (background / midground / subject) plus "lower in the picture = nearer"
+      if (hopts.depth > 0) {
+        depthMap = new Float32Array(W * H);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const yy = (y + y0) / th, g = spec.groupOf ? spec.groupOf[lab[(y + y0) * tw + x + x0]] / 2 : yy; depthMap[y * W + x] = spec.groupOf ? 0.7 * g + 0.3 * yy : yy; }
+        depthMap = boxBlur(depthMap, W, H, Math.max(2, Math.round(cell * 2.5)));
+      }
+      em = etchMask(D, W, H, dil, { cell, angle: ang, layers: hopts.layers, spread: hopts.spread, curve: hopts.curve, sketch: hopts.sketch, len: hopts.len, weight: hopts.weight, contour: hopts.contour, depth: hopts.depth, depthMap, seed: 7 });
     }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const p = y * W + x; if (!dil[p]) continue;

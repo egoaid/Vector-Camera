@@ -1,0 +1,13 @@
+/* text-panel.css - text slot tabs (which of the 3 texts is being edited / shown) */
+.tx-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.tx-tab { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "num name" "num state"; column-gap: 8px; align-items: center; text-align: left; min-width: 0; padding: 8px 10px; border-radius: 12px; border: 2px solid var(--border); background: var(--panel-2); color: var(--muted); cursor: pointer; touch-action: manipulation; }
+.tx-num { grid-area: num; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: .95rem; background: var(--bg); color: var(--muted); border: 2px solid var(--border); }
+.tx-name { grid-area: name; font-weight: 800; font-size: .82rem; line-height: 1.2; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-state { grid-area: state; font-size: .7rem; font-weight: 700; display: flex; align-items: center; gap: 5px; line-height: 1.2; }
+.tx-state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--muted); box-sizing: border-box; }
+.tx-tab.shown .tx-state { color: var(--accent-2); }
+.tx-tab.shown .tx-state::before { background: var(--accent-2); border-color: var(--accent-2); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 30%, transparent); }
+.tx-tab:not(.shown) .tx-name { opacity: .6; }
+.tx-tab[aria-selected="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--panel-2)); box-shadow: 0 3px 0 var(--accent); color: var(--text); }
+.tx-tab[aria-selected="true"] .tx-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 899px) { #sheet .tx-tab { padding: 5px 7px; column-gap: 6px; border-width: 1.5px; border-radius: 10px; } #sheet .tx-num { width: 22px; height: 22px; font-size: .78rem; } #sheet .tx-name { font-size: .72rem; } #sheet .tx-state { font-size: .64rem; } }

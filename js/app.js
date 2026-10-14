@@ -30,6 +30,7 @@ import { initExport, updateExportNote } from './ui-export.js';
 import { initAbout } from './ui-about.js';
 import { registerSW } from './pwa.js';
 import { toast } from './ui-toast.js';
+import { initStyleLibrary, buildStyleLibrary } from './ui-styles.js';
 import { PRESETS, getPreset } from './style-palette.js';
 
 const $ = (id) => document.getElementById(id);
@@ -170,7 +171,7 @@ function updateBadges() { $('badges').replaceChildren(); } // the info chips wer
 
 /* ---------- UI wiring ---------- */
 function buildUI() {
-  buildControls(onControl, setMode); buildExtras(onControl, { shuffle: () => { state.params.collageSeed = (Math.random() * 1e6) | 0; saveSettings(); redraw(); }, add: () => $('file-collage').click(), addCam: () => openCamera('multi', true) });
+  buildControls(onControl, setMode); buildStyleLibrary(); buildExtras(onControl, { shuffle: () => { state.params.collageSeed = (Math.random() * 1e6) | 0; saveSettings(); redraw(); }, add: () => $('file-collage').click(), addCam: () => openCamera('multi', true) });
   const single = !state.collage; $('btn-edit').hidden = !single || !['silhouette', 'hybrid'].includes(state.params.mode); if ($('btn-edit').hidden) setEdit(false);
   $('btn-compare').hidden = !single; if (!single) compare.off(); $('btn-rerun').hidden = !single; $('btn-edit-reset').hidden = !single || !state.overrides.length; base = snapshot(); syncUndo();
 }
@@ -178,7 +179,13 @@ async function onControl(key, value) {
   trackChange();
   if (key === 'textFont') await ensureFonts(state.params);
   if (key === 'preset') { state.params.preset = value; if (state.collage && state.params.collageVary) { state.params.collageVary = false; toast(t('col.bulk')); } if (state.params.mode === 'hybrid' || state.params.mode === 'regions') Object.assign(state.params, presetDefaults(state.params.mode, value)); buildUI(); saveSettings(); }
-  clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130);
+  clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130); buildStyleLibrary();
+}
+/** Applies a complete style (built-in or mine): every look parameter at once, one undo step. */
+async function applyWholeStyle(np, name) {
+  if (!state.result) return;
+  trackDiscrete(); state.params = np; if (state.collage && state.params.collageVary) state.params.collageVary = false;
+  await ensureFonts(state.params); saveSettings(); buildUI(); toast(t('st.applied', { name })); await refresh();
 }
 async function refresh() {
   const mySeq = ++state.seq; $('stage').style.opacity = '.85';
@@ -240,7 +247,7 @@ async function doRandom() {
   trackDiscrete();
   const o = state.params.rndOpts, solo = !state.collage; if (solo) computeGroups();
   const seed = (Math.random() * 4294967296) >>> 0;
-  const out = randomize(seed, { ...o }, state.params, solo ? state.result : null, solo ? state.groups : null, { collage: !!state.collage });
+  const out = randomize(seed, { ...o, tendency: state.params.rndStyle }, state.params, solo ? state.result : null, solo ? state.groups : null, { collage: !!state.collage });
   Object.assign(state.params, out.params);
   if (out.overrides && solo) state.overrides = out.overrides;
   await ensureFonts({ ...state.params, ...out.params });
@@ -282,7 +289,7 @@ function init() {
   $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
   $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, !!state.collage); } finally { state.collageBusy = false; } } });
   $('btn-random').addEventListener('click', doRandom); $('sheet-undo').addEventListener('click', undo); $('sheet-redo').addEventListener('click', redo);
-  ensureFonts(state.params);
+  ensureFonts(state.params); initStyleLibrary({ apply: applyWholeStyle });
   $('btn-rerun').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); analyze(); });
   $('btn-edit').addEventListener('click', () => setEdit(!editing));
   $('btn-edit-reset').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });

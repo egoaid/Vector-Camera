@@ -1,5 +1,6 @@
 // ui-extras.js - panels added in v0.2: randomise options, contour lines, vector text, collage layout.
 import { t } from './i18n.js';
+import { TENDENCIES } from './style-tendency.js';
 import { state, saveSettings } from './state.js';
 import { slider, select, check } from './ui-controls.js';
 import { FONTS, ensureFont, isLatinOnly } from './style-text.js';
@@ -17,6 +18,7 @@ const sl = (k, min, max, onChange, base) => slider({ k, min, max, base }, onChan
 
 export function buildExtras(onChange, hooks) {
   // --- randomise options
+  const rs = $('sel-rnd-style'); if (rs) { rs.replaceChildren(); for (const k of ['off', ...TENDENCIES]) { const o = document.createElement('option'); o.value = k; o.textContent = t('rnd.tend.' + k); rs.append(o); } rs.value = state.params.rndStyle || 'off'; rs.onchange = () => { state.params.rndStyle = rs.value; saveSettings(); }; }
   const ro = $('random-opts'); ro.replaceChildren();
   for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
     const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params.rndOpts[k];
@@ -49,8 +51,12 @@ export function buildTextPanel(onChange) {
   const i = Math.max(0, Math.min(TEXT_SLOTS - 1, state.textSlot | 0)), K = (k) => tkey(k, i);
   const tabs = document.createElement('div'); tabs.className = 'tx-tabs'; tabs.setAttribute('role', 'tablist');
   for (let n = 0; n < TEXT_SLOTS; n++) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(n === i));
-    b.textContent = t('tx.slot', { n: n + 1 }) + (state.params[tkey('textShow', n)] && String(state.params[tkey('text', n)] || '').trim() ? ' ●' : '');
+    const shown = !!state.params[tkey('textShow', n)], txt = String(state.params[tkey('text', n)] || '').trim(), sel = n === i;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tx-tab' + (shown ? ' shown' : ''); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(sel)); b.dataset.slot = String(n + 1);
+    const num = document.createElement('span'); num.className = 'tx-num'; num.textContent = String(n + 1);
+    const name = document.createElement('span'); name.className = 'tx-name'; name.textContent = txt || t('tx.empty');
+    const st = document.createElement('span'); st.className = 'tx-state'; st.textContent = t(shown ? 'tx.on' : 'tx.off');
+    b.append(num, name, st); b.setAttribute('aria-label', t('tx.slot', { n: n + 1 }) + ' ' + t(shown ? 'tx.on' : 'tx.off'));
     b.addEventListener('click', () => { state.textSlot = n; buildTextPanel(onChange); onChange('textSlot'); }); tabs.append(b);
   }
   const f = document.createElement('div'); f.className = 'field'; const lab = document.createElement('label'); lab.htmlFor = 'in-text'; lab.textContent = t('tx.text');

@@ -11,11 +11,13 @@
 //   wave     engrave: amplitude of the swelling waves
 //   waveLen  engrave: wave length
 //   guilloche engrave: amount of interlaced lace (guilloche) curves
+//   depth    etching: near lines bold / far lines fine (0 = all lines alike)
+//   contour  etching: outline strokes that follow the form (0 = off)
 //   len      etching: stroke length (the real etching ink is drawn by etching.js; here it is only a threshold approximation for text)
 export const HT_TYPES = ['dot', 'line', 'cross', 'engrave', 'etching'];
-export const HT_DEFAULTS = { htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50 };
+export const HT_DEFAULTS = { htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50, htDepth: 45, htContour: 35 };
 /** Extracts the halftone detail options from a params object. */
-export const htOptsFrom = (p) => ({ weight: p.htWeight ?? 50, layers: p.htLayers ?? 3, spread: p.htSpread ?? 60, curve: p.htCurve ?? 40, sketch: p.htSketch ?? 40, wave: p.htWave ?? 50, waveLen: p.htWaveLen ?? 50, guilloche: p.htGuilloche ?? 40, len: p.htLen ?? 50 });
+export const htOptsFrom = (p) => ({ weight: p.htWeight ?? 50, layers: p.htLayers ?? 3, spread: p.htSpread ?? 60, curve: p.htCurve ?? 40, sketch: p.htSketch ?? 40, wave: p.htWave ?? 50, waveLen: p.htWaveLen ?? 50, guilloche: p.htGuilloche ?? 40, len: p.htLen ?? 50, depth: p.htDepth ?? 45, contour: p.htContour ?? 35 });
 /** Darkness gain from the weight slider (50 = x1). */
 export const htGain = (opts) => 0.45 + ((opts && opts.weight != null ? opts.weight : 50) / 100) * 1.1;
 
