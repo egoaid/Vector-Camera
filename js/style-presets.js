@@ -62,7 +62,7 @@ export function sanitizeParams(src) {
     if (ENUMS[base] && !ENUMS[base].includes(v)) continue;
     if (typeof d === 'number') { if (typeof v === 'number' && Number.isFinite(v)) { const [lo, hi] = rangeOf(k); out[k] = Math.min(hi, Math.max(lo, v)); } continue; }
     if (typeof d === 'boolean') { if (typeof v === 'boolean') out[k] = v; continue; }
-    if (typeof d === 'string') { if (typeof v !== 'string') continue; if (/Color$|Color2$|Colors?$|^lineColor/.test(base) || (d.startsWith('#') && base !== 'collagePaper')) { if (hexOk(v)) out[k] = v; } else if (base === 'collagePaper') { if (v === '' || hexOk(v)) out[k] = v; } else if (/^text(_\d)?$/.test(k)) out[k] = v.slice(0, 80); else out[k] = v.slice(0, 40); }
+    if (typeof d === 'string') { if (typeof v !== 'string') continue; if ((/Color$|Color2$|Colors?$|^lineColor/.test(base) && base !== 'htColor') || (d.startsWith('#') && base !== 'collagePaper')) { if (hexOk(v)) out[k] = v; } else if (base === 'collagePaper' || base === 'htColor') { if (v === '' || hexOk(v)) out[k] = v; } else if (/^text(_\d)?$/.test(k)) out[k] = v.slice(0, 80); else out[k] = v.slice(0, 40); }
   }
   return out;
 }

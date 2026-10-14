@@ -1,6 +1,7 @@
 // i18n-styles.js - texts for styles (built-in / my styles), random tendency and the new palettes.
 export const STYLES_JA = {
   'preset.label': '配色', 'preset.etching': 'エッチング（墨）', 'preset.etchblue': 'エッチング（藍）', 'preset.sanguine': 'サンギーヌ（赤褐色）', 'preset.silver': '銀塩モノクロ', 'preset.sepia': 'セピア', 'preset.selenium': 'セレン調色',
+  'p.htColor': 'ハーフトーンの色', 'ht.color.auto': '配色に合わせる', 'ht.color.autoon': '配色に連動中',
   'style.title': 'スタイル', 'style.note': 'スタイルは配色だけでなく、段数・質感・ハーフトーン・線など全設定をまとめて切り替えます（文字と端末設定は変わりません）。',
   'style.builtin': 'おすすめスタイル', 'style.mine': 'マイスタイル', 'style.none': 'まだ保存したスタイルはありません。',
   'style.etching': 'エッチング（銅版画）', 'style.silver': '銀塩写真', 'style.sepia': 'セピア写真', 'style.silkscreen': 'シルクスクリーン', 'style.popart': 'ポップアート', 'style.engraving': 'エングレービング', 'style.pen': 'ペン画', 'style.sleeve': 'レトロ・レコード', 'style.vector': 'ベクターイラスト', 'style.poster': 'ポスター', 'style.silhouette': 'シルエット',
@@ -13,6 +14,7 @@ export const STYLES_JA = {
 };
 export const STYLES_EN = {
   'preset.label': 'Palette', 'preset.etching': 'Etching (ink)', 'preset.etchblue': 'Etching (indigo)', 'preset.sanguine': 'Sanguine (red-brown)', 'preset.silver': 'Silver-gelatin B&W', 'preset.sepia': 'Sepia', 'preset.selenium': 'Selenium toned',
+  'p.htColor': 'Halftone colour', 'ht.color.auto': 'Follow palette', 'ht.color.autoon': 'follows palette',
   'style.title': 'Styles', 'style.note': 'A style switches every setting at once - palette, levels, texture, halftone, lines (your texts and device settings are kept).',
   'style.builtin': 'Built-in styles', 'style.mine': 'My styles', 'style.none': 'No saved styles yet.',
   'style.etching': 'Etching (copperplate)', 'style.silver': 'Silver-gelatin photo', 'style.sepia': 'Sepia photo', 'style.silkscreen': 'Silkscreen', 'style.popart': 'Pop art', 'style.engraving': 'Engraving', 'style.pen': 'Pen drawing', 'style.sleeve': 'Retro record sleeve', 'style.vector': 'Vector illustration', 'style.poster': 'Poster', 'style.silhouette': 'Silhouette',

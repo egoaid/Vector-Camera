@@ -14,13 +14,3 @@ export function resampleLabels(src, sw, sh, w, h) {
   for (let y = 0; y < h; y++) { const sy = Math.min(sh - 1, (y * sh / h) | 0); for (let x = 0; x < w; x++) out[y * w + x] = src[sy * sw + Math.min(sw - 1, (x * sw / w) | 0)]; }
   return out;
 }
-/** Convert transformers.js image-segmentation output [{label,score,mask}] into a label map. */
-export function segmentsToLabelMap(segments, w, h) {
-  const map = new Uint8Array(w * h), names = [];
-  segments.forEach((seg, i) => {
-    names.push(seg.label || 'unknown');
-    const m = seg.mask, mw = m.width, mh = m.height, d = m.data, ch = m.channels || 1;
-    for (let y = 0; y < h; y++) { const sy = Math.min(mh - 1, (y * mh / h) | 0); for (let x = 0; x < w; x++) { const sx = Math.min(mw - 1, (x * mw / w) | 0); if (d[(sy * mw + sx) * ch] > 127) map[y * w + x] = i; } }
-  });
-  return { labels: map, names, C: Math.max(1, names.length) };
-}

@@ -7,7 +7,6 @@ import * as wake from './wake-lock.js';
 import { initCameraUI } from './ui-camera.js';
 import { loadSource, makeWorking } from './image-input.js';
 import { PipelineClient } from './pipeline-client.js';
-import { runSegformer, cancelAI, isSupported as aiSupported } from './seg-segformer.js';
 import { classifyGroups } from './seg-saliency.js';
 import { buildScene, sceneHasRaster } from './style-scene.js';
 import { buildCollageScene } from './style-collage.js';
@@ -37,7 +36,7 @@ const $ = (id) => document.getElementById(id);
 const STAGE_KEY = { segment: 'proc.segment', merge: 'proc.merge', regions: 'proc.regions', vectorize: 'proc.vectorize', done: 'proc.done' };
 const undoH = new History(60), redoH = new History(60);
 let base = null, lastT = 0;
-let client, compare, zoom, handles, lastKey = '', pipeStale = false, inkCache = null, debounce = 0, editing = false, aiConsent = false, cancelled = false;
+let client, compare, zoom, handles, lastKey = '', pipeStale = false, inkCache = null, debounce = 0, editing = false, cancelled = false;
 
 /* ---------- processing helpers ---------- */
 const onPipeProgress = (stage, f) => { if (!$('processing').hidden && !state.collageBusy) showProcessing(STAGE_KEY[stage] || 'proc.segment', 0.4 + 0.55 * f); };
@@ -62,34 +61,11 @@ async function analyze() {
   state.work = makeWorking(state.canvas, state.params.quality);
   state.sem = null; state.engineUsed = 'classic'; pipeStale = false; lastKey = '';
   await client.setImage(state.work.w, state.work.h, state.work.data); await client.setSemantic(null);
-  if (state.params.engine === 'ai' && aiSupported()) await tryAI();
   if (cancelled || mySeq !== state.seq) return;
   showProcessing('proc.segment', 0.4);
   try { await runPipeline(true); } catch (e) { if (cancelled) return; console.error(e); hideProcessing(); toast(t('err.generic')); if (!state.result) showScreen('start'); return; }
   if (cancelled) return;
   hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); drawOriginal();
-}
-async function tryAI() {
-  if (!aiConsent) {
-    let ok = false; try { ok = localStorage.getItem('vc.aiConsent') === '1'; } catch { /* ignore */ }
-    if (!ok) { hideProcessing(); ok = await askAI(); showProcessing('proc.prepare', 0.1); }
-    if (!ok) { state.params.engine = 'classic'; $('sel-engine').value = 'classic'; return; }
-    aiConsent = true; try { localStorage.setItem('vc.aiConsent', '1'); } catch { /* ignore */ }
-  }
-  try {
-    showProcessing('proc.ai', 0.15); let fromCache = false;
-    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch { /* ignore */ }
-    const sem = await runSegformer(state.work, (d) => {
-      if (d.status === 'cache') { fromCache = !!d.cached; if (fromCache) showProcessing('proc.cached', 0.2); }
-      else if (d.status === 'progress' && d.total && fromCache) showProcessing('proc.cached', 0.15 + 0.2 * (d.loaded / d.total));
-      else if (d.status === 'progress' && d.total) showProcessing('proc.download', 0.15 + 0.2 * (d.loaded / d.total), { pct: Math.round((d.loaded / d.total) * 100) });
-      else if (d.status === 'inference') showProcessing('proc.ai', 0.36);
-    });
-    state.sem = sem; await client.setSemantic(sem); state.engineUsed = 'ai';
-  } catch (e) { if (cancelled) return; console.warn('segmentation model failed', e); state.engineUsed = 'classic'; toast(t('err.ai'), { ms: 7000 }); }
-}
-function askAI() {
-  return new Promise((resolve) => { const d = $('dlg-ai'); d.addEventListener('close', () => resolve(d.returnValue === 'go'), { once: true }); d.returnValue = 'no'; d.showModal(); });
 }
 async function runPipeline(force = false) {
   await ensurePipeline();
@@ -185,7 +161,7 @@ async function onControl(key, value) {
 async function applyWholeStyle(np, name) {
   if (!state.result) return;
   trackDiscrete(); state.params = np; if (state.collage && state.params.collageVary) state.params.collageVary = false;
-  await ensureFonts(state.params); saveSettings(); buildUI(); toast(t('st.applied', { name })); await refresh();
+  await ensureFonts(state.params); saveSettings(); buildUI(); await refresh();
 }
 async function refresh() {
   const mySeq = ++state.seq; $('stage').style.opacity = '.85';
@@ -272,11 +248,9 @@ const undo = () => stepHistory(undoH, redoH), redo = () => stepHistory(redoH, un
 
 /* ---------- init ---------- */
 function init() {
-  loadSettings(); initLang(); $('sel-engine').value = state.params.engine; $('sel-quality').value = state.params.quality;
-  const note = () => { $('engine-note').textContent = t(state.params.engine === 'ai' ? 'engine.note.ai' : 'engine.note.classic'); };
-  note(); document.addEventListener('vc:lang', () => { note(); updateWakeUI(); if (state.result) { buildUI(); updateBadges(); updateExportNote(state.scene); } $('btn-lang').textContent = t('lang.toggle'); });
+  loadSettings(); initLang(); $('sel-quality').value = state.params.quality;
+  document.addEventListener('vc:lang', () => { updateWakeUI(); if (state.result) { buildUI(); updateBadges(); updateExportNote(state.scene); } $('btn-lang').textContent = t('lang.toggle'); });
   $('btn-lang').addEventListener('click', () => setLang(getLang() === 'ja' ? 'en' : 'ja'));
-  $('sel-engine').addEventListener('change', (e) => { state.params.engine = e.target.value; note(); saveSettings(); });
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });
   client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); initSheet(); initLayout(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
   camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => showScreen(state.result ? 'result' : 'start'), toast });
@@ -294,7 +268,7 @@ function init() {
   $('btn-edit').addEventListener('click', () => setEdit(!editing));
   $('btn-edit-reset').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });
   $('stage').addEventListener('click', onStageClick); $('toolbar').addEventListener('click', hideHint);
-  $('btn-proc-cancel').addEventListener('click', () => { cancelled = true; state.seq++; client.cancel(); cancelAI(); pipeStale = !!state.work; hideProcessing(); toast(t('proc.cancelled')); showScreen(state.result ? 'result' : 'start'); });
+  $('btn-proc-cancel').addEventListener('click', () => { cancelled = true; state.seq++; client.cancel(); pipeStale = !!state.work; hideProcessing(); toast(t('proc.cancelled')); showScreen(state.result ? 'result' : 'start'); });
   $('chk-wake').addEventListener('change', (e) => setWake(e.target.checked));
   wake.init(); wake.onChange(updateWakeUI); setWake(state.params.wakeLock);
   new ResizeObserver(() => { clearTimeout(init._r); init._r = setTimeout(() => { if ($('screen-result').classList.contains('active')) redraw(); }, 150); }).observe($('stage'));

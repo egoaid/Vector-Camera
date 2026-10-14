@@ -81,6 +81,10 @@ export function buildHalftone(onChange, mode = state.params.mode) {
   box.append(select('halftoneType', HT_TYPES.map((x) => [x, 'ht.' + x]), re, 'p.htype'));
   const n = document.createElement('p'); n.className = 'note'; n.textContent = t('ht.desc.' + (p.halftoneType || 'dot')); box.append(n);
   const S = (k, min, max) => slider({ k, min, max }, onChange), ty = p.halftoneType || 'dot';
+  { const l = document.createElement('label'), i = document.createElement('input'), auto = p.htColor === '' || p.htColor == null; i.type = 'color'; i.value = auto ? (() => { const pr = getPreset(p); return pr.mode === 'bands' ? (pr.groups.fg.ramp?.[0] || '#17121c') : pr.ink; })() : p.htColor;
+    i.addEventListener('input', () => { state.params.htColor = i.value; onChange('htColor'); }); i.addEventListener('change', () => { saveSettings(); buildHalftone(onChange, mode); });
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-small'; b.textContent = t('ht.color.auto'); b.disabled = auto; b.addEventListener('click', () => { state.params.htColor = ''; onChange('htColor'); buildHalftone(onChange, mode); });
+    const row = document.createElement('div'); row.className = 'color-row'; l.append(t('p.htColor') + (auto ? ' (' + t('ht.color.autoon') + ')' : ''), i); row.append(l, b); box.append(row); }
   box.append(S('halftoneSize', 3, 14), S('halftoneAngle', 0, 90), S('htWeight', 0, 100));
   if (ty === 'line') box.append(S('htCurve', 0, 100));
   if (ty === 'cross') box.append(S('htLayers', 2, 3), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100));

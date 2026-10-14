@@ -50,7 +50,7 @@ export const EN2 = {
   'rnd.o.textFx': 'Text halftone / wear / dirt',
   'exp.pnglite': 'Light PNG',
   'exp.jpeglite': 'Light JPEG',
-  'proc.cached': 'Loading the segmentation model from saved data (no download)',
+ 
   'zoom.group': 'Zoom',
   'zoom.out': 'Zoom out',
   'zoom.in': 'Zoom in',

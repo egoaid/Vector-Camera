@@ -3,19 +3,19 @@ export const EN = {
   'app.tagline': 'Turn photos into vector & screen-print style art. Everything stays on your device.',
   'start.camera': 'Take a photo', 'start.choose': 'Choose an image',
   'start.hint': 'Your images are never uploaded.',
-  'start.engine': 'Analysis engine', 'engine.classic': 'Standard (on-device, no download)', 'engine.ai': 'Subject detection (SegFormer, first-use download)',
-  'engine.note.classic': 'Splits the image into regions using colour and edges. No extra download.',
-  'engine.note.ai': 'Downloads an image-segmentation model (SegFormer-B0, about 4.4 MB) plus its runtime once and runs it on your device. It only tells background from people/objects in your photo; it never generates or alters images. Mind your data usage.',
+ 
+ 
+ 
   'start.quality': 'Analysis size', 'quality.low': 'Light (512px)', 'quality.standard': 'Standard (768px)', 'quality.high': 'High (1024px, slower)',
   'start.wake': 'Keep the screen awake while in use', 'wake.on': 'Screen wake lock: on', 'wake.off': 'Screen wake lock: off', 'wake.unsupported': 'Screen wake lock is not supported on this device/browser', 'wake.denied': 'Could not acquire the wake lock (e.g. battery saver)',
   'camera.timer': 'Self-timer', 'camera.timer.off': 'Timer off', 'camera.title': 'Camera', 'camera.shutter': 'Capture', 'camera.switch': 'Switch camera', 'camera.close': 'Close',
   'camera.denied': 'Camera access was denied. Allow it in your browser settings, or use "Choose an image".',
   'camera.notfound': 'No camera found. Please use "Choose an image".', 'camera.busy': 'The camera is in use by another app.', 'camera.error': 'Could not start the camera.', 'camera.unsupported': 'This browser cannot capture from the camera. Please use "Choose an image".',
-  'proc.title': 'Converting…', 'proc.cancel': 'Cancel', 'proc.prepare': 'Preparing image', 'proc.ai': 'Detecting the subject', 'proc.segment': 'Segmenting regions', 'proc.merge': 'Merging regions', 'proc.regions': 'Cleaning up regions', 'proc.vectorize': 'Vectorising', 'proc.done': 'Finishing',
-  'proc.download': 'Downloading segmentation model {pct}%', 'proc.cancelled': 'Cancelled.',
-  'err.generic': 'Processing failed. Try a smaller image and retry.', 'err.load': 'Could not load the image.', 'err.ai': 'The subject-detection model was unavailable, so the standard engine was used.', 'err.memory': 'Possibly out of memory. Set analysis size to "Light".',
-  'ai.title': 'Download segmentation model', 'ai.body': 'On first use only, this downloads an image-segmentation model (SegFormer-B0, about 4.4 MB) and its runtime (a few MB). It is kept in your browser afterwards. The model only classifies regions of your photo (background, person, ...); it does not generate or rewrite images. Your image is never uploaded.',
-  'ai.license': 'Note: this model is under NVIDIA\'s licence (intended for research / evaluation). Check the licence before any commercial use or redistribution.', 'ai.go': 'Download and use', 'ai.no': 'Use standard engine',
+  'proc.title': 'Converting…', 'proc.cancel': 'Cancel', 'proc.prepare': 'Preparing image','proc.segment': 'Segmenting regions', 'proc.merge': 'Merging regions', 'proc.regions': 'Cleaning up regions', 'proc.vectorize': 'Vectorising', 'proc.done': 'Finishing',
+ 'proc.cancelled': 'Cancelled.',
+  'err.generic': 'Processing failed. Try a smaller image and retry.', 'err.load': 'Could not load the image.','err.memory': 'Possibly out of memory. Set analysis size to "Light".',
+ 
+ 
   'result.original': 'Original', 'result.result': 'Result', 'result.compare': 'Compare', 'result.edit': 'Fix subject / background', 'result.edit.hint': 'Tap a region to cycle it: background → middle → subject.', 'result.edit.reset': 'Reset manual fixes',
   'result.new': 'Choose another image', 'result.retake': '📷 Retake with camera', 'result.rerun': 'Re-analyse', 'badge.vector': 'Vector preview', 'badge.hybrid': 'Hybrid (includes raster)', 'badge.classic': 'Standard analysis', 'badge.ai': 'Subject detection', 'badge.regions': '{n} regions',
   'mode.vector': 'Vector', 'mode.silhouette': 'Silhouette', 'mode.regions': 'Color regions', 'mode.hybrid': 'Silkscreen',

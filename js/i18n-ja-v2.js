@@ -50,7 +50,7 @@ export const JA2 = {
   'rnd.o.textFx': '文字のハーフトーン・かすれ・汚れ',
   'exp.pnglite': '軽量PNG',
   'exp.jpeglite': '軽量JPEG',
-  'proc.cached': '領域分割モデルを保存済みデータから読み込み中（ダウンロードなし）',
+ 
   'zoom.group': '拡大縮小',
   'zoom.out': '縮小',
   'zoom.in': '拡大',

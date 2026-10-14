@@ -82,8 +82,7 @@
       "mainEntity": [
         { "@type": "Question", "name": "写真はサーバーにアップロードされますか？", "acceptedAnswer": { "@type": "Answer", "text": "いいえ。画像の処理はすべてお使いの端末のブラウザ内で行われ、画像や撮影データは外部へ送信されません。" } },
         { "@type": "Question", "name": "書き出したSVGやPDFは本当にベクターですか？", "acceptedAnswer": { "@type": "Answer", "text": "ベクター／シルエット／カラー領域モードでは、パスと塗りだけで構成された純粋なベクターです。ハイブリッド（シルクスクリーン）モードのSVG・PDFは、初期設定ではベクター形状に加工した写真（ラスター画像）を重ねた構成で、写真部分はラスターです。ただし書き出しの「ラスター部分もベクター化する」をオンにすると、粒子やインクの部分もトレースして本物のパスに変換し、完全なベクターのSVG・PDFにすることもできます（処理に時間がかかり、ファイルサイズも大きくなります）。" } },
-        { "@type": "Question", "name": "インストールや会員登録は必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "不要です。ブラウザで開くだけで使えます。ホーム画面に追加すればアプリのように起動できます。" } },
-        { "@type": "Question", "name": "被写体判別（領域分割モデル）は必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "必須ではありません。標準エンジンだけで動作します。「被写体判別つき」を選ぶと、初回のみ画像領域分割モデル（SegFormer-B0・約4.4MB）と実行ランタイムをダウンロードし、端末内で実行します。このモデルは背景・人物などを判別するだけで、画像の生成や書き換えは行いません。" } }
+        { "@type": "Question", "name": "インストールや会員登録は必要ですか？", "acceptedAnswer": { "@type": "Answer", "text": "不要です。ブラウザで開くだけで使えます。ホーム画面に追加すればアプリのように起動できます。" } }
       ]
     }
   ]
@@ -121,14 +120,6 @@
     </div>
 
     <div class="panel start-options">
-      <div class="field">
-        <label for="sel-engine" data-i18n="start.engine">解析エンジン</label>
-        <select id="sel-engine">
-          <option value="classic" data-i18n="engine.classic">標準（端末内・ダウンロード不要）</option>
-          <option value="ai" data-i18n="engine.ai">被写体判別つき（領域分割モデル・初回DLあり）</option>
-        </select>
-        <p class="note" id="engine-note" data-i18n="engine.note.classic"></p>
-      </div>
       <div class="field">
         <label for="sel-quality" data-i18n="start.quality">解析サイズ</label>
         <select id="sel-quality">
@@ -301,18 +292,6 @@
 </div>
 
 <!-- model download confirm -->
-<dialog id="dlg-ai" aria-labelledby="ai-title">
-  <form method="dialog" class="dlg">
-    <h2 id="ai-title" data-i18n="ai.title">領域分割モデルのダウンロード</h2>
-    <p data-i18n="ai.body"></p>
-    <p class="note" data-i18n="ai.license"></p>
-    <div class="dlg-actions">
-      <button class="btn btn-secondary" value="no" data-i18n="ai.no">標準で処理する</button>
-      <button class="btn btn-primary" value="go" data-i18n="ai.go">ダウンロードして使う</button>
-    </div>
-  </form>
-</dialog>
-
 <!-- ABOUT -->
 <dialog id="dlg-about" aria-labelledby="about-title">
   <div class="dlg">

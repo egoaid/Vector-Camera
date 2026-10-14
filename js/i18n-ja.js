@@ -3,19 +3,19 @@ export const JA = {
   'app.tagline': '写真を、ベクター＆シルクスクリーン風アートに。端末内で完結。',
   'start.camera': 'カメラで撮る', 'start.choose': '画像を選ぶ',
   'start.hint': '画像は端末の外へ送信されません。',
-  'start.engine': '解析エンジン', 'engine.classic': '標準（端末内・ダウンロード不要）', 'engine.ai': '被写体判別つき（画像領域分割モデル・初回DLあり）',
-  'engine.note.classic': '色・輪郭を手がかりに領域を自動分割します。追加ダウンロードは不要です。',
-  'engine.note.ai': '画像の領域分割モデル（SegFormer-B0・約4.4MB）と実行ランタイムを初回のみダウンロードし、端末内で実行します。写真の中の背景・人物などを判別するだけで、画像を生成・加工する機能ではありません。通信量にご注意ください。',
+ 
+ 
+ 
   'start.quality': '解析サイズ', 'quality.low': '軽量（512px）', 'quality.standard': '標準（768px）', 'quality.high': '高精細（1024px・重い）',
   'start.wake': '使用中は画面を消灯させない', 'wake.on': '画面スリープ抑制：有効', 'wake.off': '画面スリープ抑制：オフ', 'wake.unsupported': 'この端末・ブラウザは画面スリープ抑制に未対応です', 'wake.denied': '画面スリープ抑制を取得できませんでした（省電力モードなど）',
   'camera.timer': 'セルフタイマー', 'camera.timer.off': 'タイマー切', 'camera.title': 'カメラ', 'camera.shutter': '撮影', 'camera.switch': 'カメラ切替', 'camera.close': '閉じる',
   'camera.denied': 'カメラの使用が許可されていません。ブラウザの設定で許可するか、「画像を選ぶ」をご利用ください。',
   'camera.notfound': 'カメラが見つかりません。「画像を選ぶ」をご利用ください。', 'camera.busy': 'カメラが他のアプリで使用中です。', 'camera.error': 'カメラを起動できませんでした。', 'camera.unsupported': 'このブラウザはカメラ撮影に対応していません。「画像を選ぶ」をご利用ください。',
-  'proc.title': '変換中…', 'proc.cancel': 'キャンセル', 'proc.prepare': '画像を準備中', 'proc.ai': '被写体を判別中', 'proc.segment': '領域を分割中', 'proc.merge': '領域を統合中', 'proc.regions': '領域を整理中', 'proc.vectorize': 'ベクター化中', 'proc.done': '仕上げ中',
-  'proc.download': '領域分割モデルをダウンロード中 {pct}%', 'proc.cancelled': 'キャンセルしました。',
-  'err.generic': '処理に失敗しました。画像サイズを小さくして再試行してください。', 'err.load': '画像を読み込めませんでした。', 'err.ai': '被写体判別モデルを利用できなかったため、標準エンジンで処理しました。', 'err.memory': 'メモリ不足の可能性があります。解析サイズを「軽量」にしてください。',
-  'ai.title': '領域分割モデルのダウンロード', 'ai.body': '初回のみ、画像領域分割モデル（SegFormer-B0・約4.4MB）と実行ランタイム（数MB〜十数MB）をダウンロードします。以降はブラウザに保存されます。このモデルは写真の背景・人物などの領域を判別するだけで、画像の生成や書き換えは行いません。画像は送信されません。',
-  'ai.license': '注意：このモデルはNVIDIAのライセンス（研究・評価目的が前提）に基づきます。商用利用や再配布をする場合は、ライセンスをご確認ください。', 'ai.go': 'ダウンロードして使う', 'ai.no': '標準で処理する',
+  'proc.title': '変換中…', 'proc.cancel': 'キャンセル', 'proc.prepare': '画像を準備中','proc.segment': '領域を分割中', 'proc.merge': '領域を統合中', 'proc.regions': '領域を整理中', 'proc.vectorize': 'ベクター化中', 'proc.done': '仕上げ中',
+ 'proc.cancelled': 'キャンセルしました。',
+  'err.generic': '処理に失敗しました。画像サイズを小さくして再試行してください。', 'err.load': '画像を読み込めませんでした。','err.memory': 'メモリ不足の可能性があります。解析サイズを「軽量」にしてください。',
+ 
+ 
   'result.original': '元画像', 'result.result': '変換結果', 'result.compare': '比較', 'result.edit': '前景/背景を直す', 'result.edit.hint': '画面をタップすると、その領域が 背景→中景→被写体 の順に切り替わります。', 'result.edit.reset': '手動修正をリセット',
   'result.new': '別の画像を選ぶ', 'result.retake': '📷 カメラで撮り直す', 'result.rerun': '再解析', 'badge.vector': 'ベクタープレビュー', 'badge.hybrid': 'ハイブリッド（ラスター含む）', 'badge.classic': '標準解析', 'badge.ai': '被写体判別', 'badge.regions': '{n} 領域',
   'mode.vector': 'ベクター', 'mode.silhouette': 'シルエット', 'mode.regions': 'カラー領域', 'mode.hybrid': 'シルクスクリーン',

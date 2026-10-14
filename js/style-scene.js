@@ -91,17 +91,18 @@ export function buildBase(res, groups, p, inkFactory) {
   scene.layers.push({ kind: 'fills', name: 'color-blocks', offset: [off, off * 0.7], items: blockItems, seal, stroke: null });
   if (inkFactory) {
     const flatThr = 0.12 * (1 - p.retention / 100);
+    const htCol = p.halftone > 0 && /^#[0-9a-f]{6}$/i.test(p.htColor || '') ? p.htColor : null; // halftone colour override (key plate ink / darkest tone of the bands)
     const common = { levels: p.separation, retention: p.retention / 100, halftone: p.halftone > 0, halftoneType: p.halftoneType || 'dot', halftoneOpts: htOptsFrom(p), halftoneSize: p.halftoneSize, halftoneAngle: p.halftoneAngle, grain: p.grain / 100, roughness: p.roughness / 100, groupOf: groups };
     if (preset.mode === 'key') {
       const ids = all.filter((r) => (groups[r] === 0 ? p.bgTreatment === 'photo' : pg[GROUP_KEYS[groups[r]]].ink));
-      if (ids.length) { const bmp = inkFactory({ ...common, mode: 'key', regions: ids, color: preset.ink }); if (bmp) scene.layers.push({ kind: 'ink', name: 'key-plate', regions: ids, bitmap: bmp, blend: 'multiply', spec: { mode: 'key', color: preset.ink } }); }
+      if (ids.length) { const bmp = inkFactory({ ...common, mode: 'key', regions: ids, color: htCol || preset.ink }); if (bmp) scene.layers.push({ kind: 'ink', name: 'key-plate', regions: ids, bitmap: bmp, blend: 'multiply', spec: { mode: 'key', color: htCol || preset.ink } }); }
     } else {
       GROUP_KEYS.forEach((gk, g) => {
         if (g === 0 && p.bgTreatment !== 'photo') return;
         const ids = byG[g].filter((r) => st.texStd[r] >= flatThr);
         if (!ids.length) return;
-        const bmp = inkFactory({ ...common, mode: 'bands', regions: ids, ramp: pg[gk].ramp, key: gk });
-        if (bmp) scene.layers.push({ kind: 'ink', name: 'tone-' + gk, regions: ids, bitmap: bmp, blend: 'normal', spec: { mode: 'bands', ramp: pg[gk].ramp, levels: p.separation } });
+        const ramp = htCol ? [htCol, ...pg[gk].ramp.slice(1)] : pg[gk].ramp, bmp = inkFactory({ ...common, mode: 'bands', regions: ids, ramp, key: gk });
+        if (bmp) scene.layers.push({ kind: 'ink', name: 'tone-' + gk, regions: ids, bitmap: bmp, blend: 'normal', spec: { mode: 'bands', ramp, levels: p.separation } });
       });
     }
   }
