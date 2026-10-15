@@ -18,16 +18,32 @@ export const FONTS = [
   { id: 'courierb', file: 'CourierPrime-Bold.ttf', name: 'Courier Prime Bold', cat: 'type' }, { id: 'cutive', file: 'CutiveMono-Regular.ttf', name: 'Cutive Mono', cat: 'type' },
   { id: 'xanh', file: 'XanhMono-Regular.ttf', name: 'Xanh Mono', cat: 'type' }, { id: 'syne', file: 'SyneMono-Regular.ttf', name: 'Syne Mono', cat: 'type' },
 ];
-const cache = new Map();
-/** Loads + parses a bundled font (same-origin fetch). Resolves the parsed font or null on failure. */
-export async function ensureFont(id) {
-  if (cache.has(id)) return cache.get(id);
-  const def = FONTS.find((f) => f.id === id); if (!def) return null;
-  try { const r = await fetch(new URL('../fonts/' + def.file, import.meta.url)); if (!r.ok) throw new Error(String(r.status)); const f = parseTTF(new Uint8Array(await r.arrayBuffer())); cache.set(id, f); return f; }
-  catch (e) { console.warn('font load failed', id, e); return null; }
+const cache = new Map(), failed = new Set(), pending = new Map();
+/** Loads + parses a bundled font (same-origin fetch). Resolves the parsed font or null on failure (the id is then remembered in `failed`). */
+export function ensureFont(id) {
+  if (cache.has(id)) return Promise.resolve(cache.get(id));
+  const def = FONTS.find((f) => f.id === id); if (!def) return Promise.resolve(null);
+  if (pending.has(id)) return pending.get(id); // one fetch per font, however many callers wait for it
+  const job = (async () => {
+    try { const r = await fetch(new URL('../fonts/' + def.file, import.meta.url)); if (!r.ok) throw new Error(String(r.status)); const f = parseTTF(new Uint8Array(await r.arrayBuffer())); cache.set(id, f); failed.delete(id); return f; }
+    catch (e) { console.warn('font load failed', id, e); failed.add(id); return null; }
+    finally { pending.delete(id); }
+  })();
+  pending.set(id, job); return job;
 }
 export const registerFont = (id, font) => cache.set(id, font); // tests / preloaded
 export const hasFont = (id) => cache.has(id);
+export const fontFailed = (id) => failed.has(id);
+/** Font ids that visible text slots need but that are neither loaded nor known to have failed (a slot whose font is missing draws nothing). */
+export function missingFonts(p) {
+  const ids = new Set(); for (let i = 0; i < TEXT_SLOTS; i++) { const q = slotView(p, i); if (q.text && q.text.trim() && q.textShow !== false && !cache.has(q.textFont) && !failed.has(q.textFont)) ids.add(q.textFont); }
+  return [...ids];
+}
+/** Font ids of text slots that are shown but could not be loaded (for a visible error message). */
+export function failedFonts(p) {
+  const ids = new Set(); for (let i = 0; i < TEXT_SLOTS; i++) { const q = slotView(p, i); if (q.text && q.text.trim() && q.textShow && failed.has(q.textFont)) ids.add(q.textFont); }
+  return [...ids];
+}
 export const isLatinOnly = (s) => !/[^\u0000-ɏ‐-‧‰-›€]/.test(s);
 
 /** Lays out text and returns a mini geometry {w,h,R,chains,loops} (one region per glyph) or null. */

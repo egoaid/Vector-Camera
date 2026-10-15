@@ -47,6 +47,7 @@
 <link rel="stylesheet" href="css/sheet.css">
 <link rel="stylesheet" href="css/text-panel.css">
 <link rel="stylesheet" href="css/style-lib.css">
+<link rel="stylesheet" href="css/hub.css">
 <link rel="stylesheet" href="css/phone.css">
 <script type="application/ld+json">
 {
@@ -104,18 +105,22 @@
 <main id="app">
   <!-- START -->
   <section id="screen-start" class="screen active" aria-labelledby="h-title">
+    <div class="hub-bar"><button type="button" class="btn btn-secondary" id="btn-hub-back" hidden data-i18n="hub.back">← 編集に戻る</button></div>
     <div class="hero">
       <h1 id="h-title">Vector Camera</h1>
       <p class="tagline" data-i18n="app.tagline">写真を、ベクター＆シルクスクリーン風アートに。端末内で完結。</p>
       <div class="cta">
+        <p class="cta-label" data-i18n="hub.single">1枚の写真</p>
         <button type="button" class="btn btn-primary btn-xl" id="btn-camera" data-i18n="start.camera">カメラで撮る</button>
         <button type="button" class="btn btn-secondary btn-xl" id="btn-choose" data-i18n="start.choose">画像を選ぶ</button>
         <input type="file" id="file-input" accept="image/*" hidden>
+        <p class="cta-label" data-i18n="hub.multi">複数枚でコラージュ</p>
         <button type="button" class="btn btn-xl btn-collage" id="btn-collage-cam" data-i18n="start.collage.cam">撮影してコラージュ（連写・複数枚）</button>
         <button type="button" class="btn btn-xl btn-collage" id="btn-collage" data-i18n="start.collage">画像を選んでコラージュ</button>
         <input type="file" id="file-collage" accept="image/*" multiple hidden>
       </div>
       <p class="hint" data-i18n="start.hint">画像は端末の外へ送信されません。</p>
+      <p class="hint hub-note" id="hub-note" hidden data-i18n="hub.replace.note">新しい写真を選ぶと、いまの編集（手動の前景／背景の修正・コラージュ）は置き換わります。スタイルなどの設定は引き継がれます。</p>
       <p id="start-error" class="error" role="alert" hidden></p>
     </div>
 
@@ -146,7 +151,7 @@
       </ul>
       <h2 data-i18n-html="m.h3">使い方</h2>
       <ol class="steps">
-        <li data-i18n-html="m.s1">「カメラで撮る」または「画像を選ぶ」をタップ。</li>
+        <li data-i18n-html="m.s1">最初の画面で「カメラで撮る」「画像を選ぶ」、またはコラージュ用の複数枚の入口をタップ。</li>
         <li data-i18n-html="m.s2">自動で領域が分割されます。モードとスタイル、スライダーで好みの見た目に調整。</li>
         <li data-i18n-html="m.s3">SVG・ベクターPDF・PNG・JPEGで書き出し。</li>
       </ol>
@@ -158,11 +163,11 @@
         <li data-i18n-html="m.f4">インストール不要。ホーム画面に追加すればアプリのように使えます。</li>
       </ul>
       <h2 data-i18n-html="m.h5">プライバシー</h2>
-      <p data-i18n-html="m.p2">撮影・選択した画像は端末のブラウザ内でのみ処理されます。アカウント登録、広告、解析用の送信はありません。任意の「被写体判別つき」を選んだ場合に限り、初回に領域分割モデルとランタイムをダウンロードします（画像は送信されません）。</p>
+      <p data-i18n-html="m.p2">撮影・選択した画像は端末のブラウザ内でのみ処理されます。アカウント登録、広告、解析用の送信はありません。エッチングの顔検出には同梱のMediaPipe Face Mesh（初回のみ約10MBを読み込み、端末内で動作。画像は送信されません）を使います。</p>
       <h2 data-i18n-html="m.h6">よくある質問</h2>
       <details><summary data-i18n-html="m.q1">書き出したSVG・PDFは本当にベクターですか？</summary><p data-i18n-html="m.a1">ベクター／シルエット／カラー領域モードは、パスと塗りだけの純粋なベクターです。シルクスクリーンモードは、初期設定ではベクターの形状に加工した写真（ラスター）を重ねる構成で、写真部分はラスターです。書き出し欄の「ラスター部分もベクター化する」をオンにすると、粒子やインクの部分もパスに変換され、完全なベクターのSVG・PDFにできます（時間がかかります）。完成画像はPNG・JPEGでも保存できます。</p></details>
       <details><summary data-i18n-html="m.q2">iPhoneでも使えますか？</summary><p data-i18n-html="m.a2">はい。iPhone（Safari）とAndroid（Chrome）を主な対象にしています。重い場合は「解析サイズ」を「軽量」にし、書き出しは「軽量PNG／JPEG」を使ってください。</p></details>
-      <details><summary data-i18n-html="m.q3">オフラインで使えますか？</summary><p data-i18n-html="m.a3">一度読み込んだ後は、標準エンジンはオフラインでも動作します。被写体判別つきは初回のダウンロードが必要です。</p></details>
+      <details><summary data-i18n-html="m.q3">オフラインで使えますか？</summary><p data-i18n-html="m.a3">一度読み込んだ後は、オフラインでも動作します（顔検出の同梱ファイルは初回の使用時に保存されます）。</p></details>
       <p class="copyright">© 2026 egoaid. All rights reserved.</p>
     </div>
   </section>
@@ -219,8 +224,7 @@
         </div>
         <div class="stage-menu" id="stage-menu">
         <div class="retake-row">
-          <button type="button" class="btn btn-primary" id="btn-retake" data-i18n="result.retake">📷 カメラで撮り直す</button>
-          <button type="button" class="btn btn-secondary" id="btn-new" data-i18n="result.new">別の画像を選ぶ</button>
+          <button type="button" class="btn btn-primary" id="btn-photo" data-i18n="result.photo">📷 写真（撮影・選択）</button>
         </div>
         <div class="stage-tools">
           <button type="button" class="btn btn-small" id="btn-compare" aria-pressed="false" data-i18n="result.compare">比較</button>
@@ -236,14 +240,16 @@
         <div class="sheet-head"><span class="sheet-hist"><button type="button" class="sh-btn" id="sheet-undo" disabled data-i18n-aria="hist.undo" aria-label="元に戻す"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" class="sh-btn" id="sheet-redo" disabled data-i18n-aria="hist.redo" aria-label="やり直す"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button></span><strong id="sheet-title"></strong><button type="button" class="btn btn-ghost" id="sheet-close" data-i18n-aria="tb.close" aria-label="閉じる">✕</button></div>
         <section class="page" data-page="compose" id="sec-collage" hidden><div id="collage-ctl"></div></section>
         <section class="page" data-page="style">
-          <div class="field style-lib" id="style-lib"></div>
           <div class="field rnd-box" id="sec-random">
-            <span class="label" data-i18n="rnd.title">ランダム生成</span>
             <div class="random-row"><button type="button" class="btn btn-primary" id="btn-random" data-i18n="rnd.go">🎲 ランダム生成</button></div>
-            <label for="sel-rnd-style" data-i18n="rnd.tend">画風の傾向</label><select id="sel-rnd-style"></select><p class="note" data-i18n="rnd.tend.note"></p>
-            <p class="label" data-i18n="rnd.opts">ランダム生成の対象</p><div id="random-opts"></div>
-            <p class="note" data-i18n="rnd.lock.note"></p>
+            <p class="note rnd-lock" id="rnd-lock" role="status"></p>
+            <details class="rnd-more"><summary data-i18n="rnd.more">ランダム生成の設定</summary>
+              <label for="sel-rnd-style" data-i18n="rnd.tend">画風の傾向</label><select id="sel-rnd-style"></select><p class="note" data-i18n="rnd.tend.note"></p>
+              <p class="label" data-i18n="rnd.opts">ランダム生成の対象</p><div id="random-opts"></div>
+              <p class="note" data-i18n="rnd.lock.note"></p>
+            </details>
           </div>
+          <div class="field style-lib" id="style-lib"></div>
         </section>
         <section class="page" data-page="color" id="sec-color">
           <div class="field"><span class="label" data-i18n="preset.label">配色</span><div class="chips" id="presets" role="group"></div></div>
@@ -282,7 +288,7 @@
         </section>
       </div>
     </div>
-    <nav id="toolbar" aria-label="編集メニュー"><button type="button" class="tb-btn tb-left" id="tb-camera" data-i18n-aria="tb.camera" aria-label="撮り直す"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span data-i18n="tb.camera">撮り直す</span></button><button type="button" class="tb-btn" data-tool="compose" id="tb-compose" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/></svg><span data-i18n="tb.compose">compose</span></button><button type="button" class="tb-btn" data-tool="style" id="tb-style" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span data-i18n="tb.style">style</span></button><button type="button" class="tb-btn" data-tool="color" id="tb-color" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c5 0 9 3.6 9 8 0 2.6-2 4-4 4h-2c-1.2 0-2 .9-2 2 0 .6.3 1 .6 1.5.3.5.1 1.5-1.1 1.5-5 0-9-4-9-9s4-8 9-8z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="11" cy="7" r="1.2"/><circle cx="15.5" cy="8" r="1.2"/></svg><span data-i18n="tb.color">color</span></button><button type="button" class="tb-btn" data-tool="shape" id="tb-shape" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span data-i18n="tb.shape">shape</span></button><button type="button" class="tb-btn" data-tool="text" id="tb-text" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span data-i18n="tb.text">text</span></button><button type="button" class="tb-btn tb-right" data-tool="export" id="tb-export" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"/></svg><span data-i18n="tb.export">export</span></button></nav>
+    <nav id="toolbar" aria-label="編集メニュー"><button type="button" class="tb-btn tb-left" id="tb-camera" data-i18n-aria="tb.camera" aria-label="写真"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span data-i18n="tb.camera">写真</span></button><button type="button" class="tb-btn" data-tool="compose" id="tb-compose" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/></svg><span data-i18n="tb.compose">compose</span></button><button type="button" class="tb-btn" data-tool="style" id="tb-style" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span data-i18n="tb.style">style</span></button><button type="button" class="tb-btn" data-tool="color" id="tb-color" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c5 0 9 3.6 9 8 0 2.6-2 4-4 4h-2c-1.2 0-2 .9-2 2 0 .6.3 1 .6 1.5.3.5.1 1.5-1.1 1.5-5 0-9-4-9-9s4-8 9-8z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="11" cy="7" r="1.2"/><circle cx="15.5" cy="8" r="1.2"/></svg><span data-i18n="tb.color">color</span></button><button type="button" class="tb-btn" data-tool="shape" id="tb-shape" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span data-i18n="tb.shape">shape</span></button><button type="button" class="tb-btn" data-tool="text" id="tb-text" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span data-i18n="tb.text">text</span></button><button type="button" class="tb-btn tb-right" data-tool="export" id="tb-export" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"/></svg><span data-i18n="tb.export">export</span></button></nav>
   </section>
 </main>
 

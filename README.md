@@ -28,13 +28,13 @@
 - **ハーフトーン**: ドット／ライン／クロスハッチング（ペン画風）／エングレービング（紙幣風の波打つ細線とレース状のギロッシュ模様）／エッチング（レンブラントの銅版画のような、1本ずつ手で引いたような不揃いな線の重なり）から選べ、種類ごとに濃さ・立体への沿わせ方・ペンの揺らぎ・波の大きさなどを調整できます（写真・文字の両方）。エッチングは遠景を細く・近景を太くする「遠近の線の太さ」と、形に沿って引く「輪郭線」も調整できます（どちらも0でオフ）。
 - **描き分け（エッチング）**: 写真の中の肌・髪・目・眉・鼻・口・空・葉・草・水などを自動で見分け、それぞれに合わせて線の長さ・向き・密度を変えます（顔は端末内の顔検出で目や口の輪郭も描きます）。「描き分け」を0にすると従来どおり一様な線になります。写真が白黒・暗い・顔が小さい場合は判定が弱くなります。
 - **色タブ**: 配色・ハーフトーンの色・線の色を1か所で変更できます。「色の固定」にチェックを入れた色は、スタイルを選んだりランダム生成しても変わりません。
-- **スタイル**: エッチング／銀塩写真／セピア写真／シルクスクリーン／ポップアートなど、配色だけでなく質感・ハーフトーン・線まで含めた全設定をワンタップで切り替えます（配色だけを変えたいときは「配色」を使います）。現在の設定は「マイスタイル」として名前を付けて保存でき、JSONファイルで書き出し・読み込みもできます。
+- **スタイル**: スタイルタブの先頭にランダム生成があります。エッチング／銀塩写真／セピア写真／シルクスクリーン／ポップアートなど、配色だけでなく質感・ハーフトーン・線まで含めた全設定をワンタップで切り替えます（配色だけを変えたいときは「配色」を使います）。現在の設定は「マイスタイル」として名前を付けて保存でき、JSONファイルで書き出し・読み込みもできます。マイスタイルを選ぶと、保存した値がそのまま復元されます（「色の固定」中の色だけは現在のまま。そのときは通知します）。手動の前景/背景の修正は写真ごとの設定なので、スタイルには含まれません。
 - **コラージュ**: 複数の写真を、人の手でちぎったような「手ちぎり（有機的）」などの縁でコラージュできます。ランダム生成はコラージュの全パラメータに反映されます。
 - **輪郭線**: 領域の境界に線を重ね、少しずらした線（版ズレ）を添えることもできます。
 - **ラスター部分のベクター化**: シルクスクリーンの粒子・写真インクを、トレースして本物のパスに変換できます（SVG / PDFが完全にベクターになります。時間がかかります）。
 - **ポスター用ラスター書き出し**: A4〜A1（300dpi）や12000pxのPNGを、分割描画で書き出せます。ベクター部分は大きなサイズでもシャープなままです。
-- カメラ: 画面いっぱいの映像の上にシャッターとカメラ切替が重なって表示され、縦・横どちらの向きでも撮影できます。セルフタイマー（3/5/10秒）付き。コラージュ用には **連写（枚数・間隔を選択）** と、落ち着いて何枚も撮れる撮影トレイ（不要な写真は✕で削除）があります。結果画面からいつでも「カメラで撮り直す」ができます。
-- 編集画面: 画面下のアイコン（スタイル／調整／ハーフトーン／輪郭線／文字／ランダム、右端が書き出し）をタップするとその編集パネルが開きます。スマホではプレビューを大きく表示したまま調整できます（アイコンの再タップでパネルを閉じる／パネル上部の矢印で元に戻す・やり直し／撮り直しや比較などは右上の「⋯」メニュー）。
+- カメラ: 画面いっぱいの映像の上にシャッターとカメラ切替が重なって表示され、縦・横どちらの向きでも撮影できます。セルフタイマー（3/5/10秒）付き。コラージュ用には **連写（枚数・間隔を選択）** と、落ち着いて何枚も撮れる撮影トレイ（不要な写真は✕で削除）があります。画面下の「写真」ボタンからいつでも写真の入口（撮影・画像選択・コラージュ用の複数枚）に戻れます（編集内容は「← 編集に戻る」で再開できます）。
+- 編集画面: 画面下のアイコン（スタイル／調整／ハーフトーン／輪郭線／文字／ランダム、右端が書き出し）をタップするとその編集パネルが開きます。スマホではプレビューを大きく表示したまま調整できます（アイコンの再タップでパネルを閉じる／パネル上部の矢印で元に戻す・やり直し／写真の入口・比較・前景/背景の修正などは右上の「⋯」メニュー）。
 - プレビュー: ピンチ操作（パソコンではマウスホイール）で拡大縮小、ドラッグで移動できます。⛶で全画面表示、右下のハンドルで枠の大きさを変更、✥で好きな位置に移動（ピクチャーインピクチャー風。⤒で元の位置へ）。拡大しても枠の大きさは変わらないので、パラメータが隠れません。iPhoneでも画面全体は拡大されません。
 - 書き出し: SVG・ベクターPDF・PNG・JPEGに加え、処理能力の低い端末向けの「軽量PNG／軽量JPEG」（長辺1280px）があります。
 - 「比較」の境界線は、画像の上をなぞって左右に動かせます。
@@ -42,7 +42,7 @@
 
 ## 使い方
 
-1. 「カメラで撮る」または「画像を選ぶ」をタップします（カメラの許可は、ボタンを押したときだけ求めます）。
+1. 最初の画面（写真の入口）で、「カメラで撮る」「画像を選ぶ」「撮影してコラージュ」「画像を選んでコラージュ」のどれかをタップします（カメラの許可は、カメラのボタンを押したときだけ求めます）。
 2. 自動で領域が分割され、結果が表示されます。モードとスタイルを選び、スライダーで調整します。
 3. 「書き出し」から SVG / ベクターPDF / PNG / JPEG を保存します。
 
@@ -51,7 +51,7 @@
 ## プライバシー
 
 - 撮影・選択した画像は、お使いのブラウザの中でのみ処理されます。アップロード、アカウント、広告、解析用の通信はありません。
-- 解析もすべて端末内で行い、モデルや外部ライブラリのダウンロードはありません
+- 解析もすべて端末内で行います。外部サービスへの送信はありません。エッチングの顔検出（MediaPipe Face Mesh）は同梱のファイルを初回に読み込みます（約10MB、以降は保存データを使用）。
 - 一度読み込んだ後は、オフラインでも動作します。
 
 ## 動作環境
@@ -91,6 +91,6 @@
 
 ## English
 
-Vector Camera is a free, privacy-first web app that turns photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. Everything runs in your browser — images are never uploaded. Modes: Vector, Silhouette, Color regions, Silkscreen (flat vector colour blocks + processed photo "ink" layers). Pure-vector modes export genuine paths and fills; the Silkscreen mode embeds raster ink layers clipped by vector paths (PNG / JPEG export the flattened result). The optional subject-detection model (image segmentation only; it never generates or alters images) downloads ~4.4 MB plus runtime on first use only. The screen is kept awake while you use the app (Screen Wake Lock API, where supported).
+Vector Camera is a free, privacy-first web app that turns photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. Everything runs in your browser - images are never uploaded. Modes: Vector, Silhouette, Color regions, Silkscreen (flat vector colour blocks + processed photo "ink" layers). Pure-vector modes export genuine paths and fills; the Silkscreen mode embeds raster ink layers clipped by vector paths (PNG / JPEG export the flattened result). The optional face detection used by the etching style (bundled MediaPipe Face Mesh, about 10 MB, loaded once) also runs on your device. The screen is kept awake while you use the app (Screen Wake Lock API, where supported).
 
 © 2026 egoaid. All rights reserved.

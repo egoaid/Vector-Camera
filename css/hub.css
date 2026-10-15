@@ -1,0 +1,6 @@
+/* hub.css - the photo-entry hub (start screen): section labels, back-to-editing button, session note */
+.hub-bar { padding-top: 10px; min-height: 0; }
+.hub-bar .btn { min-height: 40px; }
+.cta-label { margin: 6px 0 -4px; font-size: .78rem; font-weight: 800; letter-spacing: .04em; color: var(--muted); text-align: left; }
+.hub-note { max-width: 34em; margin: 8px auto 0; }
+#screen-start.has-session .hero { margin-top: 8px; padding-top: 22px; }

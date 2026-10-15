@@ -26,5 +26,10 @@
 .stage-menu { display: contents; }
 
 .tb-left { flex: 0 1 64px; margin-right: 4px; padding-right: 4px; border-right: 1px solid var(--border); border-radius: 0; color: var(--text); }
-.rnd-box { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
 .lock-list { display: grid; gap: 4px; margin: 4px 0 10px; }
+/* Style tab: Random Generation sits first (compact), settings fold away */
+.rnd-box { margin: 0 0 12px; padding: 0 0 10px; border-top: 0; border-bottom: 1px dashed var(--border); }
+.rnd-box .random-row .btn { width: 100%; }
+.rnd-lock { margin: 6px 0 4px; }
+.rnd-more { margin: 4px 0 0; }
+.rnd-more > summary { cursor: pointer; font-weight: 700; font-size: .85rem; min-height: 32px; display: flex; align-items: center; }

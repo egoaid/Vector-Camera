@@ -14,7 +14,7 @@ import { vectorizeScene } from './vec-ink.js';
 import { TRACE_SHAPE } from './vec-ink.js';
 import { randomize, History } from './style-random.js';
 import { buildExtras } from './ui-extras.js';
-import { ensureFonts } from './style-text.js';
+import { ensureFonts, missingFonts, failedFonts } from './style-text.js';
 import { makeInkFactory } from './render-ink.js';
 import { drawScene, releaseScene } from './render-canvas.js';
 import { showScreen, showProcessing, hideProcessing, showError } from './ui-views.js';
@@ -25,6 +25,7 @@ import { initStageFrame } from './ui-stage.js';
 import { initSheet } from './ui-sheet.js';
 import { initLayout } from './ui-layout.js';
 import { initTextHandles } from './ui-textbox.js';
+import { initHub } from './ui-hub.js';
 import { initExport, updateExportNote } from './ui-export.js';
 import { initAbout } from './ui-about.js';
 import { registerSW } from './pwa.js';
@@ -32,6 +33,7 @@ import { toast } from './ui-toast.js';
 import { analyzeKinds } from './scene-kinds.js';
 import { detectFaces } from './face-landmarks.js';
 import { initStyleLibrary, buildStyleLibrary } from './ui-styles.js';
+import { renderRandomLock } from './ui-extras.js';
 import { PRESETS, getPreset } from './style-palette.js';
 
 const $ = (id) => document.getElementById(id);
@@ -48,14 +50,31 @@ async function ensurePipeline() {
 }
 const yieldUI = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
 
+/* ---------- replacing the photo / collage (can be cancelled without losing the current edit) ---------- */
+const SESSION_KEYS = ['source', 'canvas', 'work', 'sem', 'faces', 'engineUsed', 'overrides', 'collage', 'result', 'groups', 'scene'];
+let replacing = null, hub = null, camFrom = 'hub', collageAppendNext = false;
+const hasEdits = () => !!(state.result && (state.collage || state.overrides.length));
+const confirmReplace = () => !hasEdits() || window.confirm(t('hub.replace'));
+function beginReplace() { replacing = { pipeStale, lastKey, inkCache, undo: undoH.stack.slice(), redo: redoH.stack.slice() }; for (const k of SESSION_KEYS) replacing[k] = state[k]; }
+const commitReplace = () => { replacing = null; };
+/** Puts back the photo / collage that was open before a failed or cancelled replacement. */
+function rollbackReplace() {
+  if (!replacing) return; const r = replacing; replacing = null;
+  for (const k of SESSION_KEYS) state[k] = r[k];
+  pipeStale = true; lastKey = ''; inkCache = r.inkCache; undoH.stack = r.undo; redoH.stack = r.redo; syncUndo();
+}
+const showHub = () => hub.show();
+const resumeEdit = () => { if (!state.result) return; showScreen('result'); redraw(); };
+
 /* ---------- load + analyse ---------- */
 async function startWithSource(fileOrCanvas) {
-  showProcessing('proc.prepare', 0.03); await yieldUI();
+  if (!confirmReplace()) { showHub(); return; }
+  showProcessing('proc.prepare', 0.03); await yieldUI(); beginReplace();
   try {
     const { source, canvas } = await loadSource(fileOrCanvas);
     state.source = source; state.canvas = canvas; state.overrides = []; editing = false; state.collage = null; resetHistory();
     await analyze();
-  } catch (e) { console.error(e); hideProcessing(); showScreen('start'); showError('start-error', t(/memory|alloc/i.test(String(e && e.message)) ? 'err.memory' : 'err.load')); }
+  } catch (e) { console.error(e); rollbackReplace(); hideProcessing(); showHub(); showError('start-error', t(/memory|alloc/i.test(String(e && e.message)) ? 'err.memory' : 'err.load')); }
 }
 async function analyze() {
   cancelled = false; const mySeq = ++state.seq;
@@ -65,9 +84,9 @@ async function analyze() {
   await client.setImage(state.work.w, state.work.h, state.work.data); await client.setSemantic(null);
   if (cancelled || mySeq !== state.seq) return;
   showProcessing('proc.segment', 0.4);
-  try { await runPipeline(true); } catch (e) { if (cancelled) return; console.error(e); hideProcessing(); toast(t('err.generic')); if (!state.result) showScreen('start'); return; }
+  try { await runPipeline(true); } catch (e) { if (cancelled) return; console.error(e); rollbackReplace(); hideProcessing(); toast(t('err.generic')); if (state.result) resumeEdit(); else showHub(); return; }
   if (cancelled) return;
-  hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); drawOriginal();
+  commitReplace(); hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); drawOriginal();
 }
 async function runPipeline(force = false) {
   await ensurePipeline();
@@ -85,18 +104,18 @@ async function processCell(cell) {
   cell.groups = null; cell.inkCache = null;
 }
 async function addCollageFiles(files, append = true) {
-  if (!append) state.collage = null;
-  const list = [...files].filter((f) => f instanceof HTMLCanvasElement || /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|avif|heic)$/i.test(f.name)).slice(0, 12 - (state.collage ? state.collage.cells.length : 0));
+  const have = append && state.collage ? state.collage.cells : [];
+  const list = [...files].filter((f) => f instanceof HTMLCanvasElement || /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|avif|heic)$/i.test(f.name)).slice(0, 12 - have.length);
   if (!list.length) return;
-  cancelled = false; const mySeq = ++state.seq; const cells = state.collage ? state.collage.cells : [];
+  if (!append && !confirmReplace()) { showHub(); return; } // a new collage replaces the current edit; nothing is changed until it is built
+  beginReplace(); cancelled = false; const mySeq = ++state.seq; const cells = have.slice();
   try {
     for (let i = 0; i < list.length; i++) {
       showProcessing('proc.collage', (i + 0.1) / list.length * 0.9, { n: i + 1, m: list.length }); await yieldUI();
       const { source, canvas } = await loadSource(list[i]); const cell = { source, canvas }; await processCell(cell); if (cancelled || mySeq !== state.seq) return; cells.push(cell);
     }
-  } catch (e) { console.error(e); hideProcessing(); toast(t('err.load')); if (!cells.length) showScreen('start'); return; }
-  state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false; resetHistory();
-  if (state.params.mode === 'vector' || state.params.mode === 'silhouette') { /* all modes work per piece */ }
+  } catch (e) { console.error(e); rollbackReplace(); hideProcessing(); toast(t('err.load')); if (state.result) resumeEdit(); else showHub(); return; }
+  state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false; resetHistory(); commitReplace();
   hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw();
 }
 async function reprocessCollage(mySeq) {
@@ -142,7 +161,15 @@ function rebuildScene() {
   state.scene = buildScene(state.result, state.groups, state.params, state.params.mode === 'hybrid' ? previewInkFactory() : null);
 }
 function redraw() {
-  if (!state.result) return; rebuildScene(); paint(); updateBadges(); updateExportNote(state.scene);
+  if (!state.result) return; rebuildScene(); paint(); updateBadges(); updateExportNote(state.scene); ensureTextFonts();
+}
+/** A shown text slot whose font is not loaded draws nothing (this hid text slots 2 and 3 when their default fonts were never opened in the font menu).
+    Load what is missing, then redraw once; fonts that cannot be loaded are reported once instead of failing silently. */
+let fontTok = 0; const warnedFonts = new Set();
+function ensureTextFonts() {
+  const miss = missingFonts(state.params);
+  if (!miss.length) { for (const id of failedFonts(state.params)) if (!warnedFonts.has(id)) { warnedFonts.add(id); toast(t('tx.fontfail', { font: id })); } return; }
+  const tok = ++fontTok; ensureFonts(state.params).then(() => { if (tok === fontTok && state.result) redraw(); });
 }
 // draws the current scene; when zoomed in, the canvas gets more pixels so the vector detail stays sharp
 function paint() {
@@ -160,20 +187,21 @@ function updateBadges() { $('badges').replaceChildren(); } // the info chips wer
 
 /* ---------- UI wiring ---------- */
 function buildUI() {
-  buildControls(onControl, setMode); buildStyleLibrary(); buildExtras(onControl, { shuffle: () => { state.params.collageSeed = (Math.random() * 1e6) | 0; saveSettings(); redraw(); }, add: () => $('file-collage').click(), addCam: () => openCamera('multi', true) });
+  buildControls(onControl, setMode); buildStyleLibrary(); buildExtras(onControl, { shuffle: () => { state.params.collageSeed = (Math.random() * 1e6) | 0; saveSettings(); redraw(); }, add: () => { collageAppendNext = true; $('file-collage').click(); }, addCam: () => openCamera('multi', true, 'result') });
   const single = !state.collage; $('btn-edit').hidden = !single || !['silhouette', 'hybrid'].includes(state.params.mode); if ($('btn-edit').hidden) setEdit(false);
   $('btn-compare').hidden = !single; if (!single) compare.off(); $('btn-rerun').hidden = !single; $('btn-edit-reset').hidden = !single || !state.overrides.length; base = snapshot(); syncUndo();
 }
 async function onControl(key, value) {
   trackChange();
-  if (key === 'textFont') await ensureFonts(state.params);
+  if (/^textFont/.test(key)) await ensureFonts(state.params);
   if (key === 'preset') { state.params.preset = value; if (state.collage && state.params.collageVary) { state.params.collageVary = false; toast(t('col.bulk')); } if (state.params.mode === 'hybrid' || state.params.mode === 'regions') Object.assign(state.params, presetDefaults(state.params.mode, value)); buildUI(); saveSettings(); }
-  clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130); buildStyleLibrary();
+  clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130); buildStyleLibrary(); if (key === 'lock') renderRandomLock();
 }
 /** Applies a complete style (built-in or mine): every look parameter at once, one undo step. */
-async function applyWholeStyle(np, name) {
+async function applyWholeStyle(np, name, opts = {}) {
   if (!state.result) return;
-  trackDiscrete(); state.params = np; if (state.collage && state.params.collageVary) state.params.collageVary = false;
+  // a built-in style recolours every collage piece, so per-piece varied palettes are switched off; a saved My Style is restored exactly as saved
+  trackDiscrete(); state.params = np; if (!opts.exact && state.collage && state.params.collageVary) state.params.collageVary = false;
   await ensureFonts(state.params); saveSettings(); buildUI(); await refresh();
 }
 async function refresh() {
@@ -227,7 +255,7 @@ async function setWake(on) { state.params.wakeLock = on; saveSettings(); on ? aw
 
 /* ---------- camera (see ui-camera.js) ---------- */
 let camUI = null;
-const openCamera = (mode = 'single', append = false) => camUI.open(mode, append);
+const openCamera = (mode = 'single', append = false, from = 'hub') => { camFrom = from; return camUI.open(mode, append); };
 
 /* ---------- randomise ---------- */
 const snapshot = () => ({ params: JSON.parse(JSON.stringify(state.params)), overrides: state.overrides.slice() });
@@ -266,23 +294,18 @@ function init() {
   $('btn-lang').addEventListener('click', () => setLang(getLang() === 'ja' ? 'en' : 'ja'));
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });
   client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); initSheet(); initLayout(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
-  camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => showScreen(state.result ? 'result' : 'start'), toast });
-  $('btn-camera').addEventListener('click', () => openCamera('single'));
-  $('btn-collage-cam').addEventListener('click', () => { state.collage = null; openCamera('multi', false); });
-  $('btn-choose').addEventListener('click', () => $('file-input').click());
+  camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => { if (camFrom === 'result' && state.result) resumeEdit(); else showHub(); }, toast });
+  hub = initHub({ hasSession: () => !!state.result, camera: (m) => openCamera(m, false, 'hub'), choose: () => $('file-input').click(), collageCamera: () => openCamera('multi', false, 'hub'), collageChoose: () => { collageAppendNext = false; $('file-collage').click(); }, resume: resumeEdit });
   $('file-input').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) startWithSource(f); });
-  $('btn-new').addEventListener('click', () => { showScreen('start'); });
-  $('btn-retake').addEventListener('click', () => openCamera('single'));
-  $('tb-camera').addEventListener('click', () => (state.collage ? openCamera('multi', true) : openCamera('single')));
-  $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
-  $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, !!state.collage); } finally { state.collageBusy = false; } } });
+  $('btn-photo').addEventListener('click', showHub); $('tb-camera').addEventListener('click', showHub);
+  $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files], append = collageAppendNext; e.target.value = ''; collageAppendNext = false; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, append); } finally { state.collageBusy = false; } } });
   $('btn-random').addEventListener('click', doRandom); $('sheet-undo').addEventListener('click', undo); $('sheet-redo').addEventListener('click', redo);
   ensureFonts(state.params); initStyleLibrary({ apply: applyWholeStyle });
   $('btn-rerun').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); analyze(); });
   $('btn-edit').addEventListener('click', () => setEdit(!editing));
   $('btn-edit-reset').addEventListener('click', () => { trackDiscrete(); state.overrides = []; base = snapshot(); setEdit(editing); if (!editing) $('btn-edit-reset').hidden = true; redraw(); });
   $('stage').addEventListener('click', onStageClick); $('toolbar').addEventListener('click', hideHint);
-  $('btn-proc-cancel').addEventListener('click', () => { cancelled = true; state.seq++; client.cancel(); pipeStale = !!state.work; hideProcessing(); toast(t('proc.cancelled')); showScreen(state.result ? 'result' : 'start'); });
+  $('btn-proc-cancel').addEventListener('click', () => { cancelled = true; state.seq++; client.cancel(); pipeStale = !!state.work; rollbackReplace(); hideProcessing(); toast(t('proc.cancelled')); if (state.result) resumeEdit(); else showHub(); });
   $('chk-wake').addEventListener('change', (e) => setWake(e.target.checked));
   wake.init(); wake.onChange(updateWakeUI); setWake(state.params.wakeLock);
   new ResizeObserver(() => { clearTimeout(init._r); init._r = setTimeout(() => { if ($('screen-result').classList.contains('active')) redraw(); }, 150); }).observe($('stage'));

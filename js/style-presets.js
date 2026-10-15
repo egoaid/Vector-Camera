@@ -45,9 +45,23 @@ export const applyBuiltin = (cur, def) => keepLocked(cur, { ...cur, ...expandBui
 export const isBuiltinActive = (cur, def) => { const full = expandBuiltin(def), skip = new Set(lockedKeys(cur)); return LOOK_KEYS.every((k) => skip.has(k) || JSON.stringify(cur[k]) === JSON.stringify(full[k])); };
 
 // ---------- user styles ----------
+// CONTRACT (v0.8.1): a My Style stores EVERY look / text / collage parameter (STYLE_KEYS). Restoring it sets every one of
+// those keys to the saved value, so the result does not depend on what was set before. Exceptions, all explicit:
+//  - colour locks (Colour tab): a locked group keeps the CURRENT colours; `lockConflicts()` tells which locked values differ from the saved style;
+//  - keys missing from an older / external style take LEGACY_VALUES (the value that reproduces the look from before the key existed) or the default;
+//  - device settings (DEVICE_KEYS) and per-photo edits (manual foreground / background fixes, selected text slot) are never part of a style.
+/** Values that reproduce the pre-existence look of a key that was added after styles may have been saved. */
+export const LEGACY_VALUES = { htKinds: 0, htColor: '' };
+const missingValue = (k) => clone(k in LEGACY_VALUES ? LEGACY_VALUES[k] : DEFAULT_PARAMS[k]);
 export const snapshotStyle = (cur) => pickKeys(cur, STYLE_KEYS);
-export const applyUser = (cur, style) => keepLocked(cur, { ...cur, ...sanitizeParams(style.params) });
-export const isUserActive = (cur, style) => { const p = sanitizeParams(style.params), skip = new Set(lockedKeys(cur)); return Object.keys(p).every((k) => skip.has(k) || JSON.stringify(cur[k]) === JSON.stringify(p[k])); };
+/** The complete saved configuration of a style (sanitised; missing keys filled as described above). */
+export function fullStyleParams(style) { const p = sanitizeParams(style.params), out = {}; for (const k of STYLE_KEYS) out[k] = k in p ? p[k] : missingValue(k); return out; }
+export const applyUser = (cur, style) => keepLocked(cur, { ...cur, ...fullStyleParams(style) });
+export const isUserActive = (cur, style) => { const p = fullStyleParams(style), skip = new Set(lockedKeys(cur)); return STYLE_KEYS.every((k) => skip.has(k) || JSON.stringify(cur[k]) === JSON.stringify(p[k])); };
+/** Locked colour groups whose current values differ from what the style saved (they stay as they are): ['palette', 'htColor', 'lineColor'] subset. */
+export function lockConflicts(cur, style) {
+  const p = fullStyleParams(style); return Object.entries(LOCK_KEYS).filter(([g, ks]) => cur.lock && cur.lock[g] && ks.some((k) => JSON.stringify(cur[k]) !== JSON.stringify(p[k]))).map(([g]) => g);
+}
 
 const HEX = /^#[0-9a-f]{6}$/i, hexOk = (v) => typeof v === 'string' && HEX.test(v);
 const RANGE = { halftoneSize: [2, 20], halftoneAngle: [0, 180], separation: [2, 8], paletteK: [0, 32], textAngle: [-90, 90], textSize: [1, 100], textSpacing: [-10, 50], htLayers: [1, 4], htSpread: [10, 90], collageSlots: [0, 16], collageSeed: [0, 1e6], textSeed: [0, 1e6], textHalftoneSize: [2, 20], textHalftoneAngle: [0, 180] };

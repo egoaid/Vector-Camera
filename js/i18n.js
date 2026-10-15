@@ -6,7 +6,9 @@ import { EN2 } from './i18n-en-v2.js';
 import { STYLES_JA, STYLES_EN } from './i18n-styles.js';
 import { MANUAL_JA } from './i18n-manual-ja.js';
 import { MANUAL_EN } from './i18n-manual-en.js';
-const DICT = { ja: { ...JA, ...JA2, ...STYLES_JA, ...MANUAL_JA }, en: { ...EN, ...EN2, ...STYLES_EN, ...MANUAL_EN } };
+import { JA3 } from './i18n-ja-v3.js';
+import { EN3 } from './i18n-en-v3.js';
+const DICT = { ja: { ...JA, ...JA2, ...STYLES_JA, ...MANUAL_JA, ...JA3 }, en: { ...EN, ...EN2, ...STYLES_EN, ...MANUAL_EN, ...EN3 } };
 let lang = 'ja';
 export const getLang = () => lang;
 export function detectLang() {

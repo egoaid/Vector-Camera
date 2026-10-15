@@ -9,8 +9,8 @@
 - Price: free, no account, no ads, no telemetry
 
 ## What it does
-- Input: camera capture or a local image file.
-- Segments the photo into regions (colour/edge based; optional on-device image-segmentation model (subject detection only, no image generation) using SegFormer-B0 ADE20K via Transformers.js, downloaded only if the user opts in).
+- Input: one photo (camera or image file) or several photos for a collage (burst camera or multiple image files), all from one entry screen.
+- Segments the photo into regions (colour/edge based, own algorithms, no model download). An own scene analysis recognises skin, hair, sky, foliage, water and structures; for faces it can use the bundled on-device MediaPipe Face Mesh (Apache-2.0, loaded once from the app's own files; nothing is uploaded).
 - Adjacent regions share identical boundary geometry, so the vector output has no cracks, gaps or overlaps.
 - Modes: Vector (photo colours, editable paths), Silhouette (flat subject / middle / background shapes), Color regions (limited palette, poster look), Silkscreen (flat vector colour blocks + processed photo "ink" layers with halftone / grain / misregistration, in a pop-art / retro record-sleeve spirit).
 - Export: SVG (native paths), vector PDF (native path operators), PNG, JPEG.
@@ -18,9 +18,9 @@
 ## Facts worth quoting accurately
 - Pure-vector modes export genuine vector SVG/PDF (paths and fills only, no embedded raster).
 - Silkscreen mode SVG/PDF = vector shapes + embedded raster ink images clipped by vector paths; the photographic parts are raster. PNG/JPEG are flattened images.
-- No server upload. The optional segmentation model downloads a ~4.4 MB model plus the ONNX Runtime/Transformers.js runtime from a CDN on first use only; the SegFormer weights are under an NVIDIA research/evaluation licence.
+- No server upload. No third-party CDN or model download: everything, including the optional face detection used by the etching style, is served from the app's own files.
 - Keeps the phone screen awake while in use via the Screen Wake Lock API (where supported).
-- Works offline for the standard engine after the first load (service worker cache).
+- Works offline after the first load (service worker cache; the bundled face-analysis files are cached on first use).
 
 ## Pages
 - [Application and documentation](https://egoaid.github.io/Vector-Camera/): the app itself, with feature overview, usage steps, privacy statement and FAQ.

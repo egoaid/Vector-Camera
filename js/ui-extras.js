@@ -20,6 +20,7 @@ const sl = (k, min, max, onChange, base) => slider({ k, min, max, base }, onChan
 export function buildExtras(onChange, hooks) {
   // --- randomise options
   const rs = $('sel-rnd-style'); if (rs) { rs.replaceChildren(); for (const k of ['off', ...TENDENCIES]) { const o = document.createElement('option'); o.value = k; o.textContent = t('rnd.tend.' + k); rs.append(o); } rs.value = state.params.rndStyle || 'off'; rs.onchange = () => { state.params.rndStyle = rs.value; saveSettings(); }; }
+  renderRandomLock();
   const ro = $('random-opts'); ro.replaceChildren();
   for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
     const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params.rndOpts[k];
@@ -44,6 +45,11 @@ export function buildExtras(onChange, hooks) {
   $('sec-collage').hidden = !state.collage; $('tb-compose').hidden = !state.collage; document.dispatchEvent(new CustomEvent('vc:sheet'));
 }
 
+/** One line under the Random button: which colours stay locked (the Colour tab locks) and that everything else may change. */
+export function renderRandomLock() {
+  const el = $('rnd-lock'); if (!el) return; const lk = state.params.lock || {}, on = [['palette', 'color.lock.palette'], ['htColor', 'color.lock.ht'], ['lineColor', 'color.lock.line']].filter(([g]) => lk[g]).map(([, k]) => t(k));
+  el.textContent = on.length ? t('rnd.locked', { groups: on.join(' / ') }) : t('rnd.unlocked');
+}
 let rebuildTextCb = null;
 /** Rebuilds the text panel (e.g. after a handle drag changed values). */
 export function rebuildText() { if (rebuildTextCb) rebuildTextCb(); }
