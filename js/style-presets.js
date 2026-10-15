@@ -10,7 +10,7 @@ import { FONTS } from './style-text.js';
 import { APP_VERSION } from './version.js';
 
 /** Settings of the device / session, never part of a style. */
-const DEVICE_KEYS = new Set(['quality', 'engine', 'wakeLock', 'exportLong', 'vecInk', 'vecInkLong', 'vecInkSpeck', 'rndOpts', 'rndStyle']);
+const DEVICE_KEYS = new Set(['quality', 'engine', 'wakeLock', 'exportLong', 'vecInk', 'vecInkLong', 'vecInkSpeck', 'rndOpts', 'rndStyle', 'lock']);
 /** Every parameter a user style stores (look + texts + collage). */
 export const STYLE_KEYS = Object.keys(DEFAULT_PARAMS).filter((k) => !DEVICE_KEYS.has(k));
 /** The look only (no wording / collage layout): what the built-in styles define. */
@@ -35,15 +35,19 @@ export const BUILTIN_STYLES = [
 ];
 /** The complete look of a built-in style (defaults + differences). */
 export const expandBuiltin = (def) => ({ ...pickKeys(DEFAULT_PARAMS, LOOK_KEYS), ...clone(def.params) });
+/** Colours the user has locked (colour tab): styles and random generation leave them alone. */
+export const LOCK_KEYS = { palette: ['preset', 'customPreset', 'silColors'], htColor: ['htColor'], lineColor: ['lineColor', 'lineColor2'] };
+export const lockedKeys = (cur) => Object.entries(LOCK_KEYS).filter(([g]) => cur.lock && cur.lock[g]).flatMap(([, ks]) => ks);
+const keepLocked = (cur, next) => { for (const k of lockedKeys(cur)) if (k in cur) next[k] = clone(cur[k]); return next; };
 /** Applies a built-in style to the current params; the wording of the texts, the collage layout and device settings stay. */
-export const applyBuiltin = (cur, def) => ({ ...cur, ...expandBuiltin(def) });
+export const applyBuiltin = (cur, def) => keepLocked(cur, { ...cur, ...expandBuiltin(def) });
 /** True while the current params still match every look parameter of the style. */
-export const isBuiltinActive = (cur, def) => { const full = expandBuiltin(def); return LOOK_KEYS.every((k) => JSON.stringify(cur[k]) === JSON.stringify(full[k])); };
+export const isBuiltinActive = (cur, def) => { const full = expandBuiltin(def), skip = new Set(lockedKeys(cur)); return LOOK_KEYS.every((k) => skip.has(k) || JSON.stringify(cur[k]) === JSON.stringify(full[k])); };
 
 // ---------- user styles ----------
 export const snapshotStyle = (cur) => pickKeys(cur, STYLE_KEYS);
-export const applyUser = (cur, style) => ({ ...cur, ...sanitizeParams(style.params) });
-export const isUserActive = (cur, style) => { const p = sanitizeParams(style.params); return Object.keys(p).every((k) => JSON.stringify(cur[k]) === JSON.stringify(p[k])); };
+export const applyUser = (cur, style) => keepLocked(cur, { ...cur, ...sanitizeParams(style.params) });
+export const isUserActive = (cur, style) => { const p = sanitizeParams(style.params), skip = new Set(lockedKeys(cur)); return Object.keys(p).every((k) => skip.has(k) || JSON.stringify(cur[k]) === JSON.stringify(p[k])); };
 
 const HEX = /^#[0-9a-f]{6}$/i, hexOk = (v) => typeof v === 'string' && HEX.test(v);
 const RANGE = { halftoneSize: [2, 20], halftoneAngle: [0, 180], separation: [2, 8], paletteK: [0, 32], textAngle: [-90, 90], textSize: [1, 100], textSpacing: [-10, 50], htLayers: [1, 4], htSpread: [10, 90], collageSlots: [0, 16], collageSeed: [0, 1e6], textSeed: [0, 1e6], textHalftoneSize: [2, 20], textHalftoneAngle: [0, 180] };

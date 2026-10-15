@@ -6,6 +6,7 @@ import { slider, select, check } from './ui-controls.js';
 import { FONTS, ensureFont, isLatinOnly } from './style-text.js';
 import { TEXT_SLOTS, tkey } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
+import { getPreset } from './style-palette.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 const $ = (id) => document.getElementById(id);
 
@@ -13,7 +14,7 @@ export function colorInput(key, labelKey, onChange) {
   const l = document.createElement('label'), i = document.createElement('input'); i.type = 'color'; i.value = state.params[key] || '#ffffff';
   i.addEventListener('input', () => { state.params[key] = i.value; onChange(key); }); i.addEventListener('change', saveSettings); l.append(t(labelKey), i); return l;
 }
-const colorRow = (...items) => { const r = document.createElement('div'); r.className = 'color-row'; r.append(...items); return r; };
+export const colorRow = (...items) => { const r = document.createElement('div'); r.className = 'color-row'; r.append(...items); return r; };
 const sl = (k, min, max, onChange, base) => slider({ k, min, max, base }, onChange);
 
 export function buildExtras(onChange, hooks) {
@@ -24,16 +25,17 @@ export function buildExtras(onChange, hooks) {
     const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params.rndOpts[k];
     const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); }); l.append(i, s); ro.append(l);
   }
+  // --- colour tab: halftone colour, line colours, collage paper and the colour locks (palette chips are built in ui-controls)
+  buildColorPanel(onChange);
   // --- contour lines
   const ln = $('lines-ctl'); ln.replaceChildren();
-  ln.append(sl('lineWidth', 0, 100, onChange), select('lineScope', [['mid', 'ln.scope.mid'], ['fg', 'ln.scope.fg'], ['all', 'ln.scope.all']], onChange, 'ln.scope'), sl('lineOffset', 0, 100, onChange), colorRow(colorInput('lineColor', 'ln.color', onChange), colorInput('lineColor2', 'ln.color2', onChange)));
+  ln.append(sl('lineWidth', 0, 100, onChange), select('lineScope', [['mid', 'ln.scope.mid'], ['fg', 'ln.scope.fg'], ['all', 'ln.scope.all']], onChange, 'ln.scope'), sl('lineOffset', 0, 100, onChange));
   // --- text (3 slots; each has its own wording, font, size, position, tilt, colours and print effects)
   buildTextPanel(onChange);
   // --- collage
   const cc = $('collage-ctl'); cc.replaceChildren();
   cc.append(select('collageLayout', LAYOUTS.map((l) => [l, 'col.l.' + l]), onChange, 'col.layout'), select('collageEdge', EDGES.map((e) => [e, 'col.e.' + e]), onChange, 'col.edge'), select('collageAspect', Object.keys(ASPECTS).map((a) => [a, 'col.a.' + a]), onChange, 'col.aspect'),
-    sl('collageSlots', 0, 16, onChange), sl('collageTorn', 0, 100, onChange), sl('collageGap', 0, 100, onChange), sl('collageRotate', 0, 100, onChange), check('collageVary', 'col.vary', onChange),
-    colorRow(colorInput('collagePaper', 'col.paper', onChange)));
+    sl('collageSlots', 0, 16, onChange), sl('collageTorn', 0, 100, onChange), sl('collageGap', 0, 100, onChange), sl('collageRotate', 0, 100, onChange), check('collageVary', 'col.vary', onChange));
   const row = document.createElement('div'); row.className = 'retake-row';
   const b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'btn btn-small'; b1.textContent = t('col.shuffle'); b1.addEventListener('click', hooks.shuffle);
   const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn btn-small'; b2.textContent = t('col.add'); b2.addEventListener('click', hooks.add);
@@ -67,12 +69,30 @@ export function buildTextPanel(onChange) {
   const fontSel = document.createElement('div'); fontSel.className = 'field'; const fl = document.createElement('label'); fl.htmlFor = 'se-textFont'; fl.textContent = t('tx.font');
   const fs = document.createElement('select'); fs.id = 'se-textFont'; for (const cat of ['display', 'hand', 'type']) { const og = document.createElement('optgroup'); og.label = t('tx.cat.' + cat); for (const d of FONTS.filter((x) => x.cat === cat)) { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; og.append(o); } fs.append(og); }
   fs.value = state.params[K('textFont')]; fs.addEventListener('change', async () => { state.params[K('textFont')] = fs.value; saveSettings(); await ensureFont(fs.value); onChange(K('textFont')); }); fontSel.append(fl, fs);
-  const S = (b, min, max) => sl(K(b), min, max, onChange, b), C = (b, lk) => colorInput(K(b), lk, onChange);
+  const S = (b, min, max) => sl(K(b), min, max, onChange, b);
   const showCb = check(K('textShow'), 'tx.show', (k) => { onChange(k); buildTextPanel(onChange); });
   tx.append(tabs, showCb, f, fontSel, S('textSize', 4, 60), S('textX', 0, 100), S('textY', 0, 100), S('textAngle', -90, 90), S('textSpacing', -5, 30), S('textShadow', 0, 100),
-    colorRow(C('textColor', 'tx.color'), C('textShadowColor', 'tx.shadowcolor')),
     S('textHalftone', 0, 100), select(K('textHalftoneType'), HT_TYPES.map((x) => [x, 'ht.' + x]), onChange, 'p.htype'), S('textHalftoneSize', 2, 14), S('textHalftoneAngle', 0, 90),
     select(K('textHalftoneMode'), [['down', 'tx.ht.down'], ['up', 'tx.ht.up'], ['right', 'tx.ht.right'], ['flat', 'tx.ht.flat']], onChange, 'tx.ht.mode'), S('textWear', 0, 100), S('textDirt', 0, 100));
   const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'btn btn-small'; rs.textContent = t('tx.reseed'); rs.addEventListener('click', () => { state.params[K('textSeed')] = (Math.random() * 1e6) | 0; saveSettings(); onChange(K('textSeed')); }); tx.append(rs);
   const hint = document.createElement('p'); hint.className = 'note'; hint.textContent = t('tx.drag.hint'); tx.append(hint);
+}
+
+/** Colour tab: palette chips live in #presets (ui-controls); here the colour overrides and the colour locks. */
+function buildColorPanel(onChange) {
+  const box = $('color-ctl'); if (!box) return; box.replaceChildren(); const p = state.params, again = (k) => { onChange(k); buildColorPanel(onChange); };
+  const lockBox = (group, labelKey) => { const l = document.createElement('label'), i = document.createElement('input'), s = document.createElement('span'); l.className = 'check lock'; i.type = 'checkbox'; i.checked = !!(p.lock && p.lock[group]); s.textContent = '🔒 ' + t(labelKey); i.addEventListener('change', () => { state.params.lock = { ...state.params.lock, [group]: i.checked }; saveSettings(); onChange('lock'); }); l.append(i, s); return l; };
+  const htOn = p.mode === 'hybrid' && p.halftone > 0, auto = p.htColor === '' || p.htColor == null;
+  const h = document.createElement('div'); h.className = 'field'; // halftone colour (follows the palette until set)
+  const hl = document.createElement('label'), hi = document.createElement('input'); hi.type = 'color'; hi.disabled = !htOn;
+  const pr = getPreset(p); hi.value = auto ? (pr.mode === 'bands' ? (pr.groups.fg.ramp && pr.groups.fg.ramp[0]) || pr.ink : pr.ink) : p.htColor;
+  hi.addEventListener('input', () => { state.params.htColor = hi.value; onChange('htColor'); }); hi.addEventListener('change', () => { saveSettings(); buildColorPanel(onChange); });
+  hl.append(t('p.htColor') + (auto ? ' (' + t('ht.color.autoon') + ')' : ''), hi);
+  const hb = document.createElement('button'); hb.type = 'button'; hb.className = 'btn btn-small'; hb.textContent = t('ht.color.auto'); hb.disabled = auto || !htOn; hb.addEventListener('click', () => { state.params.htColor = ''; again('htColor'); });
+  h.append(colorRow(hl, hb)); if (!htOn) { const n = document.createElement('p'); n.className = 'note'; n.textContent = t('color.ht.off'); h.append(n); }
+  const ln = document.createElement('div'); ln.className = 'field'; ln.append(colorRow(colorInput('lineColor', 'ln.color', onChange), colorInput('lineColor2', 'ln.color2', onChange)));
+  const lk = document.createElement('div'); lk.className = 'field';
+  const title = document.createElement('span'); title.className = 'label'; title.textContent = t('color.lock.title'); const note = document.createElement('p'); note.className = 'note'; note.textContent = t('color.lock.note');
+  const list = document.createElement('div'); list.className = 'lock-list'; list.append(lockBox('palette', 'color.lock.palette'), lockBox('htColor', 'color.lock.ht'), lockBox('lineColor', 'color.lock.line')); lk.append(title, note, list);
+  box.append(h, ln); if (state.collage) { const c = document.createElement('div'); c.className = 'field'; c.append(colorRow(colorInput('collagePaper', 'col.paper', onChange))); box.append(c); } box.append(lk);
 }

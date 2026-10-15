@@ -56,11 +56,6 @@ export function buildControls(onChange, onMode) {
   pr.closest('.field').hidden = ids.length < 2;
   // controls
   const main = $('controls'), adv = $('controls-adv'); main.replaceChildren(); adv.replaceChildren();
-  if (mode === 'silhouette' && (p.preset === 'custom' || p.silSample === false && p.preset === 'custom')) {
-    const row = document.createElement('div'); row.className = 'color-row';
-    for (const g of ['bg', 'mid', 'fg']) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'color'; i.value = p.silColors[g]; i.addEventListener('input', () => { state.params.silColors[g] = i.value; onChange('silColors'); }); i.addEventListener('change', saveSettings); l.append(t('sil.' + g), i); row.append(l); }
-    main.append(row);
-  }
   if (mode === 'silhouette') main.append(check('silSample', 'sil.sample', onChange));
   for (const g of GROUP_ORDER) { const items = MAIN.filter((d) => d.g === g && d.modes.includes(mode)).map((d) => slider(d, onChange)); if (g === 'tone' && mode === 'hybrid') items.unshift(select('bgTreatment', [['flat', 'bg.flat'], ['photo', 'bg.photo'], ['paper', 'bg.paper']], onChange, 'p.bg')); if (items.length) main.append(group(g, items)); }
   buildHalftone(onChange, mode);
@@ -81,13 +76,9 @@ export function buildHalftone(onChange, mode = state.params.mode) {
   box.append(select('halftoneType', HT_TYPES.map((x) => [x, 'ht.' + x]), re, 'p.htype'));
   const n = document.createElement('p'); n.className = 'note'; n.textContent = t('ht.desc.' + (p.halftoneType || 'dot')); box.append(n);
   const S = (k, min, max) => slider({ k, min, max }, onChange), ty = p.halftoneType || 'dot';
-  { const l = document.createElement('label'), i = document.createElement('input'), auto = p.htColor === '' || p.htColor == null; i.type = 'color'; i.value = auto ? (() => { const pr = getPreset(p); return pr.mode === 'bands' ? (pr.groups.fg.ramp?.[0] || '#17121c') : pr.ink; })() : p.htColor;
-    i.addEventListener('input', () => { state.params.htColor = i.value; onChange('htColor'); }); i.addEventListener('change', () => { saveSettings(); buildHalftone(onChange, mode); });
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-small'; b.textContent = t('ht.color.auto'); b.disabled = auto; b.addEventListener('click', () => { state.params.htColor = ''; onChange('htColor'); buildHalftone(onChange, mode); });
-    const row = document.createElement('div'); row.className = 'color-row'; l.append(t('p.htColor') + (auto ? ' (' + t('ht.color.autoon') + ')' : ''), i); row.append(l, b); box.append(row); }
   box.append(S('halftoneSize', 3, 14), S('halftoneAngle', 0, 90), S('htWeight', 0, 100));
   if (ty === 'line') box.append(S('htCurve', 0, 100));
   if (ty === 'cross') box.append(S('htLayers', 2, 3), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100));
-  if (ty === 'etching') box.append(S('htLayers', 1, 4), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100), S('htLen', 0, 100), S('htDepth', 0, 100), S('htContour', 0, 100));
+  if (ty === 'etching') box.append(S('htLayers', 1, 4), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100), S('htLen', 0, 100), S('htDepth', 0, 100), S('htContour', 0, 100), S('htKinds', 0, 100));
   if (ty === 'engrave') box.append(S('htWave', 0, 100), S('htWaveLen', 0, 100), S('htGuilloche', 0, 100), S('htCurve', 0, 100));
 }

@@ -7,6 +7,7 @@ import { TEXT_SLOTS, tkey } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 import { tendencyPatch } from './style-tendency.js';
+import { lockedKeys } from './style-presets.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 const range = (r, a, b) => Math.round(a + r() * (b - a));
@@ -89,6 +90,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
   }
   let overrides = null;
   if (opts.subject && res && groups) overrides = r() < 0.3 ? [] : randomOverrides(r, res, groups, range(r, 1, 4));
+  for (const k of lockedKeys(cur)) delete patch[k]; // colours locked on the colour tab stay as they are
   return { params: patch, overrides };
 }
 /** Undo history of {params, overrides} snapshots. */

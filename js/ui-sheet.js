@@ -3,7 +3,7 @@
 import { t } from './i18n.js';
 const $ = (id) => document.getElementById(id);
 export function initSheet() {
-  const sheet = $('sheet'), bar = $('toolbar'), btns = [...bar.querySelectorAll('.tb-btn')], pages = [...sheet.querySelectorAll('.page')];
+  const sheet = $('sheet'), bar = $('toolbar'), btns = [...bar.querySelectorAll('.tb-btn[data-tool]')], pages = [...sheet.querySelectorAll('.page')];
   const desk = () => window.matchMedia('(min-width: 900px)').matches;
   let page = 'style', open = desk();
   function apply() {

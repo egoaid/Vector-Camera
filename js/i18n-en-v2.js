@@ -36,7 +36,7 @@ export const EN2 = {
   'ht.engrave': 'Engraving (banknote style)',
   'ht.etching': 'Etching (hand-drawn)',
   'ht.desc.etching': 'A loose mass of hand-drawn lines like a Rembrandt etching. Darker tones get denser lines and extra crossing directions; strokes are slightly uneven in length and direction, so the result looks quick yet organic. "Follow the form" bends lines with the shapes, "Pen wobble" adds hand tremor.',
-  'p.htDepth': 'Near/far line weight (0 = all alike)', 'p.htContour': 'Outlines along the form (0 = off)',
+  'p.htKinds': 'Touch per subject (skin, hair, leaves, sky; 0 = all alike)', 'p.htDepth': 'Near/far line weight (0 = all alike)', 'p.htContour': 'Outlines along the form (0 = off)',
   'p.htLen': 'Stroke length',
   'p.htype': 'Halftone type',
   'zoom.move': 'Move preview frame',

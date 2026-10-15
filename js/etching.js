@@ -13,6 +13,27 @@ import { mulberry32 } from './color-utils.js';
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a || 1e-6)); return t * t * (3 - 2 * t); };
+// Touch per kind of thing (see scene-kinds.js): how a draughtsman changes the pen for skin, hair, leaves, sky ...
+// len / dens / wt / sk are multipliers (1 = neutral); curve 0..1 = how strongly strokes follow the form (null = keep the user's value);
+// ang = fixed hatch direction (radians, 'rand' = every stroke different, 'vert' = upright); maxLayer = highest cross-hatch layer allowed.
+const NEUTRAL = { len: 1, dens: 1, wt: 1, sk: 1, curve: null, ang: null, maxLayer: 4 };
+export const TOUCH = [
+  NEUTRAL,
+  { len: 1.3, dens: 0.85, wt: 0.8, sk: 0.8, curve: 1, ang: null, maxLayer: 2 },  // 1 skin: long fine strokes following the form, light cross-hatching
+  { len: 1.9, dens: 1.15, wt: 0.9, sk: 0.7, curve: 1, ang: null, maxLayer: 3 },  // 2 hair: long flowing strokes
+  { len: 0.4, dens: 1.35, wt: 0.75, sk: 0.4, curve: 0.3, ang: null, maxLayer: 4 }, // 3 eye: short, dense, precise
+  { len: 0.55, dens: 1.2, wt: 0.9, sk: 0.4, curve: 0.8, ang: null, maxLayer: 2 }, // 4 brow
+  { len: 0.6, dens: 0.9, wt: 0.7, sk: 0.5, curve: 1, ang: null, maxLayer: 2 },    // 5 nose
+  { len: 0.5, dens: 1.1, wt: 0.8, sk: 0.4, curve: 1, ang: null, maxLayer: 2 },    // 6 mouth
+  { len: 0.7, dens: 0.9, wt: 0.8, sk: 0.7, curve: 1, ang: null, maxLayer: 2 },    // 7 ear
+  { len: 2.4, dens: 0.55, wt: 0.7, sk: 0.3, curve: 0, ang: 0, maxLayer: 1 },      // 8 sky: sparse, long, horizontal
+  { len: 0.55, dens: 1.15, wt: 1, sk: 1.9, curve: 0.1, ang: 'rand', maxLayer: 4 }, // 9 foliage: short scribbled clumps in every direction
+  { len: 0.6, dens: 1, wt: 0.9, sk: 1.2, curve: 0, ang: 'vert', maxLayer: 3 },     // 10 grass: upright flicks
+  { len: 2.2, dens: 0.8, wt: 0.8, sk: 0.3, curve: 0, ang: 0, maxLayer: 2 },        // 11 water: long level strokes
+  { len: 1.6, dens: 1, wt: 0.85, sk: 0.1, curve: 0, ang: null, maxLayer: 3 },      // 12 structure: straight, ruled lines
+];
+const LAYER_OF_FAMILY = [1, 1, 2, 3, 4, 3];
+const blendAng = (a, t, k) => { const x = (1 - k) * Math.cos(2 * a) + k * Math.cos(2 * t), y = (1 - k) * Math.sin(2 * a) + k * Math.sin(2 * t); return 0.5 * Math.atan2(y, x); };
 /** Separable box blur (running sums). */
 export function boxBlurF(src, w, h, r) {
   const tmp = new Float32Array(w * h), out = new Float32Array(w * h), n = 2 * r + 1;
@@ -57,6 +78,8 @@ export function etchMask(D, W, H, elig, o) {
   const nearAt = (x, y) => (dmap ? dmap[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))] : 0.5);
   const depthW = (x, y) => (dk > 0 ? Math.max(0.3, Math.min(2.3, 1 + dk * (nearAt(x, y) - 0.5) * 1.8)) : 1); // far lines fine, near lines bold
   const depthA = (x, y) => (dk > 0 ? 1 - 0.3 * dk * (1 - nearAt(x, y)) : 1); // far lines are also a little lighter
+  const kmap = o.kindMap || null, kk = kmap ? Math.max(0, Math.min(1, (o.kinds ?? 0) / 100)) : 0, kindAt = (x, y) => (kmap ? kmap[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))] : 0);
+  const mixT = (k, key) => { const t = TOUCH[k] || NEUTRAL; return key === 'curve' || key === 'ang' || key === 'maxLayer' ? t[key] : 1 + (t[key] - 1) * kk; };
   const cm = new Uint8Array(W * H), amt = Math.max(0, Math.min(1, (o.contour ?? 0) / 100));
   const darkAt = (x, y) => Db[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))];
   const stamp = (x, y, r, a) => {
@@ -65,8 +88,8 @@ export function etchMask(D, W, H, elig, o) {
   };
   // direction at a point for a hatch family rotated by `rot` from the base angle (doubled-angle blend: lines have no sign)
   const ph1 = rnd() * 6.283, ph2 = rnd() * 6.283, ph3 = rnd() * 6.283, patch = (x, y) => 0.34 * Math.sin(x / (cell * 13) + ph1) * Math.cos(y / (cell * 10) + ph2) + 0.2 * Math.sin((x + y) / (cell * 5.5) + ph3); // patches of slightly different hatch angle, as a hand drifts
-  const dirAt = (x, y, alpha0, rot) => {
-    const alpha = alpha0 + patch(x, y) * (0.4 + 0.8 * sk), k = Math.min(flow.gh - 1, (y / g) | 0) * flow.gw + Math.min(flow.gw - 1, (x / g) | 0), f = flow.f[k] * curve, c2 = flow.c2[k], s2 = flow.s2[k], cr = Math.cos(2 * rot), sr = Math.sin(2 * rot);
+  const dirAt = (x, y, alpha0, rot, cvK = curve, skK = sk) => {
+    const alpha = alpha0 + patch(x, y) * (0.4 + 0.8 * skK), k = Math.min(flow.gh - 1, (y / g) | 0) * flow.gw + Math.min(flow.gw - 1, (x / g) | 0), f = flow.f[k] * cvK, c2 = flow.c2[k], s2 = flow.s2[k], cr = Math.cos(2 * rot), sr = Math.sin(2 * rot);
     const vx = (1 - f) * Math.cos(2 * alpha) + f * (c2 * cr - s2 * sr), vy = (1 - f) * Math.sin(2 * alpha) + f * (s2 * cr + c2 * sr);
     return { a: 0.5 * Math.atan2(vy, vx), f: flow.f[k] };
   };
@@ -125,7 +148,7 @@ export function etchMask(D, W, H, elig, o) {
     }
   }
   // one hatch family
-  const family = (alpha, rot, thr, spacing, strokeLen, rows) => {
+  const family = (alpha, rot, thr, spacing, strokeLen, rows, fi = 0) => {
     const ca = Math.cos(alpha), sa = Math.sin(alpha), diag = Math.hypot(W, H), cx = W / 2, cy = H / 2, half = rows.offset || 0;
     for (let u = -diag / 2 + half * spacing; u < diag / 2; u += spacing * (0.8 + 0.4 * rnd())) {
       let v = -diag / 2 - rnd() * strokeLen;
@@ -134,14 +157,18 @@ export function etchMask(D, W, H, elig, o) {
         v += L * (0.55 + 0.7 * rnd()) + rnd() * strokeLen * 0.25;
         if (sx < 0 || sy < 0 || sx >= W || sy >= H) continue;
         const i0 = (sy | 0) * W + (sx | 0); if (elig && !elig[i0]) continue;
-        const d0 = darkAt(sx, sy); if (rnd() > smooth(thr - 0.06, thr + 0.24, d0) * 0.97) continue;
+        const kd = kk > 0 ? kindAt(sx, sy) : 0, tp = TOUCH[kd] || NEUTRAL;
+        if (kd && LAYER_OF_FAMILY[fi] > tp.maxLayer && rnd() < kk) continue; // e.g. no cross-hatching on skin or sky
+        const d0 = Math.min(1, darkAt(sx, sy) * (kd ? mixT(kd, 'dens') : 1)); if (rnd() > smooth(thr - 0.06, thr + 0.24, d0) * 0.97) continue;
+        let alphaS = alpha, cvS = curve; const skS = kd ? sk * mixT(kd, 'sk') : sk, Lk = kd ? L * mixT(kd, 'len') : L, wtK = kd ? mixT(kd, 'wt') : 1;
+        if (kd) { if (tp.curve != null) cvS = curve * (1 - kk) + tp.curve * kk; if (tp.ang != null) { const t = tp.ang === 'rand' ? rnd() * Math.PI : tp.ang === 'vert' ? -Math.PI / 2 + (rnd() - 0.5) * 0.9 : tp.ang + (alpha - base) * 0.25; alphaS = blendAng(alpha, t, kk); } }
         // trace the stroke
-        const stopTh = thr - 0.1 + (rnd() - 0.5) * 0.12, wob = (0.02 + 0.13 * sk) * (0.5 + rnd()), lam = cell * (10 + 12 * rnd()), ph = rnd() * 6.283, ph2 = rnd() * 6.283, jit = (rnd() - 0.5) * (0.1 + 0.3 * sk), w0 = lineW * (0.75 + 0.6 * rnd()) * (0.8 + 0.5 * d0) * depthW(sx, sy), aD = depthA(sx, sy);
-        let x = sx, y = sy, ang = dirAt(x, y, alpha, rot).a, drift = 0, s = 0; const bow = (rnd() - 0.5) * 0.5 * sk; // each stroke is slightly bowed
-        const n = Math.max(2, Math.round(L / ds));
+        const stopTh = thr - 0.1 + (rnd() - 0.5) * 0.12, wob = (0.02 + 0.13 * skS) * (0.5 + rnd()), lam = cell * (10 + 12 * rnd()), ph = rnd() * 6.283, ph2 = rnd() * 6.283, jit = (rnd() - 0.5) * (0.1 + 0.3 * skS), w0 = lineW * (0.75 + 0.6 * rnd()) * (0.8 + 0.5 * d0) * depthW(sx, sy) * wtK, aD = depthA(sx, sy);
+        let x = sx, y = sy, ang = dirAt(x, y, alphaS, rot, cvS, skS).a, drift = 0, s = 0; const bow = (rnd() - 0.5) * 0.5 * skS; // each stroke is slightly bowed
+        const n = Math.max(2, Math.round(Lk / ds));
         for (let k = 0; k <= n; k++) {
-          const tt = k / n, tgt = dirAt(x, y, alpha, rot); let da = tgt.a - ang; da -= Math.PI * Math.round(da / Math.PI); // shortest way, lines are undirected
-          ang += da * 0.14; drift += (rnd() - 0.5) * 0.035 * sk; drift *= 0.96;
+          const tt = k / n, tgt = dirAt(x, y, alphaS, rot, cvS, skS); let da = tgt.a - ang; da -= Math.PI * Math.round(da / Math.PI); // shortest way, lines are undirected
+          ang += da * 0.14; drift += (rnd() - 0.5) * 0.035 * skS; drift *= 0.96;
           const a = ang + jit + wob * (0.6 * Math.sin((s / lam) * 6.283 + ph) + 0.15 * Math.sin((s / (lam * 0.45)) * 6.283 + ph2)) + drift + bow * Math.sin(Math.PI * tt) * 1.3;
           const prof = Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * tt)), 0.55), r = Math.max(0.3, (w0 * prof) / 2);
           stamp(x, y, r, (0.55 + 0.45 * prof) * aD);
@@ -149,18 +176,23 @@ export function etchMask(D, W, H, elig, o) {
           if (x < 0 || y < 0 || x >= W || y >= H) break;
           if (k > 2 && darkAt(x, y) < stopTh) break; // shading fades out where the tone gets lighter
           if (elig && !elig[(y | 0) * W + (x | 0)]) break; // never run on past the region
+          if (kd && k > 2 && kindAt(x, y) !== kd && rnd() < 0.8 * kk) break; // a stroke does not run from skin into hair, from an eye onto the cheek ...
           if (amt > 0 && k > 2 && cm[(y | 0) * W + (x | 0)] && rnd() < 0.75) break; // shading stops at the outline
         }
       }
     }
   };
   if (amt > 0) contours();
+  if (kk > 0 && amt > 0 && o.strokes) for (const pl of o.strokes) { // outlines of eyes, brows, nose and lips (from face landmarks), drawn like the other outlines
+    const path = []; for (let i = 0; i < pl.length; i += 2) path.push(pl[i], pl[i + 1], 0.55);
+    if (path.length >= 9) { drawOutline(path, 0.9, 0); if (rnd() < 0.5 * amt) drawOutline(path, 0.6, cell * 0.16 * (rnd() < 0.5 ? -1 : 1)); }
+  }
   const S = cell * 0.62;
-  family(base, 0, 0.2, S, cell * 5.5 * lenK, { offset: 0 });
-  family(base + 0.05, 0.05, 0.42, S, cell * 4.5 * lenK, { offset: 0.5 }); // fills the gaps of the first family: denser in mid-darks
-  if (layers >= 2) family(base + spread, spread, 0.54, S * 1.1, cell * 4 * lenK, { offset: 0.2 });
-  if (layers >= 3) family(base - spread * 0.55, -spread * 0.55, 0.68, S * 1.15, cell * 3 * lenK, { offset: 0.7 });
-  if (layers >= 4) family(base + spread * 1.7, spread * 1.7, 0.82, S * 0.8, cell * 1.8 * lenK, { offset: 0.35 }); // scribbled marks in the deepest darks
-  if (layers >= 3) family(base + spread * 0.3, spread * 0.3, 0.9, S * 0.7, cell * 2.2 * lenK, { offset: 0.15 }); // the very darkest tones close up with short strokes
+  family(base, 0, 0.2, S, cell * 5.5 * lenK, { offset: 0 }, 0);
+  family(base + 0.05, 0.05, 0.42, S, cell * 4.5 * lenK, { offset: 0.5 }, 1); // fills the gaps of the first family: denser in mid-darks
+  if (layers >= 2) family(base + spread, spread, 0.54, S * 1.1, cell * 4 * lenK, { offset: 0.2 }, 2);
+  if (layers >= 3) family(base - spread * 0.55, -spread * 0.55, 0.68, S * 1.15, cell * 3 * lenK, { offset: 0.7 }, 3);
+  if (layers >= 4) family(base + spread * 1.7, spread * 1.7, 0.82, S * 0.8, cell * 1.8 * lenK, { offset: 0.35 }, 4); // scribbled marks in the deepest darks
+  if (layers >= 3) family(base + spread * 0.3, spread * 0.3, 0.9, S * 0.7, cell * 2.2 * lenK, { offset: 0.15 }, 5); // the very darkest tones close up with short strokes
   return mask;
 }

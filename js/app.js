@@ -29,6 +29,8 @@ import { initExport, updateExportNote } from './ui-export.js';
 import { initAbout } from './ui-about.js';
 import { registerSW } from './pwa.js';
 import { toast } from './ui-toast.js';
+import { analyzeKinds } from './scene-kinds.js';
+import { detectFaces } from './face-landmarks.js';
 import { initStyleLibrary, buildStyleLibrary } from './ui-styles.js';
 import { PRESETS, getPreset } from './style-palette.js';
 
@@ -59,7 +61,7 @@ async function analyze() {
   cancelled = false; const mySeq = ++state.seq;
   showProcessing('proc.prepare', 0.08); await yieldUI();
   state.work = makeWorking(state.canvas, state.params.quality);
-  state.sem = null; state.engineUsed = 'classic'; pipeStale = false; lastKey = '';
+  state.sem = null; state.engineUsed = 'classic'; state.faces = undefined; pipeStale = false; lastKey = '';
   await client.setImage(state.work.w, state.work.h, state.work.data); await client.setSemantic(null);
   if (cancelled || mySeq !== state.seq) return;
   showProcessing('proc.segment', 0.4);
@@ -115,6 +117,17 @@ const collageCells = (inkLongFor) => state.collage.cells.map((c) => {
 function computeGroups() {
   const r = state.result;
   state.groups = classifyGroups(r.stats, r.w, r.h, { subjectSize: state.params.subjectSize / 100, semNames: r.semNames, semMajor: r.semMajor, overrides: state.overrides, labels: r.labels });
+  ensureKinds(r);
+}
+/** What is where (skin, hair, leaves, sky, eyes ...): own analysis of the regions plus optional face landmarks. Computed only when a style uses it. */
+function ensureKinds(r) {
+  const p = state.params; if (state.collage || !state.work || !(p.mode === 'hybrid' && p.halftone > 0 && p.halftoneType === 'etching' && p.htKinds > 0)) return;
+  if (state.faces === undefined && state.canvas) { // faces are looked for once per photo, in the background; the picture is redrawn when they arrive
+    state.faces = null; const tok = state.work;
+    detectFaces(state.canvas).then((f) => { if (state.work !== tok) return; state.faces = f; if (state.result) { state.result.kinds = null; if (f.length) redraw(); } });
+  }
+  if (r.kinds && r.kinds.faces_ === state.faces) return;
+  const k = analyzeKinds({ rgba: state.work.data, w: r.w, h: r.h, labels: r.labels, R: r.R, groups: state.groups, faces: state.faces || [] }); k.faces_ = state.faces; r.kinds = k;
 }
 function previewInkFactory() {
   const long = Math.min(1100, Math.max(state.source.w, state.source.h));
@@ -260,6 +273,7 @@ function init() {
   $('file-input').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) startWithSource(f); });
   $('btn-new').addEventListener('click', () => { showScreen('start'); });
   $('btn-retake').addEventListener('click', () => openCamera('single'));
+  $('tb-camera').addEventListener('click', () => (state.collage ? openCamera('multi', true) : openCamera('single')));
   $('btn-collage').addEventListener('click', () => { state.collage = null; $('file-collage').click(); });
   $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files]; e.target.value = ''; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, !!state.collage); } finally { state.collageBusy = false; } } });
   $('btn-random').addEventListener('click', doRandom); $('sheet-undo').addEventListener('click', undo); $('sheet-redo').addEventListener('click', redo);

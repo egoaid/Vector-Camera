@@ -1,6 +1,7 @@
 // i18n-styles.js - texts for styles (built-in / my styles), random tendency and the new palettes.
 export const STYLES_JA = {
   'preset.label': '配色', 'preset.etching': 'エッチング（墨）', 'preset.etchblue': 'エッチング（藍）', 'preset.sanguine': 'サンギーヌ（赤褐色）', 'preset.silver': '銀塩モノクロ', 'preset.sepia': 'セピア', 'preset.selenium': 'セレン調色',
+  'tb.camera': '撮り直す', 'tb.color': '色', 'tb.shape': '形・質感', 'rnd.title': 'ランダム生成', 'rnd.lock.note': '色タブで固定した色（配色・ハーフトーン色・線の色）は、ランダム生成でも変わりません。', 'color.lock.title': '色の固定', 'color.lock.note': '固定した色は、スタイルの適用・ランダム生成で変わりません。気に入った色を残したまま画風だけ変えたいときに使います。', 'color.lock.palette': '配色を固定', 'color.lock.ht': 'ハーフトーンの色を固定', 'color.lock.line': '線の色を固定', 'color.ht.off': 'ハーフトーンがオンのときに使えます（形・質感タブで設定）。',
   'p.htColor': 'ハーフトーンの色', 'ht.color.auto': '配色に合わせる', 'ht.color.autoon': '配色に連動中',
   'style.title': 'スタイル', 'style.note': 'スタイルは配色だけでなく、段数・質感・ハーフトーン・線など全設定をまとめて切り替えます（文字と端末設定は変わりません）。',
   'style.builtin': 'おすすめスタイル', 'style.mine': 'マイスタイル', 'style.none': 'まだ保存したスタイルはありません。',
@@ -14,6 +15,7 @@ export const STYLES_JA = {
 };
 export const STYLES_EN = {
   'preset.label': 'Palette', 'preset.etching': 'Etching (ink)', 'preset.etchblue': 'Etching (indigo)', 'preset.sanguine': 'Sanguine (red-brown)', 'preset.silver': 'Silver-gelatin B&W', 'preset.sepia': 'Sepia', 'preset.selenium': 'Selenium toned',
+  'tb.camera': 'Retake', 'tb.color': 'Colour', 'tb.shape': 'Shape & texture', 'rnd.title': 'Randomise', 'rnd.lock.note': 'Colours locked on the Colour tab (palette, halftone colour, line colours) stay as they are when you randomise.', 'color.lock.title': 'Colour locks', 'color.lock.note': 'Locked colours do not change when you apply a style or randomise. Use it to keep colours you like while changing the look.', 'color.lock.palette': 'Lock palette', 'color.lock.ht': 'Lock halftone colour', 'color.lock.line': 'Lock line colours', 'color.ht.off': 'Available while the halftone is on (set it on the Shape & texture tab).',
   'p.htColor': 'Halftone colour', 'ht.color.auto': 'Follow palette', 'ht.color.autoon': 'follows palette',
   'style.title': 'Styles', 'style.note': 'A style switches every setting at once - palette, levels, texture, halftone, lines (your texts and device settings are kept).',
   'style.builtin': 'Built-in styles', 'style.mine': 'My styles', 'style.none': 'No saved styles yet.',

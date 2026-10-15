@@ -24,3 +24,7 @@
 .grp { margin: 0 0 10px; }
 .grp > summary { font-weight: 800; }
 .stage-menu { display: contents; }
+
+.tb-left { flex: 0 1 64px; margin-right: 4px; padding-right: 4px; border-right: 1px solid var(--border); border-radius: 0; color: var(--text); }
+.rnd-box { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.lock-list { display: grid; gap: 4px; margin: 4px 0 10px; }
