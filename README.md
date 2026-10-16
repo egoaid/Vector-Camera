@@ -56,7 +56,7 @@
 ## プライバシー
 
 - 撮影・選択した画像は、お使いのブラウザの中でのみ処理されます。アップロード、アカウント、広告、解析用の通信はありません。
-- 解析もすべて端末内で行います。外部サービスへの送信はありません。エッチングの顔検出（MediaPipe）は同梱のファイルを初回に読み込みます（旧エンジンは約10MB、以降は保存データを使用）。新エンジン（Face Landmarker）は、モデルファイルが同梱されているときだけ使えます。
+- 解析もすべて端末内で行います。外部サービスへの送信はありません。エッチングの顔検出（MediaPipe）は同梱のファイルを初回に読み込みます（旧エンジンは約10MB、以降は保存データを使用）。新エンジン（Face Landmarker）のモデルも同梱しているため、追加のダウンロードやインストールは不要です。
 - 一度読み込んだ後は、オフラインでも動作します。
 
 ## 動作環境
@@ -86,7 +86,7 @@
 © 2026 egoaid. All rights reserved.
 
 
-同梱: [MediaPipe](https://github.com/google-ai-edge/mediapipe)（Face Mesh と Tasks Vision の実行ファイル。Apache-2.0、vendor/mediapipe に無改変で同梱。ライセンス全文は vendor/mediapipe/LICENSE、詳細は vendor/mediapipe/NOTICE.txt と docs/FACE_ENGINES.md）。顔のパーツ検出にのみ使い、端末内で動作します。
+同梱: [MediaPipe](https://github.com/google-ai-edge/mediapipe)（Face Mesh と Tasks Vision の実行ファイル。Apache-2.0、vendor/mediapipe に無改変で同梱。ライセンス全文は vendor/mediapipe/LICENSE、詳細は vendor/mediapipe/NOTICE.txt）。顔のパーツ検出にのみ使い、端末内で動作します。
 
 同梱フォント（文字の輪郭化のみに使用）: Anton、Bebas Neue、Archivo Black、Abril Fatface、Shrikhand、Bungee、Pacifico、Caveat、Reenie Beanie、Covered By Your Grace、Gochi Hand ほか（SIL Open Font License 1.1）、Permanent Marker、Rock Salt、Special Elite、Homemade Apple（Apache License 2.0）。各ライセンスは `fonts/LICENSES.txt` にあります。
 

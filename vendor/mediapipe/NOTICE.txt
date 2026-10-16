@@ -7,11 +7,17 @@ their model cards state the same licence (Apache License, Version 2.0):
 The files are used unmodified. Face analysis runs entirely in the browser; images are never uploaded.
 
 
-Bundled third-party software (second engine): MediaPipe Tasks Vision (npm package @mediapipe/tasks-vision 1.1.1), runtime only, used unmodified.
-Copyright Google LLC. Licensed under the Apache License, Version 2.0 (package.json of the tarball states Apache-2.0; the licence text is in vendor/mediapipe/tasks-vision/LICENSE).
-Files and SHA-256 (taken from the npm tarball, integrity sha512-jwntgT5tzDrKOkqg6xNDNpRcTUnGvmylZE5DFnzPXossiWOIDdZX+C81LI75hlXhsG58YZW+lGzcmjH1qrQE/Q==):
-  vendor/mediapipe/tasks-vision/vision_bundle.mjs  a84921e02321e582484c1f8126d344b5f33b791fa09c640a52e20ee8632068f1
+Bundled third-party software (second engine): MediaPipe Tasks Vision (npm package @mediapipe/tasks-vision 1.1.1) runtime and the MediaPipe Face Landmarker model bundle, used unmodified.
+Copyright Google LLC. Code: Apache License, Version 2.0 (package.json of the tarball states Apache-2.0; the licence text is in vendor/mediapipe/tasks-vision/LICENSE).
+Runtime files and SHA-256 (from the npm tarball, integrity sha512-jwntgT5tzDrKOkqg6xNDNpRcTUnGvmylZE5DFnzPXossiWOIDdZX+C81LI75hlXhsG58YZW+lGzcmjH1qrQE/Q==):
+  vendor/mediapipe/tasks-vision/vision_bundle.js  f0872a70b45c5bb7bdb8b497eb5011057064c797a988caccb4eac46ab79d3dc4
   vendor/mediapipe/tasks-vision/wasm/vision_wasm_internal.js  6522286aa32dd93eff17c3da002b0649516f87abfec7a80b5bfe5c9625caa5f8
   vendor/mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm  0e101a010e262ef8e78f22e3c95b60a9705fd06962753c9acd6356d9fb56b7bd
-The model file (face_landmarker.task) is NOT bundled. Install it with tools/fetch-face-landmarker.mjs; its licence must be confirmed from Google's model card (not read in this build).
-Face analysis runs entirely in the browser; images are never uploaded. See docs/FACE_ENGINES.md for what is verified and what is not.
+Model: vendor/mediapipe/face_landmarker/face_landmarker.task (float16 bundle: face_detector.tflite, face_landmarks_detector.tflite, face_blendshapes.tflite, geometry_pipeline_metadata_landmarks.binarypb), SHA-256 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff.
+  The file was supplied by the project owner; it was NOT compared with Google's official download (that host is unreachable from the build environment), so its identity with the official file is unverified.
+Model cards of the three models in the bundle, each stating "Apache License, Version 2.0" (read on 2026-10-16):
+  https://storage.googleapis.com/mediapipe-assets/MediaPipe%20BlazeFace%20Model%20Card%20(Short%20Range).pdf
+  https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf
+  https://storage.googleapis.com/mediapipe-assets/Model%20Card%20Blendshape%20V2.pdf
+Open point: Google's MediaPipe page marks the Solutions as a "Preview" and says use is subject to the Google APIs Terms of Service and the MediaPipe API Terms of Service (https://ai.google.dev/edge/mediapipe/solutions/about). Those documents were not reviewed here, so any additional redistribution conditions in them are unchecked.
+Face analysis runs entirely in the browser; images are never uploaded. 
