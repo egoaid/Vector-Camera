@@ -1,0 +1,8 @@
+/* faces.css - face engine selector and the A/B comparison dialog */
+.face-engine { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line, #c9bfae); }
+.face-engine .btn { margin-top: 6px; width: 100%; }
+#dlg-face-ab .dlg { width: min(760px, 94vw); max-width: none; }
+.ab-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.ab-col { flex: 1 1 280px; min-width: 0; }
+.ab-col h3 { font-size: 15px; margin: 4px 0; }
+.ab-col canvas { width: 100%; height: auto; display: block; border: 2px solid var(--text); border-radius: 6px; background: #000; }

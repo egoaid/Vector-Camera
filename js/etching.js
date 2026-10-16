@@ -32,6 +32,9 @@ export const TOUCH = [
   { len: 2.2, dens: 0.8, wt: 0.8, sk: 0.3, curve: 0, ang: 0, maxLayer: 2 },        // 11 water: long level strokes
   { len: 1.6, dens: 1, wt: 0.85, sk: 0.1, curve: 0, ang: null, maxLayer: 3 },      // 12 structure: straight, ruled lines
 ];
+TOUCH[13] = { len: 2.0, dens: 0.7, wt: 0.75, sk: 0.4, curve: 1, ang: null, maxLayer: 1 }; // 13 cheek (own kind, only set when the cheek control is on): sparse, long, soft strokes that wrap the cheek
+/** How strongly each kind's strokes follow the fine image texture (hair strands, brow hairs) when "flow" is on; 1 = as much as the control says. */
+export const FLOW_OF = [1, 0.3, 1.5, 0, 1.2, 0.2, 0.5, 0.3, 0, 0.2, 0.2, 0, 0, 0.1];
 const LAYER_OF_FAMILY = [1, 1, 2, 3, 4, 3];
 const blendAng = (a, t, k) => { const x = (1 - k) * Math.cos(2 * a) + k * Math.cos(2 * t), y = (1 - k) * Math.sin(2 * a) + k * Math.sin(2 * t); return 0.5 * Math.atan2(y, x); };
 /** Separable box blur (running sums). */
@@ -43,21 +46,22 @@ export function boxBlurF(src, w, h, r) {
 }
 
 /** Contour-direction field on a coarse grid: for every cell the angle c of the iso-tone line and a 0..1 confidence f. */
-function flowField(D, W, H, cell, g) {
-  const smoothD = boxBlurF(D, W, H, Math.max(2, Math.round(cell * 2.2))), gw = Math.ceil(W / g), gh = Math.ceil(H / g);
+export function flowField(D, W, H, cell, g, fine = false) {
+  let smoothD = boxBlurF(D, W, H, fine ? Math.max(1, Math.round(cell * 0.45)) : Math.max(2, Math.round(cell * 2.2))), gw = Math.ceil(W / g), gh = Math.ceil(H / g);
+  if (fine) { const lo = boxBlurF(D, W, H, Math.max(3, Math.round(cell * 2.2))); smoothD = smoothD.map((v, k) => v - lo[k]); } // texture = what is left after removing the broad shading (that is the job of the shape-following field)
   let xx = new Float32Array(gw * gh), xy = new Float32Array(gw * gh), yy = new Float32Array(gw * gh);
   const at = (x, y) => smoothD[Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))];
   for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
-    const x = Math.min(W - 1, i * g + (g >> 1)), y = Math.min(H - 1, j * g + (g >> 1)), dx = (at(x + g, y) - at(x - g, y)) / (2 * g), dy = (at(x, y + g) - at(x, y - g)) / (2 * g), k = j * gw + i;
+    const x = Math.min(W - 1, i * g + (g >> 1)), y = Math.min(H - 1, j * g + (g >> 1)), st = fine ? 1 : g, dx = (at(x + st, y) - at(x - st, y)) / (2 * st), dy = (at(x, y + st) - at(x, y - st)) / (2 * st), k = j * gw + i; // fine texture: 1-px central differences (wider steps distort the direction of fine stripes)
     xx[k] = dx * dx; xy[k] = dx * dy; yy[k] = dy * dy;
   }
   const blur3 = (a) => { const o = new Float32Array(a.length); for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { let s = 0, n = 0; for (let v = -1; v <= 1; v++) for (let u = -1; u <= 1; u++) { const ii = i + u, jj = j + v; if (ii >= 0 && jj >= 0 && ii < gw && jj < gh) { s += a[jj * gw + ii]; n++; } } o[j * gw + i] = s / n; } return o; };
-  for (let p = 0; p < 3; p++) { xx = blur3(xx); xy = blur3(xy); yy = blur3(yy); }
+  for (let p = 0; p < (fine ? 2 : 3); p++) { xx = blur3(xx); xy = blur3(xy); yy = blur3(yy); }
   const c2 = new Float32Array(gw * gh), s2 = new Float32Array(gw * gh), f = new Float32Array(gw * gh);
   for (let k = 0; k < gw * gh; k++) {
     const a = xx[k] - yy[k], b = 2 * xy[k], mag = Math.sqrt(xx[k] + yy[k]), coh = Math.sqrt(a * a + b * b) / (xx[k] + yy[k] + 1e-9);
     const th = 0.5 * Math.atan2(b, a) + Math.PI / 2; // iso-line = perpendicular to the gradient
-    c2[k] = Math.cos(2 * th); s2[k] = Math.sin(2 * th); f[k] = smooth(0.012, 0.09, mag * cell * 3) * (0.35 + 0.65 * coh);
+    c2[k] = Math.cos(2 * th); s2[k] = Math.sin(2 * th); f[k] = fine ? smooth(0.02, 0.12, mag * cell * 3) * coh * coh : smooth(0.012, 0.09, mag * cell * 3) * (0.35 + 0.65 * coh); // fine = texture orientation (needs a clearly dominant direction)
   }
   return { gw, gh, g, c2, s2, f };
 }
@@ -78,8 +82,11 @@ export function etchMask(D, W, H, elig, o) {
   const nearAt = (x, y) => (dmap ? dmap[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))] : 0.5);
   const depthW = (x, y) => (dk > 0 ? Math.max(0.3, Math.min(2.3, 1 + dk * (nearAt(x, y) - 0.5) * 1.8)) : 1); // far lines fine, near lines bold
   const depthA = (x, y) => (dk > 0 ? 1 - 0.3 * dk * (1 - nearAt(x, y)) : 1); // far lines are also a little lighter
-  const kmap = o.kindMap || null, kk = kmap ? Math.max(0, Math.min(1, (o.kinds ?? 0) / 100)) : 0, kindAt = (x, y) => (kmap ? kmap[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))] : 0);
-  const mixT = (k, key) => { const t = TOUCH[k] || NEUTRAL; return key === 'curve' || key === 'ang' || key === 'maxLayer' ? t[key] : 1 + (t[key] - 1) * kk; };
+  let kmap = o.kindMap || null; if (kmap && o.cheekMap && (o.cheek ?? 0) > 0) { kmap = Uint8Array.from(kmap); for (let i = 0; i < kmap.length; i++) if (o.cheekMap[i] && kmap[i] === 1) kmap[i] = 13; } // cheeks = skin pixels inside the landmark cheek areas
+  const kk = kmap ? Math.max(0, Math.min(1, (o.kinds ?? 0) / 100)) : 0, kindAt = (x, y) => (kmap ? kmap[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))] : 0);
+  const regF = o.regions || null, kkOf = (k) => (k === 13 ? Math.min(1.6, kk * (o.cheek ?? 0) / 50) : regF && regF[k] != null ? Math.min(1.6, kk * regF[k]) : kk); // per-region strength of the kind touch (1 = standard)
+  const mixT = (k, key) => { const t = TOUCH[k] || NEUTRAL; return key === 'curve' || key === 'ang' || key === 'maxLayer' ? t[key] : 1 + (t[key] - 1) * kkOf(k); };
+  const flowK = Math.max(0, Math.min(1, (o.flow ?? 0) / 100)), tex = flowK > 0 ? flowField(D, W, H, cell, Math.max(3, Math.round(cell * 0.6)), true) : null; // flow-following: orientation of the fine texture, independent of the shape-following field
   const cm = new Uint8Array(W * H), amt = Math.max(0, Math.min(1, (o.contour ?? 0) / 100));
   const darkAt = (x, y) => Db[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))];
   const stamp = (x, y, r, a) => {
@@ -88,9 +95,10 @@ export function etchMask(D, W, H, elig, o) {
   };
   // direction at a point for a hatch family rotated by `rot` from the base angle (doubled-angle blend: lines have no sign)
   const ph1 = rnd() * 6.283, ph2 = rnd() * 6.283, ph3 = rnd() * 6.283, patch = (x, y) => 0.34 * Math.sin(x / (cell * 13) + ph1) * Math.cos(y / (cell * 10) + ph2) + 0.2 * Math.sin((x + y) / (cell * 5.5) + ph3); // patches of slightly different hatch angle, as a hand drifts
-  const dirAt = (x, y, alpha0, rot, cvK = curve, skK = sk) => {
+  const dirAt = (x, y, alpha0, rot, cvK = curve, skK = sk, flK = flowK) => {
     const alpha = alpha0 + patch(x, y) * (0.4 + 0.8 * skK), k = Math.min(flow.gh - 1, (y / g) | 0) * flow.gw + Math.min(flow.gw - 1, (x / g) | 0), f = flow.f[k] * cvK, c2 = flow.c2[k], s2 = flow.s2[k], cr = Math.cos(2 * rot), sr = Math.sin(2 * rot);
     const vx = (1 - f) * Math.cos(2 * alpha) + f * (c2 * cr - s2 * sr), vy = (1 - f) * Math.sin(2 * alpha) + f * (s2 * cr + c2 * sr);
+    if (tex && flK > 0) { const kt = Math.min(tex.gh - 1, (y / tex.g) | 0) * tex.gw + Math.min(tex.gw - 1, (x / tex.g) | 0), wf = Math.min(1, flK * tex.f[kt]); if (wf > 0) { const nx = (1 - wf) * vx + wf * (tex.c2[kt] * cr - tex.s2[kt] * sr), ny = (1 - wf) * vy + wf * (tex.s2[kt] * cr + tex.c2[kt] * sr); return { a: 0.5 * Math.atan2(ny, nx), f: flow.f[k] }; } }
     return { a: 0.5 * Math.atan2(vy, vx), f: flow.f[k] };
   };
   // ---- outlines: strokes that follow the form (ridges of the tone gradient), strongest first ----
@@ -158,16 +166,16 @@ export function etchMask(D, W, H, elig, o) {
         if (sx < 0 || sy < 0 || sx >= W || sy >= H) continue;
         const i0 = (sy | 0) * W + (sx | 0); if (elig && !elig[i0]) continue;
         const kd = kk > 0 ? kindAt(sx, sy) : 0, tp = TOUCH[kd] || NEUTRAL;
-        if (kd && LAYER_OF_FAMILY[fi] > tp.maxLayer && rnd() < kk) continue; // e.g. no cross-hatching on skin or sky
+        if (kd && LAYER_OF_FAMILY[fi] > tp.maxLayer && rnd() < kkOf(kd)) continue; // e.g. no cross-hatching on skin or sky
         const d0 = Math.min(1, darkAt(sx, sy) * (kd ? mixT(kd, 'dens') : 1)); if (rnd() > smooth(thr - 0.06, thr + 0.24, d0) * 0.97) continue;
         let alphaS = alpha, cvS = curve; const skS = kd ? sk * mixT(kd, 'sk') : sk, Lk = kd ? L * mixT(kd, 'len') : L, wtK = kd ? mixT(kd, 'wt') : 1;
-        if (kd) { if (tp.curve != null) cvS = curve * (1 - kk) + tp.curve * kk; if (tp.ang != null) { const t = tp.ang === 'rand' ? rnd() * Math.PI : tp.ang === 'vert' ? -Math.PI / 2 + (rnd() - 0.5) * 0.9 : tp.ang + (alpha - base) * 0.25; alphaS = blendAng(alpha, t, kk); } }
+        let flS = flowK; if (kd) { const kq = Math.min(1, kkOf(kd)); flS = flowK * (1 + (FLOW_OF[kd] - 1) * kq); if (tp.curve != null) cvS = Math.max(0, Math.min(1, curve * (1 - kq) + tp.curve * kq)); if (tp.ang != null) { const t = tp.ang === 'rand' ? rnd() * Math.PI : tp.ang === 'vert' ? -Math.PI / 2 + (rnd() - 0.5) * 0.9 : tp.ang + (alpha - base) * 0.25; alphaS = blendAng(alpha, t, kq); } }
         // trace the stroke
         const stopTh = thr - 0.1 + (rnd() - 0.5) * 0.12, wob = (0.02 + 0.13 * skS) * (0.5 + rnd()), lam = cell * (10 + 12 * rnd()), ph = rnd() * 6.283, ph2 = rnd() * 6.283, jit = (rnd() - 0.5) * (0.1 + 0.3 * skS), w0 = lineW * (0.75 + 0.6 * rnd()) * (0.8 + 0.5 * d0) * depthW(sx, sy) * wtK, aD = depthA(sx, sy);
-        let x = sx, y = sy, ang = dirAt(x, y, alphaS, rot, cvS, skS).a, drift = 0, s = 0; const bow = (rnd() - 0.5) * 0.5 * skS; // each stroke is slightly bowed
+        let x = sx, y = sy, ang = dirAt(x, y, alphaS, rot, cvS, skS, flS).a, drift = 0, s = 0; const bow = (rnd() - 0.5) * 0.5 * skS; // each stroke is slightly bowed
         const n = Math.max(2, Math.round(Lk / ds));
         for (let k = 0; k <= n; k++) {
-          const tt = k / n, tgt = dirAt(x, y, alphaS, rot, cvS, skS); let da = tgt.a - ang; da -= Math.PI * Math.round(da / Math.PI); // shortest way, lines are undirected
+          const tt = k / n, tgt = dirAt(x, y, alphaS, rot, cvS, skS, flS); let da = tgt.a - ang; da -= Math.PI * Math.round(da / Math.PI); // shortest way, lines are undirected
           ang += da * 0.14; drift += (rnd() - 0.5) * 0.035 * skS; drift *= 0.96;
           const a = ang + jit + wob * (0.6 * Math.sin((s / lam) * 6.283 + ph) + 0.15 * Math.sin((s / (lam * 0.45)) * 6.283 + ph2)) + drift + bow * Math.sin(Math.PI * tt) * 1.3;
           const prof = Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * tt)), 0.55), r = Math.max(0.3, (w0 * prof) / 2);
@@ -176,7 +184,7 @@ export function etchMask(D, W, H, elig, o) {
           if (x < 0 || y < 0 || x >= W || y >= H) break;
           if (k > 2 && darkAt(x, y) < stopTh) break; // shading fades out where the tone gets lighter
           if (elig && !elig[(y | 0) * W + (x | 0)]) break; // never run on past the region
-          if (kd && k > 2 && kindAt(x, y) !== kd && rnd() < 0.8 * kk) break; // a stroke does not run from skin into hair, from an eye onto the cheek ...
+          if (kd && k > 2 && kindAt(x, y) !== kd && rnd() < 0.8 * Math.min(1, kkOf(kd))) break; // a stroke does not run from skin into hair, from an eye onto the cheek ...
           if (amt > 0 && k > 2 && cm[(y | 0) * W + (x | 0)] && rnd() < 0.75) break; // shading stops at the outline
         }
       }

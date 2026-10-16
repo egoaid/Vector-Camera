@@ -4,6 +4,8 @@ import { PRESETS, getPreset } from './style-palette.js';
 import { t } from './i18n.js';
 import { HT_TYPES } from './halftone-types.js';
 import { state, saveSettings } from './state.js';
+import { buildTone } from './ui-tone.js';
+import { buildFaceEngine } from './ui-faces.js';
 const $ = (id) => document.getElementById(id);
 const ALL = MODES;
 const MAIN = [
@@ -58,7 +60,7 @@ export function buildControls(onChange, onMode) {
   const main = $('controls'), adv = $('controls-adv'); main.replaceChildren(); adv.replaceChildren();
   if (mode === 'silhouette') main.append(check('silSample', 'sil.sample', onChange));
   for (const g of GROUP_ORDER) { const items = MAIN.filter((d) => d.g === g && d.modes.includes(mode)).map((d) => slider(d, onChange)); if (g === 'tone' && mode === 'hybrid') items.unshift(select('bgTreatment', [['flat', 'bg.flat'], ['photo', 'bg.photo'], ['paper', 'bg.paper']], onChange, 'p.bg')); if (items.length) main.append(group(g, items)); }
-  buildHalftone(onChange, mode);
+  buildTone(onChange, mode); buildHalftone(onChange, mode);
   if (mode === 'regions') main.append(select('paletteMap', [['luma', 'map.luma'], ['nearest', 'map.nearest']], onChange, 'p.map'));
   for (const d of ADV) if (d.modes.includes(mode) && (!d.when || d.when(p))) adv.append(slider(d, onChange));
   adv.append(check('seal', 'p.seal', onChange));
@@ -77,8 +79,10 @@ export function buildHalftone(onChange, mode = state.params.mode) {
   const n = document.createElement('p'); n.className = 'note'; n.textContent = t('ht.desc.' + (p.halftoneType || 'dot')); box.append(n);
   const S = (k, min, max) => slider({ k, min, max }, onChange), ty = p.halftoneType || 'dot';
   box.append(S('halftoneSize', 3, 14), S('halftoneAngle', 0, 90), S('htWeight', 0, 100));
+  if (p.tone === 'silver' || p.tone === 'twotone') box.append(S('htMix', 0, 100));
   if (ty === 'line') box.append(S('htCurve', 0, 100));
   if (ty === 'cross') box.append(S('htLayers', 2, 3), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100));
-  if (ty === 'etching') box.append(S('htLayers', 1, 4), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100), S('htLen', 0, 100), S('htDepth', 0, 100), S('htContour', 0, 100), S('htKinds', 0, 100));
+  if (ty === 'etching') box.append(S('htLayers', 1, 4), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100), S('htLen', 0, 100), S('htDepth', 0, 100), S('htContour', 0, 100), S('htFlow', 0, 100), S('htKinds', 0, 100));
+    if (p.htKinds > 0) { const n2 = document.createElement('p'); n2.className = 'note'; n2.textContent = t('ht.regions.note'); box.append(n2, S('htRegSkin'), S('htRegCheek'), S('htRegEyes'), S('htRegBrows'), S('htRegNose'), S('htRegLips'), S('htRegHair')); buildFaceEngine(box); }
   if (ty === 'engrave') box.append(S('htWave', 0, 100), S('htWaveLen', 0, 100), S('htGuilloche', 0, 100), S('htCurve', 0, 100));
 }

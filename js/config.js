@@ -13,8 +13,11 @@ export const DEFAULT_PARAMS = {
   paletteK: 8, paletteMap: 'luma',
   seal: true, outline: 0, outlineColor: '#111111', background: 'auto',
   silColors: { bg: '#f2d934', mid: '#e1456d', fg: '#17121c' }, silSample: false,
-  separation: 3, retention: 45, halftone: 0, halftoneType: 'dot', htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50, htDepth: 45, htContour: 35, htKinds: 70, htColor: '', lock: { palette: false, htColor: false, lineColor: false }, halftoneSize: 6, halftoneAngle: 45,
+  separation: 3, retention: 45, halftone: 0, halftoneType: 'dot', htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50, htDepth: 45, htContour: 35, htKinds: 70, htFlow: 0, htRegSkin: 50, htRegHair: 50, htRegEyes: 50, htRegBrows: 50, htRegNose: 50, htRegLips: 50, htRegCheek: 0, faceEngine: 'legacy', engineProfiles: {}, htColor: '', lock: { palette: false, htColor: false, lineColor: false }, halftoneSize: 6, halftoneAngle: 45,
   grain: 25, roughness: 20, misreg: 25, paper: 25, bgTreatment: 'flat', semStrength: 100,
+  // photographic tone treatment (hybrid mode): 'classic' = the original levels / grain; 'silver' = silver-gelatin; 'twotone' = strict black-and-white threshold (see tone-photo.js)
+  tone: 'classic', sgBlack: 0, sgWhite: 100, sgContrast: 50, sgCurve: 50, sgGrain: 35, sgGrainSize: 40, sgGrainRough: 40, sgToning: 'none', sgToningAmt: 60,
+  ttThreshold: 50, ttBias: 50, ttAdaptive: 0, ttDetail: 30, ttEdge: 0, ttClean: 20, ttBreakup: 0, ttStrict: true, htMix: 70,
   exportLong: 2048, wakeLock: true,
   lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
   text: 'Vector Camera', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,

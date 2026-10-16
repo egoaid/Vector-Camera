@@ -6,7 +6,7 @@ import { FONTS } from './style-text.js';
 import { TEXT_SLOTS, tkey } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
-import { tendencyPatch } from './style-tendency.js';
+import { tendencyPatch, toneTexturePatch } from './style-tendency.js';
 import { lockedKeys } from './style-presets.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
@@ -57,6 +57,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
       Object.assign(patch, { separation: range(r, 2, 5), retention: range(r, 20, 80), grain: range(r, 5, 55), roughness: range(r, 0, 45), misreg: range(r, 0, 60), paper: range(r, 10, 60) });
       const ht = r() < 0.45; patch.halftone = ht ? 1 : 0; if (ht) Object.assign(patch, { halftoneType: pick(r, ['dot', 'dot', 'line', 'cross', 'engrave', 'etching']), halftoneSize: range(r, 4, 10), halftoneAngle: pick(r, [15, 45, 75, range(r, 0, 90)]) });
     }
+    if (opts.texture) Object.assign(patch, toneTexturePatch(r, patch.tone ?? cur.tone));
     if (opts.background) patch.bgTreatment = pick(r, ['flat', 'flat', 'photo', 'paper']);
     if (opts.subject) patch.subjectSize = range(r, 14, 52);
     if (opts.lines) {

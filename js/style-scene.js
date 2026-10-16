@@ -4,6 +4,7 @@ import { htOptsFrom } from './halftone-types.js';
 import { PRESETS, GROUP_KEYS, mapRegionsToPalette, allPresetColors, getPreset } from './style-palette.js';
 import { rgbToHex, hexToRgb } from './color-utils.js';
 import { textLayers } from './style-text.js';
+import { sgOptsFrom, ttOptsFrom, tonedRamp, neutralRamp } from './tone-photo.js';
 
 const hexOf = (st, r) => rgbToHex(st.rgb[r * 3], st.rgb[r * 3 + 1], st.rgb[r * 3 + 2]);
 function groupBy(map) { const m = new Map(); for (const [r, fill] of map) { if (!m.has(fill)) m.set(fill, []); m.get(fill).push(r); } return [...m].map(([fill, regions]) => ({ fill, regions })); }
@@ -81,28 +82,34 @@ export function buildBase(res, groups, p, inkFactory) {
 
   // ---- hybrid: flat colour blocks (vector) + processed photo ink (raster) clipped by vector shapes ----
   const pg = preset.groups || PRESETS.pop.groups;
+  const tone = p.tone === 'silver' || p.tone === 'twotone' ? p.tone : 'classic';
   scene.paperAmount = p.paper / 100; scene.paper = preset.paper;
+  if (tone === 'twotone' && p.ttStrict !== false) scene.paperAmount = 0; // strict two-tone: only ink and paper, no paper grain
   const byG = [[], [], []]; for (const r of all) byG[groups[r]].push(r);
   const map = new Map();
   GROUP_KEYS.forEach((gk, g) => { const m = mapRegionsToPalette(byG[g], st, pg[gk].block, 'luma'); for (const [r, c] of m) map.set(r, c); });
   const bgPaper = p.bgTreatment === 'paper';
   const blockItems = groupBy(new Map([...map].filter(([r]) => !(bgPaper && groups[r] === 0))));
   const off = (p.misreg / 100) * 0.012 * long;
-  scene.layers.push({ kind: 'fills', name: 'color-blocks', offset: [off, off * 0.7], items: blockItems, seal, stroke: null });
+  if (tone !== 'twotone') scene.layers.push({ kind: 'fills', name: 'color-blocks', offset: [off, off * 0.7], items: blockItems, seal, stroke: null }); // two-tone has no flat colour blocks: just ink on paper
   if (inkFactory) {
     const flatThr = 0.12 * (1 - p.retention / 100);
     const htCol = p.halftone > 0 && /^#[0-9a-f]{6}$/i.test(p.htColor || '') ? p.htColor : null; // halftone colour override (key plate ink / darkest tone of the bands)
-    const common = { levels: p.separation, retention: p.retention / 100, halftone: p.halftone > 0, halftoneType: p.halftoneType || 'dot', halftoneOpts: htOptsFrom(p), halftoneSize: p.halftoneSize, halftoneAngle: p.halftoneAngle, grain: p.grain / 100, roughness: p.roughness / 100, groupOf: groups };
-    if (preset.mode === 'key') {
+    const common = { levels: p.separation, retention: p.retention / 100, halftone: p.halftone > 0, halftoneType: p.halftoneType || 'dot', halftoneOpts: htOptsFrom(p), halftoneSize: p.halftoneSize, halftoneAngle: p.halftoneAngle, grain: p.grain / 100, roughness: p.roughness / 100, groupOf: groups, tone, htMix: p.htMix ?? 70, sg: sgOptsFrom(p), tt: ttOptsFrom(p) };
+    if (tone === 'twotone') { // every region, whatever the palette's ink flags say: the whole photo becomes one key plate
+      if (all.length) { const bmp = inkFactory({ ...common, mode: 'key', regions: all, color: htCol || preset.ink }); if (bmp) scene.layers.push({ kind: 'ink', name: 'key-plate', regions: all, bitmap: bmp, blend: 'multiply', spec: { mode: 'key', color: htCol || preset.ink } }); }
+    } else if (preset.mode === 'key' && tone === 'classic') {
       const ids = all.filter((r) => (groups[r] === 0 ? p.bgTreatment === 'photo' : pg[GROUP_KEYS[groups[r]]].ink));
       if (ids.length) { const bmp = inkFactory({ ...common, mode: 'key', regions: ids, color: htCol || preset.ink }); if (bmp) scene.layers.push({ kind: 'ink', name: 'key-plate', regions: ids, bitmap: bmp, blend: 'multiply', spec: { mode: 'key', color: htCol || preset.ink } }); }
     } else {
       GROUP_KEYS.forEach((gk, g) => {
         if (g === 0 && p.bgTreatment !== 'photo') return;
-        const ids = byG[g].filter((r) => st.texStd[r] >= flatThr);
+        const ids = byG[g].filter((r) => tone === 'silver' || st.texStd[r] >= flatThr); // a silver-gelatin print has no flat (untextured) regions
         if (!ids.length) return;
-        const ramp = htCol ? [htCol, ...pg[gk].ramp.slice(1)] : pg[gk].ramp, bmp = inkFactory({ ...common, mode: 'bands', regions: ids, ramp, key: gk });
-        if (bmp) scene.layers.push({ kind: 'ink', name: 'tone-' + gk, regions: ids, bitmap: bmp, blend: 'normal', spec: { mode: 'bands', ramp, levels: p.separation } });
+        // silver-gelatin on a one-ink palette: a neutral ink -> paper ramp; toning (sepia / selenium) is mixed into the ramp so SVG / PDF vectorising sees the same colours
+        let base = pg[gk].ramp || neutralRamp(preset.ink, preset.paper); if (tone === 'silver') base = tonedRamp(base, p.sgToning, p.sgToningAmt);
+        const ramp = htCol ? [htCol, ...base.slice(1)] : base, bmp = inkFactory({ ...common, mode: 'bands', regions: ids, ramp, key: gk });
+        if (bmp) scene.layers.push({ kind: 'ink', name: 'tone-' + gk, regions: ids, bitmap: bmp, blend: 'normal', spec: { mode: 'bands', ramp, levels: tone === 'silver' ? 8 : p.separation } }); // silver: 8 tone bands when traced to vector
       });
     }
   }

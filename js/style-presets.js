@@ -6,11 +6,12 @@
 import { DEFAULT_PARAMS, MODES } from './config.js';
 import { PRESETS } from './style-palette.js';
 import { HT_TYPES } from './halftone-types.js';
+import { TONES, TONINGS } from './tone-photo.js';
 import { FONTS } from './style-text.js';
 import { APP_VERSION } from './version.js';
 
 /** Settings of the device / session, never part of a style. */
-const DEVICE_KEYS = new Set(['quality', 'engine', 'wakeLock', 'exportLong', 'vecInk', 'vecInkLong', 'vecInkSpeck', 'rndOpts', 'rndStyle', 'lock']);
+const DEVICE_KEYS = new Set(['quality', 'engine', 'wakeLock', 'exportLong', 'vecInk', 'vecInkLong', 'vecInkSpeck', 'rndOpts', 'rndStyle', 'lock', 'faceEngine', 'engineProfiles']);
 /** Every parameter a user style stores (look + texts + collage). */
 export const STYLE_KEYS = Object.keys(DEFAULT_PARAMS).filter((k) => !DEVICE_KEYS.has(k));
 /** The look only (no wording / collage layout): what the built-in styles define. */
@@ -22,8 +23,9 @@ const pickKeys = (src, keys) => { const o = {}; for (const k of keys) if (k in s
 /** Built-in styles: `params` lists the differences from the defaults; everything else is reset to the default. */
 export const BUILTIN_STYLES = [
   { id: 'etching', params: { mode: 'hybrid', preset: 'etching', bgTreatment: 'photo', detail: 38, simplify: 40, subjectSize: 32, separation: 3, retention: 60, grain: 6, roughness: 0, misreg: 0, paper: 45, halftone: 1, halftoneType: 'etching', halftoneSize: 6, halftoneAngle: 45, htWeight: 55, htLayers: 3, htSpread: 60, htCurve: 45, htSketch: 45, htLen: 50, htDepth: 55, htContour: 40 } },
-  { id: 'silver', params: { mode: 'hybrid', preset: 'silver', bgTreatment: 'photo', detail: 30, simplify: 30, separation: 6, retention: 95, grain: 60, roughness: 40, misreg: 0, paper: 35, halftone: 0 } },
-  { id: 'sepia', params: { mode: 'hybrid', preset: 'sepia', bgTreatment: 'photo', detail: 30, simplify: 30, separation: 6, retention: 90, grain: 45, roughness: 35, misreg: 0, paper: 50, halftone: 0 } },
+  { id: 'silver', params: { mode: 'hybrid', preset: 'silver', bgTreatment: 'photo', detail: 30, simplify: 30, separation: 6, retention: 95, grain: 60, roughness: 40, misreg: 0, paper: 35, halftone: 0, tone: 'silver', sgBlack: 8, sgWhite: 92, sgContrast: 56, sgCurve: 60, sgGrain: 52, sgGrainSize: 40, sgGrainRough: 45 } },
+  { id: 'sepia', params: { mode: 'hybrid', preset: 'sepia', bgTreatment: 'photo', detail: 30, simplify: 30, separation: 6, retention: 90, grain: 45, roughness: 35, misreg: 0, paper: 50, halftone: 0, tone: 'silver', sgBlack: 5, sgWhite: 90, sgContrast: 52, sgCurve: 55, sgGrain: 42, sgGrainSize: 38, sgGrainRough: 40, sgToning: 'sepia', sgToningAmt: 70 } },
+  { id: 'twotone', params: { mode: 'hybrid', preset: 'mono', bgTreatment: 'photo', detail: 36, simplify: 30, misreg: 0, paper: 20, halftone: 0, tone: 'twotone', ttThreshold: 52, ttBias: 50, ttAdaptive: 20, ttDetail: 40, ttEdge: 25, ttClean: 25, ttBreakup: 0 } },
   { id: 'silkscreen', params: { mode: 'hybrid', preset: 'riso', bgTreatment: 'flat', detail: 40, separation: 3, retention: 40, grain: 35, roughness: 30, misreg: 60, paper: 50, halftone: 1, halftoneType: 'dot', halftoneSize: 6, halftoneAngle: 45 } },
   { id: 'popart', params: { mode: 'hybrid', preset: 'pop', bgTreatment: 'flat', detail: 40, separation: 3, retention: 30, grain: 8, roughness: 5, misreg: 12, paper: 15, halftone: 1, halftoneType: 'dot', halftoneSize: 9, halftoneAngle: 45, htWeight: 60, lineWidth: 30, lineScope: 'all', lineColor: '#17121c', lineOffset: 0 } },
   { id: 'engraving', params: { mode: 'hybrid', preset: 'unite', bgTreatment: 'photo', separation: 3, retention: 70, grain: 5, misreg: 0, paper: 30, halftone: 1, halftoneType: 'engrave', halftoneSize: 5, halftoneAngle: 30, htWeight: 55, htCurve: 50, htWave: 50, htWaveLen: 50, htGuilloche: 40 } },
@@ -66,7 +68,7 @@ export function lockConflicts(cur, style) {
 const HEX = /^#[0-9a-f]{6}$/i, hexOk = (v) => typeof v === 'string' && HEX.test(v);
 const RANGE = { halftoneSize: [2, 20], halftoneAngle: [0, 180], separation: [2, 8], paletteK: [0, 32], textAngle: [-90, 90], textSize: [1, 100], textSpacing: [-10, 50], htLayers: [1, 4], htSpread: [10, 90], collageSlots: [0, 16], collageSeed: [0, 1e6], textSeed: [0, 1e6], textHalftoneSize: [2, 20], textHalftoneAngle: [0, 180] };
 const rangeOf = (k) => RANGE[k.replace(/_\d$/, '')] || [0, 100];
-const ENUMS = { mode: MODES, halftoneType: HT_TYPES, textHalftoneType: HT_TYPES, bgTreatment: ['flat', 'photo', 'paper'], paletteMap: ['luma', 'nearest'], lineScope: ['mid', 'fg', 'all'], collageLayout: null, collageEdge: null, collageAspect: null, background: null, textHalftoneMode: ['down', 'up', 'right', 'flat'] };
+const ENUMS = { mode: MODES, halftoneType: HT_TYPES, textHalftoneType: HT_TYPES, bgTreatment: ['flat', 'photo', 'paper'], paletteMap: ['luma', 'nearest'], lineScope: ['mid', 'fg', 'all'], collageLayout: null, collageEdge: null, collageAspect: null, background: null, textHalftoneMode: ['down', 'up', 'right', 'flat'], tone: TONES, sgToning: TONINGS };
 const validPalette = (p) => p && typeof p === 'object' && ['key', 'bands'].includes(p.mode) && hexOk(p.ink) && hexOk(p.paper) && p.groups && ['bg', 'mid', 'fg'].every((g) => p.groups[g] && Array.isArray(p.groups[g].block) && p.groups[g].block.length > 0 && p.groups[g].block.length <= 8 && p.groups[g].block.every(hexOk) && (!p.groups[g].ramp || (Array.isArray(p.groups[g].ramp) && p.groups[g].ramp.length >= 2 && p.groups[g].ramp.length <= 8 && p.groups[g].ramp.every(hexOk))));
 /** Keeps only known keys with the right type and a sane range (a style file is untrusted input). */
 export function sanitizeParams(src) {

@@ -31,7 +31,9 @@ import { initAbout } from './ui-about.js';
 import { registerSW } from './pwa.js';
 import { toast } from './ui-toast.js';
 import { analyzeKinds } from './scene-kinds.js';
-import { detectFaces } from './face-landmarks.js';
+import { detectFacesDetailed } from './face-landmarks.js';
+import { switchEngine, syncActiveProfile } from './face-profiles.js';
+import { initAB } from './ui-engine-ab.js';
 import { initStyleLibrary, buildStyleLibrary } from './ui-styles.js';
 import { renderRandomLock } from './ui-extras.js';
 import { PRESETS, getPreset } from './style-palette.js';
@@ -51,7 +53,7 @@ async function ensurePipeline() {
 const yieldUI = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
 
 /* ---------- replacing the photo / collage (can be cancelled without losing the current edit) ---------- */
-const SESSION_KEYS = ['source', 'canvas', 'work', 'sem', 'faces', 'engineUsed', 'overrides', 'collage', 'result', 'groups', 'scene'];
+const SESSION_KEYS = ['source', 'canvas', 'work', 'sem', 'faces', 'facesEngine', 'faceStatus', 'engineUsed', 'overrides', 'collage', 'result', 'groups', 'scene'];
 let replacing = null, hub = null, camFrom = 'hub', collageAppendNext = false;
 const hasEdits = () => !!(state.result && (state.collage || state.overrides.length));
 const confirmReplace = () => !hasEdits() || window.confirm(t('hub.replace'));
@@ -80,7 +82,7 @@ async function analyze() {
   cancelled = false; const mySeq = ++state.seq;
   showProcessing('proc.prepare', 0.08); await yieldUI();
   state.work = makeWorking(state.canvas, state.params.quality);
-  state.sem = null; state.engineUsed = 'classic'; state.faces = undefined; pipeStale = false; lastKey = '';
+  state.sem = null; state.engineUsed = 'classic'; state.faces = undefined; state.faceStatus = null; pipeStale = false; lastKey = '';
   await client.setImage(state.work.w, state.work.h, state.work.data); await client.setSemantic(null);
   if (cancelled || mySeq !== state.seq) return;
   showProcessing('proc.segment', 0.4);
@@ -138,12 +140,17 @@ function computeGroups() {
   state.groups = classifyGroups(r.stats, r.w, r.h, { subjectSize: state.params.subjectSize / 100, semNames: r.semNames, semMajor: r.semMajor, overrides: state.overrides, labels: r.labels });
   ensureKinds(r);
 }
+const NO_FACES = [];
+function setFaceStatus(s) { state.faceStatus = s; document.dispatchEvent(new CustomEvent('vc:face-status')); }
 /** What is where (skin, hair, leaves, sky, eyes ...): own analysis of the regions plus optional face landmarks. Computed only when a style uses it. */
 function ensureKinds(r) {
   const p = state.params; if (state.collage || !state.work || !(p.mode === 'hybrid' && p.halftone > 0 && p.halftoneType === 'etching' && p.htKinds > 0)) return;
-  if (state.faces === undefined && state.canvas) { // faces are looked for once per photo, in the background; the picture is redrawn when they arrive
+  const eng = p.faceEngine || 'legacy'; // the engine the person selected - never substituted by another one
+  if (state.facesEngine !== eng) { state.faces = undefined; state.facesEngine = eng; state.faceStatus = null; }
+  if (eng === 'off') { state.faces = NO_FACES; setFaceStatus({ engine: 'off', status: 'off', faces: 0, ms: 0 }); }
+  else if (state.faces === undefined && state.canvas) { // faces are looked for once per photo and engine, in the background; the picture is redrawn when they arrive
     state.faces = null; const tok = state.work;
-    detectFaces(state.canvas).then((f) => { if (state.work !== tok) return; state.faces = f; if (state.result) { state.result.kinds = null; if (f.length) redraw(); } });
+    detectFacesDetailed(state.canvas, { engine: eng }).then((res) => { if (state.work !== tok || (state.params.faceEngine || 'legacy') !== eng) return; state.faces = res.faces; setFaceStatus({ engine: eng, status: res.status, reason: res.reason, faces: res.faces.length, ms: res.ms }); if (state.result) { state.result.kinds = null; if (res.faces.length) redraw(); } });
   }
   if (r.kinds && r.kinds.faces_ === state.faces) return;
   const k = analyzeKinds({ rgba: state.work.data, w: r.w, h: r.h, labels: r.labels, R: r.R, groups: state.groups, faces: state.faces || [] }); k.faces_ = state.faces; r.kinds = k;
@@ -295,6 +302,10 @@ function init() {
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });
   client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); initSheet(); initLayout(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
   camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => { if (camFrom === 'result' && state.result) resumeEdit(); else showHub(); }, toast });
+  initAB();
+  document.addEventListener('vc:face-engine', (e) => { // explicit engine switch: store this engine's artistic profile, load the other's, detect again, redraw
+    state.params = switchEngine(syncActiveProfile(state.params), e.detail); saveSettings(); state.faces = undefined; state.facesEngine = e.detail; state.faceStatus = null; if (state.result) state.result.kinds = null; buildControls(onControl, setMode); if (state.result) redraw();
+  });
   hub = initHub({ hasSession: () => !!state.result, camera: (m) => openCamera(m, false, 'hub'), choose: () => $('file-input').click(), collageCamera: () => openCamera('multi', false, 'hub'), collageChoose: () => { collageAppendNext = false; $('file-collage').click(); }, resume: resumeEdit });
   $('file-input').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) startWithSource(f); });
   $('btn-photo').addEventListener('click', showHub); $('tb-camera').addEventListener('click', showHub);

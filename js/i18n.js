@@ -8,7 +8,9 @@ import { MANUAL_JA } from './i18n-manual-ja.js';
 import { MANUAL_EN } from './i18n-manual-en.js';
 import { JA3 } from './i18n-ja-v3.js';
 import { EN3 } from './i18n-en-v3.js';
-const DICT = { ja: { ...JA, ...JA2, ...STYLES_JA, ...MANUAL_JA, ...JA3 }, en: { ...EN, ...EN2, ...STYLES_EN, ...MANUAL_EN, ...EN3 } };
+import { JA4 } from './i18n-ja-v4.js';
+import { EN4 } from './i18n-en-v4.js';
+const DICT = { ja: { ...JA, ...JA2, ...STYLES_JA, ...MANUAL_JA, ...JA3, ...JA4 }, en: { ...EN, ...EN2, ...STYLES_EN, ...MANUAL_EN, ...EN3, ...EN4 } };
 let lang = 'ja';
 export const getLang = () => lang;
 export function detectLang() {

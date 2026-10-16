@@ -4,14 +4,8 @@
 import { makeScreen, htGain } from './halftone-types.js';
 import { hexToRgb, mulberry32 } from './color-utils.js';
 import { etchMask } from './etching.js';
+import { hash, vnoise, boxBlur, silverTone, silverGrain, prepTwoTone } from './tone-photo.js';
 
-function hash(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
-function vnoise(x, y, cell, s) {
-  const fx = x / cell, fy = y / cell, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0;
-  const a = hash(x0, y0, s), b = hash(x0 + 1, y0, s), c = hash(x0, y0 + 1, s), d = hash(x0 + 1, y0 + 1, s);
-  const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
-  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
-}
 /** Box (area-average) downscale of RGBA to the requested long edge. */
 export function downscale(img, longEdge) {
   const k = Math.min(1, longEdge / Math.max(img.w, img.h)); if (k === 1) return img;
@@ -58,31 +52,47 @@ export function makeInkFactory(src, res, targetLong) {
     const cell = Math.max(2, spec.halftoneSize * (tw / 640)), ang = (spec.halftoneAngle * Math.PI) / 180, ca = Math.cos(ang), sa = Math.sin(ang);
     const htType = spec.halftoneType || 'dot', hopts = spec.halftoneOpts || {}, scr = makeScreen(htType, cell, ang, hopts), gain = htGain(hopts);
     const etch = spec.halftone && htType === 'etching';
+    // photographic tone treatment (tone-photo.js): 'silver' = continuous silver-gelatin, 'twotone' = strict threshold; anything else = the original classic levels
+    const tone = spec.tone === 'silver' || spec.tone === 'twotone' ? spec.tone : 'classic', sg = spec.sg, tt = spec.tt, mix = Math.max(0, Math.min(1, (spec.htMix ?? 70) / 100));
+    const norm = (gx, gy) => Math.max(0, Math.min(1, (lum[gy * tw + gx] - lo) / (hi - lo)));
+    let pre = null; // two-tone: pre-processed tone + threshold map of the whole crop
+    if (tone === 'twotone') { const T = new Float32Array(W * H); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) T[y * W + x] = norm(x + x0, y + y0); pre = prepTwoTone(T, W, H, tw / 640, tt, x0, y0); }
     const blur = spec.halftone && htType !== 'dot' && !etch && (hopts.curve == null || hopts.curve > 0) ? (() => { const r = Math.max(2, Math.round(cell * 0.9)); if (!blurMemo.has(r)) blurMemo.set(r, boxBlur(lum, tw, th, r)); return blurMemo.get(r); })() : null; // tone image for form-following lines
     const screen = (x, y) => scr(x, y, blur ? blur[y * tw + x] - 0.5 : 0);
     const inkRGB = spec.mode === 'key' ? hexToRgb(spec.color) : null, stops = spec.mode === 'bands' ? spec.ramp.map(hexToRgb) : null, grainScale = Math.max(1, tw / 900);
     let em = null; // etching: strokes are drawn for the whole region first (they depend on their neighbours), then read per pixel
     if (etch) {
       const D = new Float32Array(W * H); // darkness of the whole bbox (outlines need the tone just outside the regions too)
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) D[y * W + x] = Math.min(1, Math.max(0, (1 - (lum[(y + y0) * tw + x + x0] - lo) / (hi - lo)) * gain));
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) D[y * W + x] = Math.min(1, Math.max(0, (1 - (pre ? pre.t[y * W + x] : tone === 'silver' ? silverTone(norm(x + x0, y + y0), sg) : (lum[(y + y0) * tw + x + x0] - lo) / (hi - lo))) * gain));
       let depthMap = null; // 0 far .. 1 near: the group (background / midground / subject) plus "lower in the picture = nearer"
       if (hopts.depth > 0) {
         depthMap = new Float32Array(W * H);
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const yy = (y + y0) / th, g = spec.groupOf ? spec.groupOf[lab[(y + y0) * tw + x + x0]] / 2 : yy; depthMap[y * W + x] = spec.groupOf ? 0.7 * g + 0.3 * yy : yy; }
         depthMap = boxBlur(depthMap, W, H, Math.max(2, Math.round(cell * 2.5)));
       }
-      let kindMap = null, strokes = null; const kn = res.kinds; // what each pixel is (skin, hair, leaves, sky ...): see scene-kinds.js
+      let kindMap = null, strokes = null, cheekMap = null; const kn = res.kinds; // what each pixel is (skin, hair, leaves, sky ...): see scene-kinds.js
       if (kn && hopts.kinds > 0) {
+        if (kn.cheek && hopts.cheek > 0) { cheekMap = new Uint8Array(W * H); for (let y = 0; y < H; y++) { const sy = Math.min(kn.h - 1, Math.floor(((y + y0) * kn.h) / th)) * kn.w; for (let x = 0; x < W; x++) cheekMap[y * W + x] = kn.cheek[sy + Math.min(kn.w - 1, Math.floor(((x + x0) * kn.w) / tw))]; } }
         kindMap = new Uint8Array(W * H); for (let y = 0; y < H; y++) { const sy = Math.min(kn.h - 1, Math.floor(((y + y0) * kn.h) / th)) * kn.w; for (let x = 0; x < W; x++) kindMap[y * W + x] = kn.map[sy + Math.min(kn.w - 1, Math.floor(((x + x0) * kn.w) / tw))]; }
         const sx = tw / kn.w, sy2 = th / kn.h; strokes = (kn.strokes || []).map((pl) => { const o = new Float32Array(pl.length); for (let i = 0; i < pl.length; i += 2) { o[i] = pl[i] * sx - x0; o[i + 1] = pl[i + 1] * sy2 - y0; } return o; });
       }
-      em = etchMask(D, W, H, dil, { kindMap, strokes, kinds: hopts.kinds, cell, angle: ang, layers: hopts.layers, spread: hopts.spread, curve: hopts.curve, sketch: hopts.sketch, len: hopts.len, weight: hopts.weight, contour: hopts.contour, depth: hopts.depth, depthMap, seed: 7 });
+      em = etchMask(D, W, H, dil, { kindMap, strokes, cheekMap, cheek: hopts.cheek, regions: hopts.regions, flow: hopts.flow, kinds: hopts.kinds, cell, angle: ang, layers: hopts.layers, spread: hopts.spread, curve: hopts.curve, sketch: hopts.sketch, len: hopts.len, weight: hopts.weight, contour: hopts.contour, depth: hopts.depth, depthMap, seed: 7 });
     }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const p = y * W + x; if (!dil[p]) continue;
       const gx = x + x0, gy = y + y0, t = Math.max(0, Math.min(1, (lum[gy * tw + gx] - lo) / (hi - lo)));
       const wn = hash(gx, gy, 11) - 0.5, ln = vnoise(gx, gy, 3 * grainScale, 5) - 0.5, o = p * 4;
-      if (spec.mode === 'key') {
+      if (tone === 'twotone') { // strict black / white: ink where the (pre-processed) tone is below the threshold; the halftone screen / etching only moves that threshold
+        const tv = pre.t[p], th0 = pre.thr[p]; let a;
+        if (em) { const v = (tv < th0 ? 1 : 0) * (1 - mix) + em[p] * mix; a = tt.strict ? (v >= 0.5 ? 1 : 0) : smooth(0.45, 0.55, v); }
+        else { const thr = spec.halftone ? th0 - mix * (screen(gx, gy) - 0.5) : th0; a = tt.strict ? (tv < thr ? 1 : 0) : smooth(-0.03, 0.03, thr - tv); }
+        out[o] = inkRGB[0]; out[o + 1] = inkRGB[1]; out[o + 2] = inkRGB[2]; out[o + 3] = Math.round(a * 255);
+      } else if (tone === 'silver') { // continuous tone (no posterising): curve -> grain -> halftone overlay -> colour ramp
+        let v = silverGrain(silverTone(t, sg), gx, gy, sg, grainScale);
+        if (em) v -= em[p] * 0.4 * (mix / 0.5); else if (spec.halftone) v += (screen(gx, gy) - 0.5) * 0.45 * (mix / 0.5);
+        const c = rampColor(stops, Math.max(0, Math.min(1, v)));
+        out[o] = c[0]; out[o + 1] = c[1]; out[o + 2] = c[2]; out[o + 3] = 255;
+      } else if (spec.mode === 'key') {
         const d = 1 - t, dq = Math.round(d * (n - 1)) / (n - 1); let dd = dq + (d - dq) * ret * 0.7; if (spec.halftone) dd = Math.min(1, dd * gain);
         let s = 0.5 + wn * (grain * 0.3 + ret * 0.1) + ln * rough * 0.4;
         if (spec.halftone) s = htType === 'dot' ? s * 0.35 + screen(gx, gy) * 0.65 : s * 0.12 + screen(gx, gy) * 0.88;
@@ -98,13 +108,6 @@ export function makeInkFactory(src, res, targetLong) {
     const k = gw0 / tw;
     return { w: W, h: H, rgba: out, gx: x0 * k, gy: y0 * k, gw: W * k, gh: H * k, opaque: spec.mode === 'bands' };
   };
-}
-/** Separable box blur of a Float32/Float64 tone image (running sums). */
-function boxBlur(src, w, h, r) {
-  const tmp = new Float32Array(w * h), out = new Float32Array(w * h), n = 2 * r + 1;
-  for (let y = 0; y < h; y++) { let acc = 0; const o = y * w; for (let x = -r; x <= r; x++) acc += src[o + Math.min(w - 1, Math.max(0, x))]; for (let x = 0; x < w; x++) { tmp[o + x] = acc / n; acc += src[o + Math.min(w - 1, x + r + 1)] - src[o + Math.max(0, x - r)]; } }
-  for (let x = 0; x < w; x++) { let acc = 0; for (let y = -r; y <= r; y++) acc += tmp[Math.min(h - 1, Math.max(0, y)) * w + x]; for (let y = 0; y < h; y++) { out[y * w + x] = acc / n; acc += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x]; } }
-  return out;
 }
 /** Deterministic paper-grain amount in [0,1] for a pixel (used by the canvas renderer). */
 export const paperNoise = (x, y) => hash(x, y, 3) * 0.6 + vnoise(x, y, 4, 9) * 0.4;

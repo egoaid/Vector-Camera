@@ -6,6 +6,12 @@ const pick = (r, a) => a[Math.floor(r() * a.length)];
 const range = (r, a, b) => Math.round(a + r() * (b - a));
 
 export const TENDENCIES = ['etching', 'silver', 'silkscreen', 'popart'];
+/** Random values for the photographic tone controls of the ACTIVE tone mode (silver-gelatin / two-tone); classic -> nothing. All inside the UI ranges. */
+export function toneTexturePatch(r, tone) {
+  if (tone === 'silver') return { sgBlack: range(r, 0, 22), sgWhite: range(r, 78, 100), sgContrast: range(r, 38, 68), sgCurve: range(r, 38, 72), sgGrain: range(r, 12, 70), sgGrainSize: range(r, 15, 70), sgGrainRough: range(r, 10, 70) };
+  if (tone === 'twotone') return { ttThreshold: range(r, 38, 62), ttBias: range(r, 38, 62), ttAdaptive: r() < 0.4 ? range(r, 10, 60) : 0, ttDetail: range(r, 10, 60), ttEdge: r() < 0.5 ? range(r, 10, 50) : 0, ttClean: range(r, 0, 40), ttBreakup: r() < 0.3 ? range(r, 5, 30) : 0 };
+  return {};
+}
 
 const PROFILES = {
   etching: {
@@ -19,7 +25,7 @@ const PROFILES = {
   },
   silver: {
     palette: (r) => pick(r, ['silver', 'silver', 'sepia', 'selenium']),
-    texture: (r) => ({ separation: 6, retention: range(r, 85, 100), grain: range(r, 35, 75), roughness: range(r, 20, 50), misreg: 0, paper: range(r, 20, 50), detail: range(r, 25, 40), simplify: range(r, 25, 40), halftone: 0 }),
+    texture: (r) => { const ht = r() < 0.2; return { separation: 6, retention: range(r, 85, 100), grain: range(r, 35, 75), roughness: range(r, 20, 50), misreg: 0, paper: range(r, 20, 50), detail: range(r, 25, 40), simplify: range(r, 25, 40), tone: 'silver', ...toneTexturePatch(r, 'silver'), sgToning: pick(r, ['none', 'none', 'sepia', 'selenium']), sgToningAmt: range(r, 30, 80), halftone: ht ? 1 : 0, ...(ht ? { halftoneType: 'dot', halftoneSize: range(r, 3, 5), halftoneAngle: pick(r, [15, 45, 75]), htMix: range(r, 25, 55) } : {}) }; },
     background: () => 'photo',
     subject: (r) => range(r, 20, 40),
     lines: () => ({ lineWidth: 0 }),

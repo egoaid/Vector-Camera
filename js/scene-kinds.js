@@ -17,6 +17,8 @@ const NOSE = [193, 168, 417, 122, 351, 129, 358, 98, 327, 2, 4, 5, 195, 197, 6, 
 const LID_UP_R = [33, 246, 161, 160, 159, 158, 157, 173, 133], LID_LO_R = [33, 7, 163, 144, 145, 153, 154, 155, 133], LID_UP_L = [362, 398, 384, 385, 386, 387, 388, 466, 263], LID_LO_L = [362, 382, 381, 380, 374, 373, 390, 249, 263];
 const BROW_TOP_R = [70, 63, 105, 66, 107], BROW_TOP_L = [300, 293, 334, 296, 336], LIP_MID = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
 
+/** The landmark groups this module reads (canonical mesh indices) - exported so the mapping can be validated and tested. */
+export const FACE_GROUPS = { FACE_OVAL, LIPS_OUTER, LIPS_INNER, EYE_R, EYE_L, BROW_R, BROW_L, NOSE, NOSE_BOTTOM, LID_UP_R, LID_LO_R, LID_UP_L, LID_LO_L, BROW_TOP_R, BROW_TOP_L, LIP_MID };
 /** Fills a polygon (flat [x0,y0,x1,y1...] in pixels) into map with value v. only(prev) filters which existing values may be overwritten. */
 function fillPoly(map, w, h, pts, v, only) {
   let y0 = h, y1 = -1; for (let i = 1; i < pts.length; i += 2) { y0 = Math.min(y0, pts[i]); y1 = Math.max(y1, pts[i]); }
@@ -121,6 +123,10 @@ export function analyzeKinds({ rgba, w, h, labels, R, groups = null, faces = [] 
     for (const idx of [LID_UP_R, LID_LO_R, LID_UP_L, LID_LO_L, BROW_TOP_R, BROW_TOP_L, NOSE_BOTTOM]) strokes.push(toPx(face, idx, w, h));
     const lipLine = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308]; strokes.push(toPx(face, lipLine, w, h)); strokes.push(toPx(face, [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291], w, h));
   }
+  // cheeks: two ellipses under the eyes (landmarks 205 / 425 = cheekbone), only on skin; used by the etching cheek control
+  const cheek = new Uint8Array(n);
+  for (const pp of pixelParts) for (const c of [205, 425]) { const q = pp.face[c]; if (!q) continue; const cx = q.x * w, cy = q.y * h, rx = pp.fw * 0.16, ry = pp.fh * 0.13, poly = new Float32Array(48); for (let k = 0; k < 24; k++) { poly[k * 2] = cx + Math.cos((k / 24) * 6.2832) * rx; poly[k * 2 + 1] = cy + Math.sin((k / 24) * 6.2832) * ry; } fillPoly(cheek, w, h, poly, 1, (v) => v === 0); }
+  for (let i = 0; i < n; i++) if (cheek[i] && map[i] !== K.SKIN) cheek[i] = 0;
   const counts = new Uint32Array(13); for (let i = 0; i < n; i++) counts[map[i]]++;
-  return { map, strokes, faces: faceInfo, counts, w, h };
+  return { map, cheek, strokes, faces: faceInfo, counts, w, h };
 }

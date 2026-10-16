@@ -48,6 +48,7 @@
 <link rel="stylesheet" href="css/text-panel.css">
 <link rel="stylesheet" href="css/style-lib.css">
 <link rel="stylesheet" href="css/hub.css">
+<link rel="stylesheet" href="css/faces.css">
 <link rel="stylesheet" href="css/phone.css">
 <script type="application/ld+json">
 {
@@ -259,6 +260,7 @@
           <div class="modes" role="tablist" id="modes"></div>
           <p class="note" id="mode-desc"></p>
           <details class="grp" open><summary data-i18n="grp.shape">形・質感</summary><div id="controls"></div><details class="advanced" id="advanced"><summary data-i18n="adv">詳細設定</summary><div id="controls-adv"></div></details></details>
+          <details class="grp" open><summary data-i18n="grp.tone">トーン（階調）</summary><div id="tone-ctl"></div></details>
           <details class="grp" open><summary data-i18n="tb.halftone">ハーフトーン</summary><div id="halftone-ctl"></div></details>
           <details class="grp" open><summary data-i18n="tb.lines">輪郭線</summary><div id="lines-ctl"></div></details>
         </section>
@@ -326,6 +328,18 @@
       <button type="submit" class="btn btn-primary" id="name-ok" data-i18n="st.ok">OK</button>
     </div>
   </form>
+</dialog>
+<!-- face engine A/B comparison -->
+<dialog id="dlg-face-ab" aria-labelledby="ab-title">
+  <div class="dlg">
+    <h2 id="ab-title" data-i18n="face.ab.title">顔検出エンジンの比較（A / B）</h2>
+    <div id="ab-body"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-secondary" id="ab-close" data-i18n="face.ab.close">閉じる</button>
+      <button type="button" class="btn btn-primary" id="ab-use-a" data-i18n="face.ab.usea" disabled>Aを使う</button>
+      <button type="button" class="btn btn-primary" id="ab-use-b" data-i18n="face.ab.useb" disabled>Bを使う</button>
+    </div>
+  </div>
 </dialog>
 <input type="file" id="file-style" accept=".json,application/json" hidden>
 
