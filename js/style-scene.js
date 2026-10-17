@@ -35,6 +35,25 @@ export function addOverlays(scene, res, groups, p) {
   scene.geom = res.geom;
 }
 
+/**
+ * Tone / halftone ink ON TOP of the vector colour fills (vector and regions modes). The ink layers multiply over the fills, so the colours stay visible
+ * under the tonal drawing: silver = continuous tone (toned ramp), two-tone = one ink on the colours, classic + halftone = a halftone key plate.
+ * Nothing is added with classic tone and halftone off, so a plain vector picture stays exactly as before.
+ */
+function addOverlayInk(scene, res, groups, p, preset, all, inkFactory) {
+  const tone = p.tone === 'silver' || p.tone === 'twotone' ? p.tone : 'classic';
+  if (tone === 'classic' && !(p.halftone > 0)) return;
+  const htCol = p.halftone > 0 && /^#[0-9a-f]{6}$/i.test(p.htColor || '') ? p.htColor : null, inkCol = htCol || preset.ink;
+  const common = { levels: p.separation, retention: p.retention / 100, halftone: p.halftone > 0, halftoneType: p.halftoneType || 'dot', halftoneOpts: htOptsFrom(p), halftoneSize: p.halftoneSize, halftoneAngle: p.halftoneAngle, grain: p.grain / 100, roughness: p.roughness / 100, groupOf: groups, tone, htMix: p.htMix ?? 70, sg: sgOptsFrom(p), tt: ttOptsFrom(p) };
+  if (tone === 'silver') {
+    const ramp = tonedRamp(neutralRamp(preset.ink, preset.paper), p.sgToning, p.sgToningAmt), bmp = inkFactory({ ...common, mode: 'bands', regions: all, ramp, key: 'fg' });
+    if (bmp) scene.layers.push({ kind: 'ink', name: 'tone-overlay', regions: all, bitmap: bmp, blend: 'multiply', spec: { mode: 'bands', ramp, levels: 8 } });
+  } else {
+    const bmp = inkFactory({ ...common, mode: 'key', regions: all, color: inkCol });
+    if (bmp) scene.layers.push({ kind: 'ink', name: tone === 'twotone' ? 'key-plate' : 'halftone-overlay', regions: all, bitmap: bmp, blend: 'multiply', spec: { mode: 'key', color: inkCol } });
+  }
+}
+
 export function buildBase(res, groups, p, inkFactory) {
   const { w, h, R, stats: st } = res, long = Math.max(w, h), sc = long / 640;
   const preset = getPreset(p);
@@ -60,6 +79,7 @@ export function buildBase(res, groups, p, inkFactory) {
     } else for (const r of all) map.set(r, hexOf(st, r));
     scene.layers.push({ kind: 'rect', fill: meanHex });
     scene.layers.push({ kind: 'fills', name: p.mode === 'vector' ? 'regions' : 'color-regions', offset: [0, 0], items: groupBy(map), seal, stroke });
+    if (inkFactory) addOverlayInk(scene, res, groups, p, preset, all, inkFactory);
     return scene;
   }
 

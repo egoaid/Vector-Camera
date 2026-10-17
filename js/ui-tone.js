@@ -1,12 +1,13 @@
 // ui-tone.js - the "tone" group of the Style tab (hybrid mode): classic / silver-gelatin / strict two-tone, with the controls of the chosen tone.
 import { slider, select, check } from './ui-controls.js';
+import { INK_MODES } from './config.js';
 import { state } from './state.js';
 import { t } from './i18n.js';
 const $ = (id) => document.getElementById(id);
 
 export function buildTone(onChange, mode = state.params.mode) {
   const box = $('tone-ctl'); if (!box) return; box.replaceChildren(); const p = state.params;
-  if (mode !== 'hybrid') { const n = document.createElement('p'); n.className = 'note'; n.textContent = t('tone.hybridonly'); box.append(n); return; }
+  if (!INK_MODES.includes(mode)) { const n = document.createElement('p'); n.className = 'note'; n.textContent = t('tone.hybridonly'); box.append(n); return; }
   const re = (k) => { onChange(k); buildTone(onChange, mode); };
   box.append(select('tone', [['classic', 'tone.classic'], ['silver', 'tone.silver'], ['twotone', 'tone.twotone']], re, 'p.tone'));
   const n = document.createElement('p'); n.className = 'note'; n.textContent = t('tone.desc.' + (p.tone || 'classic')); box.append(n);

@@ -1,6 +1,7 @@
 // style-collage.js - arranges several independently styled images into one scene: torn paper, grid, strips, mosaic.
 // Each piece is a scene 'group' (own geometry + affine transform + torn clip polygon), so SVG / PDF stay vector.
 import { buildBase, addLines } from './style-scene.js';
+import { needsInk } from './config.js';
 import { mulberry32 } from './color-utils.js';
 import { PRESETS, STYLE_ORDER } from './style-palette.js';
 import { textLayers } from './style-text.js';
@@ -109,7 +110,7 @@ export function buildCollageScene(cells, p, { inkLong = 700 } = {}) {
   const tornAmp = (p.collageTorn / 100) * 0.05 * Math.min(W, H);
   slots.forEach((sl, i) => {
     const cell = cells[i % cells.length], res = cell.res, pp = vary && i > 0 ? { ...p, preset: vary[i % vary.length], bgTreatment: (PRESETS[vary[i % vary.length]] || {}).bgTreatment || p.bgTreatment } : p;
-    const sub = buildBase(res, cell.groups, pp, pp.mode === 'hybrid' ? cell.ink(inkLong) : null); addLines(sub, res, cell.groups, pp);
+    const sub = buildBase(res, cell.groups, pp, needsInk(pp) ? cell.ink(inkLong) : null); addLines(sub, res, cell.groups, pp);
     const sc = Math.max(sl.w / res.w, sl.h / res.h) * (1 + (i % 3 === 1 ? 0.12 : 0)), a = sc * Math.cos(sl.rot), b = sc * Math.sin(sl.rot), c = -b, d = a;
     const e = sl.cx - (a * res.w / 2 + c * res.h / 2), f = sl.cy - (b * res.w / 2 + d * res.h / 2);
     const tornSides = [1, 1, 1, 1].map(() => (rnd() < 0.75 ? 1 : 0)), edge = p.collageEdge || 'organic', amp = tornAmp * (edge === 'cut' ? 0 : sl.torn || 0);

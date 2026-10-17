@@ -1,5 +1,5 @@
 // ui-controls.js - builds mode tabs, style presets and sliders from a definition table.
-import { MODES, MODE_PRESETS, MODE_DEFAULTS } from './config.js';
+import { MODES, MODE_PRESETS, MODE_DEFAULTS, INK_MODES } from './config.js';
 import { PRESETS, getPreset } from './style-palette.js';
 import { t } from './i18n.js';
 import { HT_TYPES } from './halftone-types.js';
@@ -71,7 +71,7 @@ export { MODE_DEFAULTS };
 /** Halftone section: on/off, type and the detail controls of the chosen type (hybrid mode only). */
 export function buildHalftone(onChange, mode = state.params.mode) {
   const box = $('halftone-ctl'); if (!box) return; box.replaceChildren(); const p = state.params;
-  if (mode !== 'hybrid') { const n = document.createElement('p'); n.className = 'note'; n.textContent = t('ht.hybridonly'); box.append(n); return; }
+  if (!INK_MODES.includes(mode)) { const n = document.createElement('p'); n.className = 'note'; n.textContent = t('ht.hybridonly'); box.append(n); return; }
   const re = (k) => { onChange(k); buildHalftone(onChange, mode); };
   box.append(select('halftone', [[0, 'p.off'], [1, 'p.on']], re, 'p.halftone'));
   if (!(p.halftone > 0)) return;

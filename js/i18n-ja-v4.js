@@ -1,7 +1,7 @@
 // i18n-ja-v4.js - v0.9.0: tone (silver-gelatin / strict two-tone), halftone overlay mix.
 export const JA4 = {
   'grp.tone': 'トーン（階調）', 'p.tone': '階調の表現', 'tone.classic': '標準（従来どおり）', 'tone.silver': '銀塩写真', 'tone.twotone': '完全な2階調（白黒）',
-  'tone.hybridonly': 'トーンの設定は「ハイブリッド」モードで使えます。',
+  'tone.hybridonly': 'トーンの設定は「ハイブリッド」「ベクター」「色分け」モードで使えます。',
   'tone.desc.classic': '従来の階調表現です。以前に保存したスタイルはこのままの見た目で再現されます。',
   'tone.desc.silver': '連続階調のモノクロ写真。黒点・白点・コントラスト・粒子で印画紙のような質感にします。',
   'tone.desc.twotone': 'インクと紙の2色だけで表します（中間色なし）。しきい値や細部、輪郭、ノイズ除去を調整できます。',

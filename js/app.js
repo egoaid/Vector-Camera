@@ -1,7 +1,7 @@
 // app.js - application bootstrap and orchestration (input -> analysis -> style -> export).
 import { initLang, setLang, getLang, t, applyDom } from './i18n.js';
 import { state, loadSettings, saveSettings, applyModeDefaults } from './state.js';
-import { LIMITS, MODE_PRESETS, pipelineParams } from './config.js';
+import { LIMITS, MODE_PRESETS, pipelineParams, INK_MODES, needsInk } from './config.js';
 import { versionString } from './version.js';
 import * as wake from './wake-lock.js';
 import { initCameraUI } from './ui-camera.js';
@@ -142,7 +142,7 @@ const NO_FACES = [];
 function setFaceStatus(s) { state.faceStatus = s; document.dispatchEvent(new CustomEvent('vc:face-status')); }
 /** What is where (skin, hair, leaves, sky, eyes ...): own analysis of the regions plus optional face landmarks. Computed only when a style uses it. */
 function ensureKinds(r) {
-  const p = state.params; if (state.collage || !state.work || !(p.mode === 'hybrid' && p.halftone > 0 && p.halftoneType === 'etching' && p.htKinds > 0)) return;
+  const p = state.params; if (state.collage || !state.work || !(INK_MODES.includes(p.mode) && p.halftone > 0 && p.halftoneType === 'etching' && p.htKinds > 0)) return;
   const eng = p.faceEngine || 'modern'; // the engine the person selected - never substituted by another one
   if (state.facesEngine !== eng) { state.faces = undefined; state.facesEngine = eng; state.faceStatus = null; }
   if (eng === 'off') { state.faces = NO_FACES; setFaceStatus({ engine: 'off', status: 'off', faces: 0, ms: 0 }); }
@@ -163,7 +163,7 @@ function rebuildScene() {
   if (state.scene) releaseScene(state.scene);
   if (state.collage) { state.scene = buildCollageScene(collageCells((l) => l), state.params, { inkLong: 700 }); return; }
   computeGroups();
-  state.scene = buildScene(state.result, state.groups, state.params, state.params.mode === 'hybrid' ? previewInkFactory() : null);
+  state.scene = buildScene(state.result, state.groups, state.params, needsInk(state.params) ? previewInkFactory() : null);
 }
 function redraw() {
   if (!state.result) return; rebuildScene(); paint(); updateBadges(); updateExportNote(state.scene); ensureTextFonts();
@@ -240,7 +240,7 @@ async function getExportScene(kind) {
   if (state.collage) { scene = buildCollageScene(collageCells(() => want), { ...state.params, fxLong: want }, { inkLong: want }); }
   else {
     const r = state.result; computeGroups(); let f = null;
-    if (state.params.mode === 'hybrid') { const srcLong = Math.max(state.source.w, state.source.h); f = makeInkFactory(state.source, r, Math.min(want, srcLong)); }
+    if (needsInk(state.params)) { const srcLong = Math.max(state.source.w, state.source.h); f = makeInkFactory(state.source, r, Math.min(want, srcLong)); }
     scene = buildScene(r, state.groups, { ...state.params, fxLong: want }, f); geom = r.geom;
   }
   if (vec && sceneHasRaster(scene)) {

@@ -1,5 +1,11 @@
 // config.js - defaults, limits, presets and slider -> pipeline parameter mapping.
 export const MODES = ['vector', 'silhouette', 'regions', 'hybrid'];
+/** Modes whose picture can carry the tone (silver / two-tone) and halftone ink: hybrid (the main use) and, as an overlay on the photo-colour fills, vector and regions. */
+export const INK_MODES = ['vector', 'regions', 'hybrid'];
+/** true when the params ask for tone or halftone ink on a vector / regions picture (classic tone and halftone off = a plain vector picture, nothing overlaid). */
+export const overlayInk = (p) => (p.mode === 'vector' || p.mode === 'regions') && (p.tone === 'silver' || p.tone === 'twotone' || p.halftone > 0);
+/** true when an ink factory is needed at all (hybrid always; vector / regions only with an overlay). */
+export const needsInk = (p) => p.mode === 'hybrid' || overlayInk(p);
 export const LIMITS = {
   working: { low: 512, standard: 768, high: 1024 },   // long edge of the segmentation working copy
   sourceMax: 2400,                                     // long edge kept for hybrid raster / PNG export

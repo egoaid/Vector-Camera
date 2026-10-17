@@ -4,7 +4,7 @@ import { TENDENCIES } from './style-tendency.js';
 import { state, saveSettings } from './state.js';
 import { slider, select, check } from './ui-controls.js';
 import { FONTS, ensureFont, isLatinOnly } from './style-text.js';
-import { TEXT_SLOTS, tkey } from './config.js';
+import { TEXT_SLOTS, tkey, INK_MODES } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { getPreset } from './style-palette.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
@@ -88,7 +88,7 @@ export function buildTextPanel(onChange) {
 function buildColorPanel(onChange) {
   const box = $('color-ctl'); if (!box) return; box.replaceChildren(); const p = state.params, again = (k) => { onChange(k); buildColorPanel(onChange); };
   const lockBox = (group, labelKey) => { const l = document.createElement('label'), i = document.createElement('input'), s = document.createElement('span'); l.className = 'check lock'; i.type = 'checkbox'; i.checked = !!(p.lock && p.lock[group]); s.textContent = '🔒 ' + t(labelKey); i.addEventListener('change', () => { state.params.lock = { ...state.params.lock, [group]: i.checked }; saveSettings(); onChange('lock'); }); l.append(i, s); return l; };
-  const htOn = p.mode === 'hybrid' && p.halftone > 0, auto = p.htColor === '' || p.htColor == null;
+  const htOn = INK_MODES.includes(p.mode) && p.halftone > 0, auto = p.htColor === '' || p.htColor == null;
   const h = document.createElement('div'); h.className = 'field'; // halftone colour (follows the palette until set)
   const hl = document.createElement('label'), hi = document.createElement('input'); hi.type = 'color'; hi.disabled = !htOn;
   const pr = getPreset(p); hi.value = auto ? (pr.mode === 'bands' ? (pr.groups.fg.ramp && pr.groups.fg.ramp[0]) || pr.ink : pr.ink) : p.htColor;

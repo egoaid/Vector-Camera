@@ -1,7 +1,7 @@
 // i18n-en-v4.js - v0.9.0: tone (silver-gelatin / strict two-tone), halftone overlay mix.
 export const EN4 = {
   'grp.tone': 'Tone', 'p.tone': 'Tonal treatment', 'tone.classic': 'Classic (as before)', 'tone.silver': 'Silver-gelatin', 'tone.twotone': 'Strict two-tone (black & white)',
-  'tone.hybridonly': 'Tone settings are available in Hybrid mode.',
+  'tone.hybridonly': 'Tone settings are available in Hybrid, Vector and Colour-regions modes.',
   'tone.desc.classic': 'The original tonal treatment. Styles saved before this version render exactly as they did.',
   'tone.desc.silver': 'Continuous-tone monochrome: black/white point, contrast and film grain give a darkroom-print look.',
   'tone.desc.twotone': 'Only ink and paper - no intermediate tones. Threshold, detail, edge and clean-up controls shape the result.',

@@ -23,7 +23,7 @@ export const EN2 = {
   'p.htGuilloche': 'Guilloche (lace curves)',
   'p.halftoneSize': 'Size (line / dot pitch)',
   'p.halftoneAngle': 'Angle',
-  'ht.hybridonly': 'Halftone is available in Hybrid (screen-print) mode.',
+  'ht.hybridonly': 'Halftone is available in Hybrid (screen-print), Vector and Colour-regions modes.',
   'ht.desc.dot': 'Classic dots: tone is shown by dot size.',
   'ht.desc.line': 'Parallel lines: darker areas get thicker lines.',
   'ht.desc.cross': 'Pen-style cross-hatching: extra line directions are layered for shadows. "Follow the form" bends lines around shapes; "Pen wobble" adds a hand-drawn feel.',
