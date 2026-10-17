@@ -13,6 +13,16 @@ export function toneTexturePatch(r, tone) {
   return {};
 }
 
+/**
+ * Random values for the vector shape controls ("Shape & texture" tab): detail, simplification, angularity, curviness and border smoothing,
+ * plus the etching shading controls for eyes, lips and hair. All inside the UI ranges. A tendency narrows the ranges (an etching stays soft and curved, pop art may be sharper).
+ */
+export function shapePatch(r, tend) {
+  const R = { etching: { detail: [30, 55], simplify: [25, 50], ang: [0, 40], fit: [40, 90], sm: [35, 70] }, silver: { detail: [25, 45], simplify: [20, 40], ang: [0, 30], fit: [50, 95], sm: [40, 80] },
+    silkscreen: { detail: [28, 60], simplify: [30, 65], ang: [10, 60], fit: [25, 80], sm: [25, 70] }, popart: { detail: [20, 50], simplify: [35, 70], ang: [20, 80], fit: [20, 70], sm: [20, 60] } }[tend] || { detail: [20, 70], simplify: [15, 65], ang: [0, 70], fit: [20, 95], sm: [20, 85] };
+  return { detail: range(r, ...R.detail), simplify: range(r, ...R.simplify), angularity: range(r, ...R.ang), curveFit: range(r, ...R.fit), regionSmooth: range(r, ...R.sm), htShade: range(r, 40, 90), htHairLong: range(r, 40, 90) };
+}
+
 const PROFILES = {
   etching: {
     palette: (r) => pick(r, ['etching', 'etching', 'etchblue', 'sanguine', 'mono']),

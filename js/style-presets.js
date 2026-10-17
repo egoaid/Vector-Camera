@@ -11,7 +11,7 @@ import { FONTS } from './style-text.js';
 import { APP_VERSION } from './version.js';
 
 /** Settings of the device / session, never part of a style. */
-const DEVICE_KEYS = new Set(['quality', 'engine', 'wakeLock', 'exportLong', 'vecInk', 'vecInkLong', 'vecInkSpeck', 'rndOpts', 'rndStyle', 'lock', 'faceEngine', 'engineProfiles']);
+const DEVICE_KEYS = new Set(['quality', 'engine', 'wakeLock', 'exportLong', 'vecInk', 'vecInkLong', 'vecInkSpeck', 'rndOpts', 'rndStyle', 'lock', 'faceEngine']);
 /** Every parameter a user style stores (look + texts + collage). */
 export const STYLE_KEYS = Object.keys(DEFAULT_PARAMS).filter((k) => !DEVICE_KEYS.has(k));
 /** The look only (no wording / collage layout): what the built-in styles define. */
@@ -53,7 +53,7 @@ export const isBuiltinActive = (cur, def) => { const full = expandBuiltin(def), 
 //  - keys missing from an older / external style take LEGACY_VALUES (the value that reproduces the look from before the key existed) or the default;
 //  - device settings (DEVICE_KEYS) and per-photo edits (manual foreground / background fixes, selected text slot) are never part of a style.
 /** Values that reproduce the pre-existence look of a key that was added after styles may have been saved. */
-export const LEGACY_VALUES = { htKinds: 0, htColor: '' };
+export const LEGACY_VALUES = { htKinds: 0, htColor: '', htShade: 0, htHairLong: 0, curveFit: 0, regionSmooth: 0 };
 const missingValue = (k) => clone(k in LEGACY_VALUES ? LEGACY_VALUES[k] : DEFAULT_PARAMS[k]);
 export const snapshotStyle = (cur) => pickKeys(cur, STYLE_KEYS);
 /** The complete saved configuration of a style (sanitised; missing keys filled as described above). */

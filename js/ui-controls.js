@@ -9,7 +9,7 @@ import { buildFaceEngine } from './ui-faces.js';
 const $ = (id) => document.getElementById(id);
 const ALL = MODES;
 const MAIN = [
-  { k: 'detail', modes: ALL, g: 'shape' }, { k: 'simplify', modes: ALL, g: 'shape' }, { k: 'angularity', modes: ALL, g: 'shape' },
+  { k: 'detail', modes: ALL, g: 'shape' }, { k: 'simplify', modes: ALL, g: 'shape' }, { k: 'angularity', modes: ALL, g: 'shape' }, { k: 'curveFit', modes: ALL, g: 'shape' }, { k: 'regionSmooth', modes: ALL, g: 'shape' },
   { k: 'paletteK', modes: ['regions'], min: 2, max: 24, g: 'shape' }, { k: 'subjectSize', modes: ['silhouette', 'hybrid'], min: 5, max: 70, g: 'subject' },
   { k: 'separation', modes: ['hybrid'], min: 2, max: 6, g: 'tone' }, { k: 'retention', modes: ['hybrid'], g: 'tone' }, { k: 'grain', modes: ['hybrid'], g: 'tone' }, { k: 'misreg', modes: ['hybrid'], g: 'tone' },
 ];
@@ -82,7 +82,7 @@ export function buildHalftone(onChange, mode = state.params.mode) {
   if (p.tone === 'silver' || p.tone === 'twotone') box.append(S('htMix', 0, 100));
   if (ty === 'line') box.append(S('htCurve', 0, 100));
   if (ty === 'cross') box.append(S('htLayers', 2, 3), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100));
-  if (ty === 'etching') box.append(S('htLayers', 1, 4), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100), S('htLen', 0, 100), S('htDepth', 0, 100), S('htContour', 0, 100), S('htFlow', 0, 100), S('htKinds', 0, 100));
+  if (ty === 'etching') box.append(S('htLayers', 1, 4), S('htSpread', 20, 90), S('htCurve', 0, 100), S('htSketch', 0, 100), S('htLen', 0, 100), S('htDepth', 0, 100), S('htContour', 0, 100), S('htFlow', 0, 100), S('htKinds', 0, 100), S('htShade', 0, 100), S('htHairLong', 0, 100));
     if (p.htKinds > 0) { const n2 = document.createElement('p'); n2.className = 'note'; n2.textContent = t('ht.regions.note'); box.append(n2, S('htRegSkin'), S('htRegCheek'), S('htRegEyes'), S('htRegBrows'), S('htRegNose'), S('htRegLips'), S('htRegHair')); buildFaceEngine(box); }
   if (ty === 'engrave') box.append(S('htWave', 0, 100), S('htWaveLen', 0, 100), S('htGuilloche', 0, 100), S('htCurve', 0, 100));
 }

@@ -1,9 +1,11 @@
 // vec-geometry.js - builds shared-boundary vector geometry for a label map and serialises regions to path data.
 import { traceBoundaries } from './vec-chains.js';
 import { fitChain, reversePath, pinEnds } from './vec-curves.js';
+import { smoothLabels } from './vec-smooth.js';
 
-/** prm: { smooth, eps, fitErr, cornerDeg, angular }. Returns geometry { w,h,R,chains[],loops[][] , stats }. */
+/** prm: { smooth, eps, fitErr, cornerDeg, angular, round (px radius for rounding stair-stepped borders; 0 = off) }. Returns geometry { w,h,R,chains[],loops[][] , stats }. */
 export function buildGeometry(labels, w, h, R, prm) {
+  if (prm.round > 0) labels = smoothLabels(labels, w, h, R, prm.round);
   const { chains: raw } = traceBoundaries(labels, w, h);
   const chains = raw.map((c) => {
     const path = fitChain(c.xy, c.closed, prm), n = c.xy.length;

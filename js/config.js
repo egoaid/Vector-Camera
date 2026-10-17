@@ -9,11 +9,11 @@ export const LIMITS = {
 };
 export const DEFAULT_PARAMS = {
   mode: 'hybrid', preset: 'pop', quality: 'standard',
-  detail: 45, boundary: 50, simplify: 35, angularity: 25, minRegion: 30, subjectSize: 30,
+  detail: 45, boundary: 50, simplify: 35, angularity: 25, curveFit: 40, regionSmooth: 50, minRegion: 30, subjectSize: 30,
   paletteK: 8, paletteMap: 'luma',
   seal: true, outline: 0, outlineColor: '#111111', background: 'auto',
   silColors: { bg: '#f2d934', mid: '#e1456d', fg: '#17121c' }, silSample: false,
-  separation: 3, retention: 45, halftone: 0, halftoneType: 'dot', htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50, htDepth: 45, htContour: 35, htKinds: 70, htFlow: 0, htRegSkin: 50, htRegHair: 50, htRegEyes: 50, htRegBrows: 50, htRegNose: 50, htRegLips: 50, htRegCheek: 0, faceEngine: 'legacy', engineProfiles: {}, htColor: '', lock: { palette: false, htColor: false, lineColor: false }, halftoneSize: 6, halftoneAngle: 45,
+  separation: 3, retention: 45, halftone: 0, halftoneType: 'dot', htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50, htDepth: 45, htContour: 35, htKinds: 70, htFlow: 0, htShade: 60, htHairLong: 60, htRegSkin: 50, htRegHair: 50, htRegEyes: 50, htRegBrows: 50, htRegNose: 50, htRegLips: 50, htRegCheek: 0, faceEngine: 'modern', htColor: '', lock: { palette: false, htColor: false, lineColor: false }, halftoneSize: 6, halftoneAngle: 45,
   grain: 25, roughness: 20, misreg: 25, paper: 25, bgTreatment: 'flat', semStrength: 100,
   // photographic tone treatment (hybrid mode): 'classic' = the original levels / grain; 'silver' = silver-gelatin; 'twotone' = strict black-and-white threshold (see tone-photo.js)
   tone: 'classic', sgBlack: 0, sgWhite: 100, sgContrast: 50, sgCurve: 50, sgGrain: 35, sgGrainSize: 40, sgGrainRough: 40, sgToning: 'none', sgToningAmt: 60,
@@ -23,7 +23,7 @@ export const DEFAULT_PARAMS = {
   text: 'Vector Camera', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
   vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
   collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '', collageEdge: 'organic',
-  rndOpts: { palette: true, texture: true, background: true, subject: true, lines: true, font: true, textOn: false, textFx: true, collage: true, aspect: true },
+  rndOpts: { palette: true, shape: true, texture: true, background: true, subject: true, lines: true, font: true, textOn: false, textFx: true, collage: true, aspect: true },
   customPreset: null, rndStyle: 'off',
   // text slots 2 and 3 (keys get a _1 / _2 suffix); slot 1 uses the plain keys above
   text_1: '', textFont_1: 'marker', textSize_1: 11, textX_1: 50, textY_1: 22, textAngle_1: 0, textSpacing_1: 2, textColor_1: '#ffd23f', textShadow_1: 20, textShadowColor_1: '#17121c', textShow_1: false, textHalftone_1: 0, textHalftoneType_1: 'dot', textHalftoneSize_1: 5, textHalftoneAngle_1: 45, textHalftoneMode_1: 'down', textWear_1: 0, textDirt_1: 0, textSeed_1: 2,
@@ -58,11 +58,12 @@ export function pipelineParams(p, w, h, semVersion = 0) {
     k, minArea: Math.max(3, Math.round(w * h * minFrac)), keepContrast: 28,
     paletteK: p.paletteK | 0,
     shape: {
-      smooth: 1 + Math.round((p.simplify / 100) * 3),
-      eps: (0.3 + 2.2 * (p.simplify / 100)) * sc * (p.angularity > 70 ? 1.4 : 1),
-      fitErr: (0.45 + 1.3 * (p.simplify / 100)) * sc,
-      cornerDeg: 38 + 0.35 * (100 - p.angularity),
+      smooth: 1 + Math.round((p.simplify / 100) * 3) + Math.round(((p.curveFit ?? 0) / 100) * 6 * Math.min(2, sc)), // curveFit: more smoothing passes ...
+      eps: (0.3 + 2.2 * (p.simplify / 100)) * sc * (p.angularity > 70 ? 1.4 : 1) * (1 + 0.35 * (p.curveFit ?? 0) / 100),
+      fitErr: (0.45 + 1.3 * (p.simplify / 100)) * sc * (1 + 0.5 * (p.curveFit ?? 0) / 100),
+      cornerDeg: Math.min(150, 38 + 0.35 * (100 - p.angularity) + 0.4 * (p.curveFit ?? 0)), // ... and fewer corners: only really sharp turns stay corners
       angular: p.angularity >= 80,
+      round: ((p.regionSmooth ?? 0) / 100) * 12 * sc * 0.85, // px radius at which stair-stepped region borders are rounded
     },
   };
 }

@@ -22,8 +22,8 @@ export function buildExtras(onChange, hooks) {
   const rs = $('sel-rnd-style'); if (rs) { rs.replaceChildren(); for (const k of ['off', ...TENDENCIES]) { const o = document.createElement('option'); o.value = k; o.textContent = t('rnd.tend.' + k); rs.append(o); } rs.value = state.params.rndStyle || 'off'; rs.onchange = () => { state.params.rndStyle = rs.value; saveSettings(); }; }
   renderRandomLock();
   const ro = $('random-opts'); ro.replaceChildren();
-  for (const k of ['palette', 'texture', 'background', 'subject', 'lines', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
-    const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!state.params.rndOpts[k];
+  for (const k of ['palette', 'shape', 'texture', 'background', 'subject', 'lines', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
+    const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = state.params.rndOpts[k] ?? (k === 'shape'); // the shape option is new: on for settings saved before it existed
     const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); }); l.append(i, s); ro.append(l);
   }
   // --- colour tab: halftone colour, line colours, collage paper and the colour locks (palette chips are built in ui-controls)

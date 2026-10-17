@@ -49,14 +49,14 @@
 ### トーンとエッチングの設定（v0.9）
 - 「形・質感」タブの「トーン」: **銀塩写真**（黒点・白点・コントラスト・階調カーブ・粒子の強さ／大きさ／荒れ・セピア／セレン調色）と、**完全な2階調**（インクと紙の2色だけ。しきい値・黒の割合・局所しきい値・細部・輪郭・ノイズ除去・崩し）を選べます。ハーフトーンは、どちらにも重ねられます（重ね具合を調整）。
 - エッチングでは、線を「形に沿わせる」（陰影の曲がり）と「流れに沿わせる」（毛流れ・質感の向き）を別々に調整できます。顔が検出できたときは、肌・頬・目・眉・鼻・唇・髪ごとの描き分けの強さも変えられます。
-- 顔検出エンジンは「旧 Face Mesh（同梱）」「新 Face Landmarker」「オフ」から選べます。自動では切り替わらず、使えないときは顔パーツなしで描きます。「A/B 比較」で両方の結果を見比べられます。
+- 顔検出は MediaPipe Face Landmarker（同梱・端末内）を使います。「オフ」にもできます。使えないときや顔が見つからないときは、顔パーツなしで独自の被写体解析だけで描きます。
 
 ヒント: 動作が重いときは、スタート画面の「解析サイズ」を「軽量」にしてください。ホーム画面に追加すると、アプリのように起動できます。
 
 ## プライバシー
 
 - 撮影・選択した画像は、お使いのブラウザの中でのみ処理されます。アップロード、アカウント、広告、解析用の通信はありません。
-- 解析もすべて端末内で行います。外部サービスへの送信はありません。エッチングの顔検出（MediaPipe）は同梱のファイルを初回に読み込みます（旧エンジンは約10MB、以降は保存データを使用）。新エンジン（Face Landmarker）のモデルも同梱しているため、追加のダウンロードやインストールは不要です。
+- 解析もすべて端末内で行います。外部サービスへの送信はありません。エッチングの顔検出（MediaPipe Face Landmarker）は同梱のファイル（約17MB）を初回に読み込み、以降は保存データを使います。追加のダウンロードやインストールは不要です。
 - 一度読み込んだ後は、オフラインでも動作します。
 
 ## 動作環境
@@ -86,7 +86,7 @@
 © 2026 egoaid. All rights reserved.
 
 
-同梱: [MediaPipe](https://github.com/google-ai-edge/mediapipe)（Face Mesh と Tasks Vision の実行ファイル。Apache-2.0、vendor/mediapipe に無改変で同梱。ライセンス全文は vendor/mediapipe/LICENSE、詳細は vendor/mediapipe/NOTICE.txt）。顔のパーツ検出にのみ使い、端末内で動作します。
+同梱: [MediaPipe](https://github.com/google-ai-edge/mediapipe)（Tasks Vision の実行ファイルと Face Landmarker のモデル。Apache-2.0、vendor/mediapipe に無改変で同梱。ライセンス全文は vendor/mediapipe/LICENSE、詳細は vendor/mediapipe/NOTICE.txt）。顔のパーツ検出にのみ使い、端末内で動作します。
 
 同梱フォント（文字の輪郭化のみに使用）: Anton、Bebas Neue、Archivo Black、Abril Fatface、Shrikhand、Bungee、Pacifico、Caveat、Reenie Beanie、Covered By Your Grace、Gochi Hand ほか（SIL Open Font License 1.1）、Permanent Marker、Rock Salt、Special Elite、Homemade Apple（Apache License 2.0）。各ライセンスは `fonts/LICENSES.txt` にあります。
 
@@ -96,6 +96,6 @@
 
 ## English
 
-Vector Camera is a free, privacy-first web app that turns photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. Everything runs in your browser - images are never uploaded. Modes: Vector, Silhouette, Color regions, Silkscreen (flat vector colour blocks + processed photo "ink" layers). Pure-vector modes export genuine paths and fills; the Silkscreen mode embeds raster ink layers clipped by vector paths (PNG / JPEG export the flattened result). The optional face detection used by the etching style (bundled MediaPipe Face Mesh, about 10 MB, loaded once) also runs on your device. The screen is kept awake while you use the app (Screen Wake Lock API, where supported).
+Vector Camera is a free, privacy-first web app that turns photos into editable vector art (native SVG and true vector PDF) and screen-print style hybrid artwork. Everything runs in your browser - images are never uploaded. Modes: Vector, Silhouette, Color regions, Silkscreen (flat vector colour blocks + processed photo "ink" layers). Pure-vector modes export genuine paths and fills; the Silkscreen mode embeds raster ink layers clipped by vector paths (PNG / JPEG export the flattened result). The optional face detection used by the etching style (bundled MediaPipe Face Landmarker, about 17 MB, loaded once) also runs on your device. The screen is kept awake while you use the app (Screen Wake Lock API, where supported).
 
 © 2026 egoaid. All rights reserved.

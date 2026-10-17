@@ -87,6 +87,8 @@ export function etchMask(D, W, H, elig, o) {
   const regF = o.regions || null, kkOf = (k) => (k === 13 ? Math.min(1.6, kk * (o.cheek ?? 0) / 50) : regF && regF[k] != null ? Math.min(1.6, kk * regF[k]) : kk); // per-region strength of the kind touch (1 = standard)
   const mixT = (k, key) => { const t = TOUCH[k] || NEUTRAL; return key === 'curve' || key === 'ang' || key === 'maxLayer' ? t[key] : 1 + (t[key] - 1) * kkOf(k); };
   const flowK = Math.max(0, Math.min(1, (o.flow ?? 0) / 100)), tex = flowK > 0 ? flowField(D, W, H, cell, Math.max(3, Math.round(cell * 0.6)), true) : null; // flow-following: orientation of the fine texture, independent of the shape-following field
+  // Shadow-only fine hatching for eyes and lips (shade) and long flowing hair strokes (hairLong); 0 = the earlier look.
+  const shadeK = Math.max(0, Math.min(1, (o.shade ?? 0) / 100)), hairK = Math.max(0, Math.min(1, (o.hairLong ?? 0) / 100)), shadeAng = 0.92; // ~53 degrees: the classic light diagonal of an engraver's shading
   const cm = new Uint8Array(W * H), amt = Math.max(0, Math.min(1, (o.contour ?? 0) / 100));
   const darkAt = (x, y) => Db[Math.min(H - 1, Math.max(0, y | 0)) * W + Math.min(W - 1, Math.max(0, x | 0))];
   const stamp = (x, y, r, a) => {
@@ -167,19 +169,26 @@ export function etchMask(D, W, H, elig, o) {
         const i0 = (sy | 0) * W + (sx | 0); if (elig && !elig[i0]) continue;
         const kd = kk > 0 ? kindAt(sx, sy) : 0, tp = TOUCH[kd] || NEUTRAL;
         if (kd && LAYER_OF_FAMILY[fi] > tp.maxLayer && rnd() < kkOf(kd)) continue; // e.g. no cross-hatching on skin or sky
+        const isShade = shadeK > 0 && (kd === 3 || kd === 6), isHair = hairK > 0 && kd === 2;
+        if (isShade && fi >= 1 && rnd() < shadeK) continue; // eyes and lips: one light direction only, no stacked cross-hatching
+        if (isHair && fi >= 4 && rnd() < hairK) continue; // hair: the scribbled short marks of the deepest darks are left out
         const d0 = Math.min(1, darkAt(sx, sy) * (kd ? mixT(kd, 'dens') : 1)); if (rnd() > smooth(thr - 0.06, thr + 0.24, d0) * 0.97) continue;
+        if (isShade && darkAt(sx, sy) < 0.3 + 0.25 * shadeK) continue; // only where there really is shadow (iris edge, under the lip), not on the lit parts
         let alphaS = alpha, cvS = curve; const skS = kd ? sk * mixT(kd, 'sk') : sk, Lk = kd ? L * mixT(kd, 'len') : L, wtK = kd ? mixT(kd, 'wt') : 1;
         let flS = flowK; if (kd) { const kq = Math.min(1, kkOf(kd)); flS = flowK * (1 + (FLOW_OF[kd] - 1) * kq); if (tp.curve != null) cvS = Math.max(0, Math.min(1, curve * (1 - kq) + tp.curve * kq)); if (tp.ang != null) { const t = tp.ang === 'rand' ? rnd() * Math.PI : tp.ang === 'vert' ? -Math.PI / 2 + (rnd() - 0.5) * 0.9 : tp.ang + (alpha - base) * 0.25; alphaS = blendAng(alpha, t, kq); } }
         // trace the stroke
         const stopTh = thr - 0.1 + (rnd() - 0.5) * 0.12, wob = (0.02 + 0.13 * skS) * (0.5 + rnd()), lam = cell * (10 + 12 * rnd()), ph = rnd() * 6.283, ph2 = rnd() * 6.283, jit = (rnd() - 0.5) * (0.1 + 0.3 * skS), w0 = lineW * (0.75 + 0.6 * rnd()) * (0.8 + 0.5 * d0) * depthW(sx, sy) * wtK, aD = depthA(sx, sy);
-        let x = sx, y = sy, ang = dirAt(x, y, alphaS, rot, cvS, skS, flS).a, drift = 0, s = 0; const bow = (rnd() - 0.5) * 0.5 * skS; // each stroke is slightly bowed
-        const n = Math.max(2, Math.round(Lk / ds));
+        let cnt = 0, x = sx, y = sy, ang = dirAt(x, y, alphaS, rot, cvS, skS, flS).a, drift = 0, s = 0; const bow = (rnd() - 0.5) * 0.5 * skS; // each stroke is slightly bowed
+        let Lk2 = Lk, minLen = 0, wtS = 1;
+        if (isShade) { alphaS = blendAng(alphaS, shadeAng + (rnd() - 0.5) * 0.3, shadeK); cvS *= 1 - 0.8 * shadeK; flS *= 1 - shadeK; Lk2 = Math.max(Lk, cell * (2.2 + 1.8 * shadeK) * (0.8 + 0.4 * rnd())); wtS = 1 - 0.45 * shadeK; minLen = cell * 2.4 * shadeK; }
+        if (isHair) { cvS = cvS + (1 - cvS) * hairK; flS = Math.min(1, flS + 0.5 * hairK); Lk2 = Lk * (1 + 1.1 * hairK); wtS = 1 - 0.35 * hairK; minLen = cell * 9 * hairK; }
+        const n = Math.max(2, Math.round(Lk2 / ds)), buf = minLen > 0 ? [] : null; // buf: a stroke that ends up shorter than the minimum is not drawn at all
         for (let k = 0; k <= n; k++) {
           const tt = k / n, tgt = dirAt(x, y, alphaS, rot, cvS, skS, flS); let da = tgt.a - ang; da -= Math.PI * Math.round(da / Math.PI); // shortest way, lines are undirected
           ang += da * 0.14; drift += (rnd() - 0.5) * 0.035 * skS; drift *= 0.96;
           const a = ang + jit + wob * (0.6 * Math.sin((s / lam) * 6.283 + ph) + 0.15 * Math.sin((s / (lam * 0.45)) * 6.283 + ph2)) + drift + bow * Math.sin(Math.PI * tt) * 1.3;
           const prof = Math.pow(Math.sin(Math.PI * (0.04 + 0.92 * tt)), 0.55), r = Math.max(0.3, (w0 * prof) / 2);
-          stamp(x, y, r, (0.55 + 0.45 * prof) * aD);
+          cnt++; if (buf) buf.push(x, y, Math.max(0.3, r * wtS), (0.55 + 0.45 * prof) * aD * (isShade ? 1 - 0.25 * shadeK : 1)); else stamp(x, y, Math.max(0.3, r * wtS), (0.55 + 0.45 * prof) * aD);
           x += Math.cos(a) * ds; y += Math.sin(a) * ds; s += ds;
           if (x < 0 || y < 0 || x >= W || y >= H) break;
           if (k > 2 && darkAt(x, y) < stopTh) break; // shading fades out where the tone gets lighter
@@ -187,6 +196,8 @@ export function etchMask(D, W, H, elig, o) {
           if (kd && k > 2 && kindAt(x, y) !== kd && rnd() < 0.8 * Math.min(1, kkOf(kd))) break; // a stroke does not run from skin into hair, from an eye onto the cheek ...
           if (amt > 0 && k > 2 && cm[(y | 0) * W + (x | 0)] && rnd() < 0.75) break; // shading stops at the outline
         }
+        const drawn = !buf || buf.length / 4 * ds >= minLen; if (buf && drawn) for (let q = 0; q < buf.length; q += 4) stamp(buf[q], buf[q + 1], buf[q + 2], buf[q + 3]);
+        if (o.stats && drawn) o.stats.push([kd, cnt * ds]); // test hook: kind and length (px) of every stroke that was drawn
       }
     }
   };

@@ -1,10 +1,9 @@
-// face-landmarks.js - face landmark detection facade. The person selects the engine (state.params.faceEngine: 'legacy' | 'modern' | 'off'); this module runs
+// face-landmarks.js - face landmark detection facade. The person selects the engine (state.params.faceEngine: 'modern' | 'off'); this module runs
 // exactly that engine and NEVER substitutes another one. Output is the normalised 478-point representation (face-engines.js) and every face is validated.
 // Failure of an engine (missing files, no WASM, timeout, no face) yields { faces: [], status } - the app then uses its own subject analysis only.
 import { normalizeFace, validateFace } from './face-engines.js';
-import { legacyEngine } from './face-engine-legacy.js';
 import { modernEngine } from './face-engine-modern.js';
-const adapters = { legacy: legacyEngine, modern: modernEngine };
+const adapters = { modern: modernEngine };
 /** Test hook: replace an adapter (used by tests/engines.test.mjs with clearly labelled mocks). */
 export const _setAdapter = (id, a) => { adapters[id] = a; };
 export const engineAvailable = (id) => (adapters[id] ? adapters[id].available() : Promise.resolve({ ok: false, reason: 'unknown-engine' }));
@@ -12,7 +11,7 @@ export const engineAvailable = (id) => (adapters[id] ? adapters[id].available() 
  * -> { engine, status: 'ok' | 'none' | 'off' | 'unavailable' | 'error', reason?, ms, faces: normalised[], rejected: [{reasons}] }
  * 'none' = engine ran, found no (valid) face. 'unavailable' = files / model missing or no WASM. 'error' = the engine threw / timed out.
  */
-export async function detectFacesDetailed(canvas, { engine = 'legacy', timeoutMs = 25000 } = {}) {
+export async function detectFacesDetailed(canvas, { engine = 'modern', timeoutMs = 25000 } = {}) {
   const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now(), done = (o) => ({ engine, ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0), faces: [], rejected: [], ...o });
   if (engine === 'off') return done({ status: 'off' });
   const a = adapters[engine]; if (!a) return done({ status: 'unavailable', reason: 'unknown-engine' });

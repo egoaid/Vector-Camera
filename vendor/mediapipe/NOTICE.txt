@@ -1,13 +1,4 @@
-Bundled third-party software: MediaPipe Face Mesh (JavaScript solution, npm package @mediapipe/face_mesh 0.4.1633559619)
-Copyright Google LLC. Licensed under the Apache License, Version 2.0 (see LICENSE in this folder).
-The face_mesh_solution_packed_assets.data file contains the BlazeFace (short range) face detector and the FaceMesh V2 landmark model;
-their model cards state the same licence (Apache License, Version 2.0):
-  https://storage.googleapis.com/mediapipe-assets/MediaPipe%20BlazeFace%20Model%20Card%20(Short%20Range).pdf
-  https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf
-The files are used unmodified. Face analysis runs entirely in the browser; images are never uploaded.
-
-
-Bundled third-party software (second engine): MediaPipe Tasks Vision (npm package @mediapipe/tasks-vision 1.1.1) runtime and the MediaPipe Face Landmarker model bundle, used unmodified.
+Bundled third-party software: MediaPipe Tasks Vision (npm package @mediapipe/tasks-vision 1.1.1) runtime and the MediaPipe Face Landmarker model bundle, used unmodified.
 Copyright Google LLC. Code: Apache License, Version 2.0 (package.json of the tarball states Apache-2.0; the licence text is in vendor/mediapipe/tasks-vision/LICENSE).
 Runtime files and SHA-256 (from the npm tarball, integrity sha512-jwntgT5tzDrKOkqg6xNDNpRcTUnGvmylZE5DFnzPXossiWOIDdZX+C81LI75hlXhsG58YZW+lGzcmjH1qrQE/Q==):
   vendor/mediapipe/tasks-vision/vision_bundle.js  f0872a70b45c5bb7bdb8b497eb5011057064c797a988caccb4eac46ab79d3dc4

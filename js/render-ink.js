@@ -76,7 +76,7 @@ export function makeInkFactory(src, res, targetLong) {
         kindMap = new Uint8Array(W * H); for (let y = 0; y < H; y++) { const sy = Math.min(kn.h - 1, Math.floor(((y + y0) * kn.h) / th)) * kn.w; for (let x = 0; x < W; x++) kindMap[y * W + x] = kn.map[sy + Math.min(kn.w - 1, Math.floor(((x + x0) * kn.w) / tw))]; }
         const sx = tw / kn.w, sy2 = th / kn.h; strokes = (kn.strokes || []).map((pl) => { const o = new Float32Array(pl.length); for (let i = 0; i < pl.length; i += 2) { o[i] = pl[i] * sx - x0; o[i + 1] = pl[i + 1] * sy2 - y0; } return o; });
       }
-      em = etchMask(D, W, H, dil, { kindMap, strokes, cheekMap, cheek: hopts.cheek, regions: hopts.regions, flow: hopts.flow, kinds: hopts.kinds, cell, angle: ang, layers: hopts.layers, spread: hopts.spread, curve: hopts.curve, sketch: hopts.sketch, len: hopts.len, weight: hopts.weight, contour: hopts.contour, depth: hopts.depth, depthMap, seed: 7 });
+      em = etchMask(D, W, H, dil, { kindMap, strokes, cheekMap, cheek: hopts.cheek, regions: hopts.regions, flow: hopts.flow, shade: hopts.shade, hairLong: hopts.hairLong, kinds: hopts.kinds, cell, angle: ang, layers: hopts.layers, spread: hopts.spread, curve: hopts.curve, sketch: hopts.sketch, len: hopts.len, weight: hopts.weight, contour: hopts.contour, depth: hopts.depth, depthMap, seed: 7 });
     }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const p = y * W + x; if (!dil[p]) continue;

@@ -17,7 +17,7 @@ export const MANUAL_EN = {
   'm.f3': "The screen is kept awake while you use the app (Screen Wake Lock API, on supported browsers).",
   'm.f4': "No installation needed. Add it to your home screen to use it like an app.",
   'm.h5': "Privacy",
-  'm.p2': "Photos you take or choose are processed only inside your browser. There is no sign-up, advertising or analytics upload. Your images are never sent to a server. The face detection used by the etching style is a bundled MediaPipe engine (Face Mesh or Face Landmarker, your choice; Apache-2.0; loaded once) that also runs on your device.",
+  'm.p2': "Photos you take or choose are processed only inside your browser. There is no sign-up, advertising or analytics upload. Your images are never sent to a server. The face detection used by the etching style is a bundled MediaPipe engine (Face Landmarker; Apache-2.0; loaded once) that also runs on your device.",
   'm.h6': "FAQ",
   'm.q1': "Are the exported SVG / PDF really vector?",
   'm.a1': "Vector, Silhouette and Color regions modes are pure vector (paths and fills only). In Silkscreen mode, by default a photo processed to fit the vector shapes (raster) is layered on top, so the photo part is raster. Turn on \"Also convert the raster parts to vector\" in the export section to turn grain and ink into paths too, for a fully vector SVG / PDF (this takes longer). You can also save the finished image as PNG or JPEG.",

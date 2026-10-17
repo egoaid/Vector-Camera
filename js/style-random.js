@@ -6,7 +6,7 @@ import { FONTS } from './style-text.js';
 import { TEXT_SLOTS, tkey } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
-import { tendencyPatch, toneTexturePatch } from './style-tendency.js';
+import { tendencyPatch, toneTexturePatch, shapePatch } from './style-tendency.js';
 import { lockedKeys } from './style-presets.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
@@ -65,6 +65,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
       else patch.lineWidth = 0;
     }
   }
+  if (opts.shape) Object.assign(patch, shapePatch(r, tend)); // vector shape: detail, simplification, curviness, border smoothing (also inside a tendency)
   const pal0 = () => patch.customPreset || PRESETS[patch.preset || cur.preset] || PRESETS.pop;
   // text: only when the "text" option is ticked (default off). Hidden slots / empty slots are never touched or switched on;
   // the wording itself is always yours. Every slot gets its own font, size, position, tilt, colours and print effects.

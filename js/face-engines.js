@@ -2,10 +2,10 @@
 //
 // NORMALISED REPRESENTATION ("mp478"): one face = Array(478) of { x, y, z } in 0..1 image coordinates (x right, y down, z = relative depth, may be 0),
 // indices follow the canonical MediaPipe face mesh (0..467 mesh, 468..477 iris: 468 = one iris centre + 469..472 its ring, 473 = the other + 474..477).
-// Both supported engines emit this topology (legacy Face Mesh with refineLandmarks, and the Face Landmarker task). Everything downstream
+// The Face Landmarker task emits this topology (the same 478-point mesh MediaPipe Face Mesh with refineLandmarks used). Everything downstream
 // (scene-kinds.js) reads ONLY this representation, so an engine can be swapped without touching the artistic code.
 // Nothing here switches engines: the caller passes the engine id the person selected.
-export const ENGINE_IDS = ['legacy', 'modern'];
+export const ENGINE_IDS = ['modern'];
 export const LANDMARK_COUNT = 478, MESH_COUNT = 468;
 /** Landmark indices the app depends on (scene-kinds.js). The mapping check proves every one exists in a face. */
 export const MAPPING_USED = [10, 152, 33, 133, 263, 362, 4, 13, 14, 61, 291, 205, 425, 468, 473];

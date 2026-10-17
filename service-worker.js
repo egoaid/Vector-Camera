@@ -1,6 +1,6 @@
 /* service-worker.js - app-shell cache (same-origin only). */
-const VERSION = '0.9.1-beta.1';
-const BUILD = '20261016.2';
+const VERSION = '0.10.0-beta.1';
+const BUILD = '20261017.1';
 const CACHE = `vector-camera-${VERSION}-${BUILD}`;
 const SHELL = [
   './', 'index.html', 'manifest.json',
@@ -10,10 +10,10 @@ const SHELL = [
   'js/wake-lock.js', 'js/camera.js', 'js/image-input.js', 'js/pwa.js',
   'js/ui-views.js', 'js/ui-controls.js', 'js/ui-compare.js', 'js/ui-export.js', 'js/ui-about.js', 'js/ui-toast.js',
   'js/color-utils.js', 'js/seg-slic.js', 'js/seg-edges.js', 'js/seg-merge.js', 'js/seg-stats.js', 'js/seg-semantic.js', 'js/seg-saliency.js',
-  'js/vec-chains.js', 'js/vec-curves.js', 'js/vec-geometry.js', 'js/style-palette.js', 'js/style-scene.js',
+  'js/vec-chains.js', 'js/vec-smooth.js', 'js/vec-curves.js', 'js/vec-geometry.js', 'js/style-palette.js', 'js/style-scene.js',
   'js/render-svg.js', 'js/render-canvas.js', 'js/render-ink.js', 'js/render-pdf.js', 'js/render-png.js', 'js/util-deflate.js', 'js/export-files.js',
   'js/pipeline-core.js', 'js/pipeline-worker.js', 'js/pipeline-client.js',
-  'js/i18n-ja-v2.js', 'js/i18n-en-v2.js', 'js/tone-photo.js', 'js/face-engines.js', 'js/face-engine-legacy.js', 'js/face-engine-modern.js', 'js/face-frame-modern.js', 'engine/modern-frame.html', 'js/face-profiles.js', 'js/ui-faces.js', 'js/ui-engine-ab.js', 'css/faces.css', 'js/ui-tone.js', 'js/i18n-ja-v4.js', 'js/i18n-en-v4.js', 'js/font-ttf.js', 'js/style-text.js', 'js/style-collage.js', 'js/style-random.js', 'js/ui-extras.js', 'js/vec-ink.js', 'js/render-strips.js', 'js/text-fx.js', 'js/ui-camera.js', 'js/i18n-styles.js', 'js/style-presets.js', 'js/style-tendency.js', 'js/ui-styles.js', 'js/face-landmarks.js', 'js/scene-kinds.js', 'js/ui-zoom.js', 'js/ui-stage.js', 'js/ui-sheet.js', 'js/ui-layout.js', 'js/etching.js', 'js/i18n-manual-ja.js', 'js/i18n-manual-en.js', 'js/ui-textbox.js', 'js/halftone-types.js', 'js/ui-hub.js', 'js/i18n-ja-v3.js', 'js/i18n-en-v3.js',
+  'js/i18n-ja-v2.js', 'js/i18n-en-v2.js', 'js/tone-photo.js', 'js/face-engines.js', 'js/face-engine-modern.js', 'js/face-frame-modern.js', 'engine/modern-frame.html', 'js/ui-faces.js', 'css/faces.css', 'js/ui-tone.js', 'js/i18n-ja-v4.js', 'js/i18n-en-v4.js', 'js/font-ttf.js', 'js/style-text.js', 'js/style-collage.js', 'js/style-random.js', 'js/ui-extras.js', 'js/vec-ink.js', 'js/render-strips.js', 'js/text-fx.js', 'js/ui-camera.js', 'js/i18n-styles.js', 'js/style-presets.js', 'js/style-tendency.js', 'js/ui-styles.js', 'js/face-landmarks.js', 'js/scene-kinds.js', 'js/ui-zoom.js', 'js/ui-stage.js', 'js/ui-sheet.js', 'js/ui-layout.js', 'js/etching.js', 'js/i18n-manual-ja.js', 'js/i18n-manual-en.js', 'js/ui-textbox.js', 'js/halftone-types.js', 'js/ui-hub.js', 'js/i18n-ja-v3.js', 'js/i18n-en-v3.js',
 ];  // fonts/*.ttf are fetched on demand and cached at runtime
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('vector-camera-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

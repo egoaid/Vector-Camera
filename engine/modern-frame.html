@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Face Landmarker (isolated)</title></head>
 <body>
-<!-- Runs the MediaPipe Face Landmarker in its OWN window. Why: the legacy Face Mesh runtime leaves a global `Module` object in the main page, which the
+<!-- Runs the MediaPipe Face Landmarker in its OWN window. Why: (kept from the time two engines shared the page) an old runtime left a global `Module` object in the main page, which the
      Tasks Vision WASM loader then trips over ("Module.noExitRuntime has been replaced with plain noExitRuntime"). A separate window has separate globals.
      All paths are relative, so this works under any base path (e.g. /Vector-Camera/). No network access: same-origin files only. -->
 <script src="../vendor/mediapipe/tasks-vision/vision_bundle.js"></script>

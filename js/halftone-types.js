@@ -15,10 +15,10 @@
 //   contour  etching: outline strokes that follow the form (0 = off)
 //   len      etching: stroke length (the real etching ink is drawn by etching.js; here it is only a threshold approximation for text)
 export const HT_TYPES = ['dot', 'line', 'cross', 'engrave', 'etching'];
-export const HT_DEFAULTS = { htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50, htDepth: 45, htContour: 35, htKinds: 70, htFlow: 0, htRegSkin: 50, htRegHair: 50, htRegEyes: 50, htRegBrows: 50, htRegNose: 50, htRegLips: 50, htRegCheek: 0 };
+export const HT_DEFAULTS = { htWeight: 50, htLayers: 3, htSpread: 60, htCurve: 40, htSketch: 40, htWave: 50, htWaveLen: 50, htGuilloche: 40, htLen: 50, htDepth: 45, htContour: 35, htKinds: 70, htFlow: 0, htShade: 60, htHairLong: 60, htRegSkin: 50, htRegHair: 50, htRegEyes: 50, htRegBrows: 50, htRegNose: 50, htRegLips: 50, htRegCheek: 0 };
 /** Extracts the halftone detail options from a params object. */
 export const htOptsFrom = (p) => ({ weight: p.htWeight ?? 50, layers: p.htLayers ?? 3, spread: p.htSpread ?? 60, curve: p.htCurve ?? 40, sketch: p.htSketch ?? 40, wave: p.htWave ?? 50, waveLen: p.htWaveLen ?? 50, guilloche: p.htGuilloche ?? 40, len: p.htLen ?? 50, depth: p.htDepth ?? 45, contour: p.htContour ?? 35, kinds: p.htKinds ?? 70,
-  flow: p.htFlow ?? 0, cheek: p.htRegCheek ?? 0, // etching: flow-following (texture direction) and the cheek touch; region strengths (50 = the standard touch of that kind, 0 = none, 100 = twice as strong): 1 skin, 2 hair, 3 eyes, 4 brows, 5 nose, 6 lips
+  flow: p.htFlow ?? 0, shade: p.htShade ?? 0, hairLong: p.htHairLong ?? 0, cheek: p.htRegCheek ?? 0, // etching: flow-following (texture direction) and the cheek touch; region strengths (50 = the standard touch of that kind, 0 = none, 100 = twice as strong): 1 skin, 2 hair, 3 eyes, 4 brows, 5 nose, 6 lips
   regions: { 1: (p.htRegSkin ?? 50) / 50, 2: (p.htRegHair ?? 50) / 50, 3: (p.htRegEyes ?? 50) / 50, 4: (p.htRegBrows ?? 50) / 50, 5: (p.htRegNose ?? 50) / 50, 6: (p.htRegLips ?? 50) / 50 } });
 /** Darkness gain from the weight slider (50 = x1). */
 export const htGain = (opts) => 0.45 + ((opts && opts.weight != null ? opts.weight : 50) / 100) * 1.1;

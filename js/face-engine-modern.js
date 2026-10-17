@@ -1,6 +1,6 @@
-// face-engine-modern.js - adapter for the MODERN MediaPipe Face Landmarker (npm @mediapipe/tasks-vision 1.1.1, Tasks API).
-// It runs inside a hidden same-origin iframe (engine/modern-frame.html) so that its WASM runtime has its own global scope: the legacy Face Mesh runtime leaves a
-// global `Module` behind that breaks the Tasks Vision loader when both run in one window (root cause of "Module.noExitRuntime has been replaced ...").
+// face-engine-modern.js - adapter for the MediaPipe Face Landmarker (npm @mediapipe/tasks-vision 1.1.1, Tasks API).
+// It runs inside a hidden same-origin iframe (engine/modern-frame.html) so that its WASM runtime has its own global scope (kept from the time a second
+// engine shared the page: a leftover global `Module` broke the Tasks Vision loader, "Module.noExitRuntime has been replaced ...").
 // Everything is bundled in the project (vendor/mediapipe/tasks-vision runtime, vendor/mediapipe/face_landmarker/face_landmarker.task); nothing is downloaded from
 // a CDN and users install nothing. All URLs are relative, so a sub-path such as /Vector-Camera/ works.
 const FRAME = 'engine/modern-frame.html', MODEL = 'vendor/mediapipe/face_landmarker/face_landmarker.task', RT = 'vendor/mediapipe/tasks-vision/vision_bundle.js';
