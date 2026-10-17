@@ -20,4 +20,9 @@ export const EN4 = {
   'face.st.off': 'Status: face detection is off (own analysis only)', 'face.st.unavailable': 'Status: {e} unavailable ({why}). Drawing without face parts.', 'face.st.error': 'Status: {e} failed ({why}). Drawing without face parts.',
   'face.why.model-missing': 'model file not found', 'face.why.files-missing': 'required files not found', 'face.why.no-wasm': 'this device has no WebAssembly', 'face.why.unknown-engine': 'unknown engine', 'face.why.unknown': 'unknown reason',
   'style.twotone': 'Monochrome two-tone',
+  'rnd.o.mode': 'Mode (Vector / Colour regions / Hybrid / Silhouette)', 'rnd.o.palette': 'Colours (palette, ink colour, colour assignment)', 'rnd.o.shape': 'Shape (detail, simplification, curves, smoothing, borders)', 'rnd.o.tone': 'Tone (classic / silver / two-tone and their settings)',
+  'rnd.o.halftone': 'Halftone (on/off, type, size, angle, etching details)', 'rnd.o.texture': 'Texture (levels, retention, grain, roughness, misregistration, paper)', 'rnd.o.background': 'Background treatment', 'rnd.o.subject': 'Subject size / foreground-background assignment', 'rnd.o.lines': 'Contour lines & outline (width, scope, colours)',
+  'rnd.tend.note': 'A tendency is a bias, not a restriction: it makes the modes, palettes and textures of that look more likely, but other combinations can still appear. Off = fully random over every parameter.',
+  'rnd.tend.engraving': 'Engraving (line work)', 'rnd.tend.twotone': 'Monochrome two-tone', 'rnd.tend.vector': 'Vector illustration', 'rnd.tend.poster': 'Poster (colour regions)',
+  'style.sanguine': 'Sanguine (red-brown drawing)', 'style.cyanotype': 'Cyanotype (blueprint)', 'style.vecetch': 'Vector + etching', 'style.vecsilver': 'Vector + silver-gelatin', 'style.vectwo': 'Vector + monochrome two-tone', 'style.vechalf': 'Vector + halftone (custom colour)', 'style.posterdot': 'Poster + halftone',
 };

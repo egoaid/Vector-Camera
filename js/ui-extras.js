@@ -4,7 +4,7 @@ import { TENDENCIES } from './style-tendency.js';
 import { state, saveSettings } from './state.js';
 import { slider, select, check } from './ui-controls.js';
 import { FONTS, ensureFont, isLatinOnly } from './style-text.js';
-import { TEXT_SLOTS, tkey, INK_MODES } from './config.js';
+import { TEXT_SLOTS, tkey, INK_MODES, needsInk } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { getPreset } from './style-palette.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
@@ -22,8 +22,8 @@ export function buildExtras(onChange, hooks) {
   const rs = $('sel-rnd-style'); if (rs) { rs.replaceChildren(); for (const k of ['off', ...TENDENCIES]) { const o = document.createElement('option'); o.value = k; o.textContent = t('rnd.tend.' + k); rs.append(o); } rs.value = state.params.rndStyle || 'off'; rs.onchange = () => { state.params.rndStyle = rs.value; saveSettings(); }; }
   renderRandomLock();
   const ro = $('random-opts'); ro.replaceChildren();
-  for (const k of ['palette', 'shape', 'texture', 'background', 'subject', 'lines', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
-    const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = state.params.rndOpts[k] ?? (k === 'shape'); // the shape option is new: on for settings saved before it existed
+  for (const k of ['mode', 'palette', 'shape', 'tone', 'halftone', 'texture', 'background', 'subject', 'lines', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
+    const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = state.params.rndOpts[k] ?? true;
     const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); }); l.append(i, s); ro.append(l);
   }
   // --- colour tab: halftone colour, line colours, collage paper and the colour locks (palette chips are built in ui-controls)
@@ -85,10 +85,10 @@ export function buildTextPanel(onChange) {
 }
 
 /** Colour tab: palette chips live in #presets (ui-controls); here the colour overrides and the colour locks. */
-function buildColorPanel(onChange) {
+export function buildColorPanel(onChange) {
   const box = $('color-ctl'); if (!box) return; box.replaceChildren(); const p = state.params, again = (k) => { onChange(k); buildColorPanel(onChange); };
   const lockBox = (group, labelKey) => { const l = document.createElement('label'), i = document.createElement('input'), s = document.createElement('span'); l.className = 'check lock'; i.type = 'checkbox'; i.checked = !!(p.lock && p.lock[group]); s.textContent = '🔒 ' + t(labelKey); i.addEventListener('change', () => { state.params.lock = { ...state.params.lock, [group]: i.checked }; saveSettings(); onChange('lock'); }); l.append(i, s); return l; };
-  const htOn = INK_MODES.includes(p.mode) && p.halftone > 0, auto = p.htColor === '' || p.htColor == null;
+  const htOn = needsInk(p), auto = p.htColor === '' || p.htColor == null;
   const h = document.createElement('div'); h.className = 'field'; // halftone colour (follows the palette until set)
   const hl = document.createElement('label'), hi = document.createElement('input'); hi.type = 'color'; hi.disabled = !htOn;
   const pr = getPreset(p); hi.value = auto ? (pr.mode === 'bands' ? (pr.groups.fg.ramp && pr.groups.fg.ramp[0]) || pr.ink : pr.ink) : p.htColor;

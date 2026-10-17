@@ -20,4 +20,9 @@ export const JA4 = {
   'face.st.off': '状態: 顔検出はオフです（独自解析のみ）', 'face.st.unavailable': '状態: {e} を使えません（{why}）。顔パーツなしで描きます。', 'face.st.error': '状態: {e} でエラー（{why}）。顔パーツなしで描きます。',
   'face.why.model-missing': 'モデルファイルが見つかりません', 'face.why.files-missing': '必要なファイルが見つかりません', 'face.why.no-wasm': 'この端末は WebAssembly に未対応', 'face.why.unknown-engine': '不明なエンジン', 'face.why.unknown': '理由不明',
   'style.twotone': 'モノクロ2階調',
+  'rnd.o.mode': '表現モード（ベクター／色分け／ハイブリッド／シルエット）', 'rnd.o.palette': '配色（パレット・インク色・色分けの割り当て）', 'rnd.o.shape': '形（詳細度・単純化・曲線・なめらかさ・境界）', 'rnd.o.tone': 'トーン（クラシック／銀塩／2階調と各調整）',
+  'rnd.o.halftone': 'ハーフトーン（有無・種類・大きさ・角度・エッチングの細部）', 'rnd.o.texture': '質感（段数・残し具合・粒子・荒れ・ずれ・紙）', 'rnd.o.background': '背景の扱い', 'rnd.o.subject': '被写体の大きさ／前景・背景の割り当て', 'rnd.o.lines': '輪郭線・縁取り（太さ・範囲・色）',
+  'rnd.tend.note': '傾向は「選びやすさの偏り」です。傾向を選ぶと、その画風になりやすいモード・配色・質感を多めに選びますが、他の組み合わせも出ることがあります。オフは全パラメーターが対象の完全ランダムです。',
+  'rnd.tend.engraving': 'エングレービング（線刻）', 'rnd.tend.twotone': 'モノクロ2階調', 'rnd.tend.vector': 'ベクターイラスト', 'rnd.tend.poster': 'ポスター（色分け）',
+  'style.sanguine': 'サンギーヌ（赤褐色の素描）', 'style.cyanotype': 'シアノタイプ（青焼き）', 'style.vecetch': 'ベクター＋エッチング', 'style.vecsilver': 'ベクター＋銀塩', 'style.vectwo': 'ベクター＋モノクロ2階調', 'style.vechalf': 'ベクター＋ハーフトーン（色指定）', 'style.posterdot': 'ポスター＋ハーフトーン',
 };

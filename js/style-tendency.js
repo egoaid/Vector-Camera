@@ -1,74 +1,52 @@
-// style-tendency.js - "random style tendency": random generation that stays inside a look (etching, silver-gelatin
-// photo, silkscreen, pop art), so every result still reads as that kind of picture. Pure functions (no DOM).
-// With the tendency off, style-random.js picks fully at random.
-import { PRESETS } from './style-palette.js';
-const pick = (r, a) => a[Math.floor(r() * a.length)];
-const range = (r, a, b) => Math.round(a + r() * (b - a));
+// style-tendency.js - "random style tendency": a BIAS on the random generation, not a restriction.
+// A tendency gives weights for the structural choices (mode, tone, halftone type, palette, background, lines) and narrower
+// value windows for the parameters, so results usually read as that kind of picture - but every mode, tone and halftone
+// combination keeps a non-zero chance where it makes sense, and the sampler (style-space.js) still draws every parameter
+// that matters for the structure it picked. With the tendency off the whole space is open. Pure functions (no DOM).
+import { sampleLook } from './style-space.js';
 
-export const TENDENCIES = ['etching', 'silver', 'silkscreen', 'popart'];
-/** Random values for the photographic tone controls of the ACTIVE tone mode (silver-gelatin / two-tone); classic -> nothing. All inside the UI ranges. */
-export function toneTexturePatch(r, tone) {
-  if (tone === 'silver') return { sgBlack: range(r, 0, 22), sgWhite: range(r, 78, 100), sgContrast: range(r, 38, 68), sgCurve: range(r, 38, 72), sgGrain: range(r, 12, 70), sgGrainSize: range(r, 15, 70), sgGrainRough: range(r, 10, 70) };
-  if (tone === 'twotone') return { ttThreshold: range(r, 38, 62), ttBias: range(r, 38, 62), ttAdaptive: r() < 0.4 ? range(r, 10, 60) : 0, ttDetail: range(r, 10, 60), ttEdge: r() < 0.5 ? range(r, 10, 50) : 0, ttClean: range(r, 0, 40), ttBreakup: r() < 0.3 ? range(r, 5, 30) : 0 };
-  return {};
-}
+/** Tendency ids, in the order of the selector. */
+export const TENDENCIES = ['etching', 'engraving', 'silver', 'twotone', 'silkscreen', 'popart', 'vector', 'poster'];
 
-/**
- * Random values for the vector shape controls ("Shape & texture" tab): detail, simplification, angularity, curviness and border smoothing,
- * plus the etching shading controls for eyes, lips and hair. All inside the UI ranges. A tendency narrows the ranges (an etching stays soft and curved, pop art may be sharper).
- */
-export function shapePatch(r, tend) {
-  const R = { etching: { detail: [30, 55], simplify: [25, 50], ang: [0, 40], fit: [40, 90], sm: [35, 70] }, silver: { detail: [25, 45], simplify: [20, 40], ang: [0, 30], fit: [50, 95], sm: [40, 80] },
-    silkscreen: { detail: [28, 60], simplify: [30, 65], ang: [10, 60], fit: [25, 80], sm: [25, 70] }, popart: { detail: [20, 50], simplify: [35, 70], ang: [20, 80], fit: [20, 70], sm: [20, 60] } }[tend] || { detail: [20, 70], simplify: [15, 65], ang: [0, 70], fit: [20, 95], sm: [20, 85] };
-  return { detail: range(r, ...R.detail), simplify: range(r, ...R.simplify), angularity: range(r, ...R.ang), curveFit: range(r, ...R.fit), regionSmooth: range(r, ...R.sm), htShade: range(r, 40, 90), htHairLong: range(r, 40, 90) };
-}
-
-const PROFILES = {
-  etching: {
-    palette: (r) => pick(r, ['etching', 'etching', 'etchblue', 'sanguine', 'mono']),
-    texture: (r) => ({ separation: 3, retention: range(r, 45, 75), grain: range(r, 0, 15), roughness: range(r, 0, 10), misreg: range(r, 0, 6), paper: range(r, 35, 60), detail: range(r, 30, 48), simplify: range(r, 30, 50),
-      halftone: 1, halftoneType: 'etching', halftoneSize: range(r, 5, 8), halftoneAngle: pick(r, [30, 45, 60, range(r, 20, 70)]), htWeight: range(r, 45, 65), htLayers: pick(r, [2, 3, 3, 3, 4]), htSpread: range(r, 45, 80),
-      htCurve: range(r, 25, 70), htSketch: range(r, 30, 65), htLen: range(r, 35, 70), htDepth: r() < 0.1 ? 0 : range(r, 30, 80), htContour: r() < 0.1 ? 0 : range(r, 20, 55) }),
-    background: (r) => pick(r, ['photo', 'photo', 'paper']),
-    subject: (r) => range(r, 20, 45),
-    lines: () => ({ lineWidth: 0 }),
-  },
-  silver: {
-    palette: (r) => pick(r, ['silver', 'silver', 'sepia', 'selenium']),
-    texture: (r) => { const ht = r() < 0.2; return { separation: 6, retention: range(r, 85, 100), grain: range(r, 35, 75), roughness: range(r, 20, 50), misreg: 0, paper: range(r, 20, 50), detail: range(r, 25, 40), simplify: range(r, 25, 40), tone: 'silver', ...toneTexturePatch(r, 'silver'), sgToning: pick(r, ['none', 'none', 'sepia', 'selenium']), sgToningAmt: range(r, 30, 80), halftone: ht ? 1 : 0, ...(ht ? { halftoneType: 'dot', halftoneSize: range(r, 3, 5), halftoneAngle: pick(r, [15, 45, 75]), htMix: range(r, 25, 55) } : {}) }; },
-    background: () => 'photo',
-    subject: (r) => range(r, 20, 40),
-    lines: () => ({ lineWidth: 0 }),
-  },
-  silkscreen: {
-    palette: (r) => pick(r, ['riso', 'pop', 'garden', 'lovepop', 'boombox', 'stadium', 'lavender', 'skygreen', 'sunhill', 'tealpink', 'unite', 'bluepeach', 'typewriter', 'field']),
-    texture: (r) => { const ht = r() < 0.6; return { separation: range(r, 2, 4), retention: range(r, 25, 55), grain: range(r, 20, 50), roughness: range(r, 15, 45), misreg: range(r, 35, 80), paper: range(r, 35, 65), detail: range(r, 32, 48), halftone: ht ? 1 : 0, ...(ht ? { halftoneType: pick(r, ['dot', 'dot', 'line']), halftoneSize: range(r, 4, 8), halftoneAngle: pick(r, [15, 45, 75]) } : {}) }; },
-    background: (r) => pick(r, ['flat', 'flat', 'photo']),
-    subject: (r) => range(r, 22, 48),
-    lines: (r, pal) => (r() < 0.25 ? { lineWidth: range(r, 14, 28), lineScope: pick(r, ['mid', 'all']), lineOffset: range(r, 10, 40), lineColor: pal.ink, lineColor2: pal.groups.fg.block[0] } : { lineWidth: 0 }),
-  },
-  popart: {
-    palette: (r) => pick(r, ['pop', 'pop', 'lovepop', 'royal', 'tealpink', 'stadium', 'lavender', 'riso', 'boombox']),
-    texture: (r) => ({ separation: range(r, 2, 3), retention: range(r, 15, 40), grain: range(r, 0, 15), roughness: range(r, 0, 15), misreg: range(r, 0, 20), paper: range(r, 10, 30), detail: range(r, 32, 46), halftone: 1, halftoneType: r() < 0.8 ? 'dot' : 'line', halftoneSize: range(r, 7, 12), halftoneAngle: pick(r, [45, 45, 15, 75]), htWeight: range(r, 50, 70) }),
-    background: () => 'flat',
-    subject: (r) => range(r, 25, 50),
-    lines: (r, pal) => (r() < 0.8 ? { lineWidth: range(r, 22, 45), lineScope: pick(r, ['all', 'mid', 'fg']), lineOffset: 0, lineColor: pal.ink, lineColor2: pal.groups.fg.block[0] } : { lineWidth: 0 }),
-  },
+const W = (o) => o; // readability: window tables
+export const BIASES = {
+  // copperplate etching: etching hatching on paper; mostly screen-print mode, also as an ink drawing over vector colours
+  etching: { modes: { hybrid: 6, vector: 2, regions: 1 }, tones: { classic: 1 }, ht: 1, types: { etching: 1 }, bg: ['photo', 'photo', 'paper'], lines: 0, outline: 0.05, angles: [30, 45, 60],
+    presets: ['etching', 'etching', 'etchblue', 'sanguine', 'mono', 'kraft'],
+    win: W({ detail: [30, 55], simplify: [25, 50], angularity: [0, 40], curveFit: [40, 90], regionSmooth: [35, 70], separation: [3, 3], retention: [45, 75], grain: [0, 15], roughness: [0, 10], misreg: [0, 6], paper: [35, 60],
+      halftoneSize: [5, 8], htWeight: [45, 65], htLayers: [2, 3], htSpread: [45, 80], htCurve: [25, 70], htSketch: [30, 65], htLen: [35, 70], htDepth: [30, 80], htContour: [20, 55], htShade: [40, 90], htHairLong: [40, 90], subjectSize: [20, 45] }) },
+  // engraving / banknote lines
+  engraving: { modes: { hybrid: 6, vector: 1.5, regions: 1 }, tones: { classic: 1 }, ht: 1, types: { engrave: 5, line: 1, cross: 1 }, bg: ['photo', 'photo', 'paper'], lines: 0, outline: 0.05, angles: [20, 30, 45],
+    presets: ['unite', 'mono', 'kraft', 'etching', 'etchblue', 'maroon'],
+    win: W({ detail: [30, 55], simplify: [25, 50], separation: [3, 4], retention: [55, 85], grain: [0, 12], roughness: [0, 10], misreg: [0, 5], paper: [25, 50], halftoneSize: [4, 7], htWeight: [45, 65], htCurve: [30, 70], htWave: [30, 70], htWaveLen: [30, 70], htGuilloche: [10, 60] }) },
+  // silver-gelatin photograph
+  silver: { modes: { hybrid: 5, vector: 2, regions: 1 }, tones: { silver: 1 }, ht: 0.2, types: { dot: 3, line: 1 }, bg: ['photo'], lines: 0, outline: 0, angles: [15, 45, 75],
+    presets: ['silver', 'silver', 'sepia', 'selenium', 'mono'],
+    win: W({ detail: [25, 50], simplify: [20, 40], separation: [5, 6], retention: [80, 100], grain: [30, 75], roughness: [15, 50], misreg: [0, 0], paper: [20, 50], halftoneSize: [3, 6], htMix: [25, 55], subjectSize: [20, 40] }) },
+  // strict black and white (lith / photocopy / woodcut look)
+  twotone: { modes: { hybrid: 5, vector: 2.5, regions: 1 }, tones: { twotone: 1 }, ht: 0.15, types: { dot: 2, line: 2, etching: 1 }, bg: ['photo', 'photo', 'paper'], lines: 0, outline: 0.1, angles: [15, 45, 75],
+    presets: ['mono', 'mono', 'duo', 'etching', 'etchblue', 'sepia', 'riso'],
+    win: W({ detail: [28, 55], simplify: [25, 50], ttThreshold: [38, 62], ttAdaptive: [0, 60], ttDetail: [10, 60], ttEdge: [0, 50], ttClean: [0, 40], ttBreakup: [0, 30], paper: [10, 40], misreg: [0, 20], subjectSize: [20, 45] }) },
+  // silkscreen / riso: flat inks, misregistration, grain
+  silkscreen: { modes: { hybrid: 7, regions: 1.5, vector: 1 }, tones: { classic: 8, twotone: 1 }, ht: 0.6, types: { dot: 5, line: 2, cross: 1 }, bg: ['flat', 'flat', 'photo'], lines: 0.25, outline: 0.15, angles: [15, 45, 75],
+    presets: ['riso', 'pop', 'garden', 'lovepop', 'boombox', 'stadium', 'lavender', 'skygreen', 'sunhill', 'tealpink', 'unite', 'bluepeach', 'typewriter', 'field', 'cyan', 'palm'],
+    win: W({ detail: [32, 55], separation: [2, 4], retention: [25, 55], grain: [20, 50], roughness: [15, 45], misreg: [35, 80], paper: [35, 65], halftoneSize: [4, 8], subjectSize: [22, 48] }) },
+  // pop art: bold flat colour, big dots, black lines
+  popart: { modes: { hybrid: 6, regions: 2, vector: 1.5 }, tones: { classic: 1 }, ht: 1, types: { dot: 8, line: 2 }, bg: ['flat'], lines: 0.8, outline: 0.7, angles: [45, 45, 15, 75],
+    presets: ['pop', 'pop', 'lovepop', 'royal', 'tealpink', 'stadium', 'lavender', 'riso', 'boombox'],
+    win: W({ detail: [28, 50], simplify: [30, 65], angularity: [20, 80], separation: [2, 3], retention: [15, 40], grain: [0, 15], roughness: [0, 15], misreg: [0, 20], paper: [10, 30], halftoneSize: [7, 12], htWeight: [50, 70], lineWidth: [22, 45], outline: [14, 45], subjectSize: [25, 50] }) },
+  // flat vector illustration, optionally with a tone / halftone layer on top
+  vector: { modes: { vector: 1 }, tones: { classic: 5, silver: 1.5, twotone: 1.5 }, ht: 0.25, types: { dot: 3, line: 2, etching: 2, cross: 1, engrave: 1 }, lines: 0.2, outline: 0.35, angles: [15, 45, 75],
+    presets: ['natural', 'natural', 'etching', 'mono', 'silver', 'sepia', 'pop', 'riso'],
+    win: W({ detail: [45, 85], simplify: [15, 45], angularity: [0, 45], curveFit: [40, 95], regionSmooth: [35, 85], minRegion: [10, 50], retention: [30, 85], grain: [0, 30], roughness: [0, 30] }) },
+  // poster: a few colours (colour regions)
+  poster: { modes: { regions: 1 }, tones: { classic: 6, silver: 1, twotone: 1 }, ht: 0.25, types: { dot: 4, line: 2, etching: 1 }, lines: 0.2, outline: 0.4, angles: [15, 45, 75],
+    presets: ['natural', 'pop', 'riso', 'lovepop', 'garden', 'sunhill', 'tealpink', 'stadium', 'royal', 'cyan', 'earth', 'olive'],
+    win: W({ detail: [25, 55], simplify: [30, 65], angularity: [20, 80], curveFit: [20, 70], regionSmooth: [25, 65], paletteK: [4, 10], retention: [20, 60], grain: [0, 25], roughness: [0, 25] }) },
 };
 
 /**
- * Parameter patch for the chosen tendency. `on` = which parts of the random generation are switched on
- * ({ palette, texture, background, subject, lines }). The mode is always the screen-print (hybrid) mode, because
- * these looks depend on it.
+ * Parameter patch for the chosen tendency: the same sampler as the fully random generation, with the tendency's bias.
+ * `on` = the ticked targets. Returns the look patch (mode, palette, shape, tone, halftone, texture, background, subject, lines).
  */
-export function tendencyPatch(kind, r, on, cur) {
-  const P = PROFILES[kind]; if (!P) return {};
-  const patch = { mode: 'hybrid' };
-  if (on.palette) { patch.preset = P.palette(r); patch.customPreset = null; }
-  if (on.texture) Object.assign(patch, P.texture(r));
-  if (on.background) patch.bgTreatment = P.background(r);
-  else if (on.palette && PRESETS[patch.preset] && PRESETS[patch.preset].bgTreatment) patch.bgTreatment = PRESETS[patch.preset].bgTreatment;
-  if (on.subject) patch.subjectSize = P.subject(r);
-  if (on.lines) Object.assign(patch, P.lines(r, PRESETS[patch.preset || cur.preset] || PRESETS.pop));
-  return patch;
-}
+export function tendencyPatch(kind, r, on, cur) { return sampleLook(r, cur, on, BIASES[kind] || {}); }

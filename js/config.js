@@ -29,7 +29,7 @@ export const DEFAULT_PARAMS = {
   text: 'Vector Camera', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
   vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
   collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '', collageEdge: 'organic',
-  rndOpts: { palette: true, shape: true, texture: true, background: true, subject: true, lines: true, font: true, textOn: false, textFx: true, collage: true, aspect: true },
+  rndOpts: { mode: true, palette: true, shape: true, tone: true, halftone: true, texture: true, background: true, subject: true, lines: true, font: true, textOn: false, textFx: true, collage: true, aspect: true },
   customPreset: null, rndStyle: 'off',
   // text slots 2 and 3 (keys get a _1 / _2 suffix); slot 1 uses the plain keys above
   text_1: '', textFont_1: 'marker', textSize_1: 11, textX_1: 50, textY_1: 22, textAngle_1: 0, textSpacing_1: 2, textColor_1: '#ffd23f', textShadow_1: 20, textShadowColor_1: '#17121c', textShow_1: false, textHalftone_1: 0, textHalftoneType_1: 'dot', textHalftoneSize_1: 5, textHalftoneAngle_1: 45, textHalftoneMode_1: 'down', textWear_1: 0, textDirt_1: 0, textSeed_1: 2,
@@ -49,7 +49,7 @@ export const MODE_DEFAULTS = {
   hybrid: { detail: 42, paletteK: 0, simplify: 35, angularity: 25, separation: 3, retention: 45, grain: 25, misreg: 25 },
 };
 const STYLES = ['pop', 'sleeve', 'riso', 'duo', 'mono', 'unite', 'garden', 'lovepop', 'olive', 'earth', 'field', 'stripes', 'maroon', 'boombox', 'stadium', 'lavender', 'skygreen', 'bluepeach', 'kraft', 'palm', 'typewriter', 'sunhill', 'cyan', 'royal', 'tealpink', 'etching', 'etchblue', 'sanguine', 'silver', 'sepia', 'selenium'];
-export const MODE_PRESETS = { vector: ['natural'], silhouette: STYLES, regions: ['natural', ...STYLES], hybrid: STYLES };
+export const MODE_PRESETS = { vector: ['natural', ...STYLES], silhouette: STYLES, regions: ['natural', ...STYLES], hybrid: STYLES };
 
 /** detail 0..100 -> target region count (6 .. 900, log scale) */
 export const regionTarget = (detail) => Math.round(6 * Math.pow(150, detail / 100));

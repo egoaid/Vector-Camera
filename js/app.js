@@ -33,7 +33,7 @@ import { toast } from './ui-toast.js';
 import { analyzeKinds } from './scene-kinds.js';
 import { detectFacesDetailed } from './face-landmarks.js';
 import { initStyleLibrary, buildStyleLibrary } from './ui-styles.js';
-import { renderRandomLock } from './ui-extras.js';
+import { renderRandomLock, buildColorPanel } from './ui-extras.js';
 import { PRESETS, getPreset } from './style-palette.js';
 
 const $ = (id) => document.getElementById(id);
@@ -201,6 +201,7 @@ async function onControl(key, value) {
   if (/^textFont/.test(key)) await ensureFonts(state.params);
   if (key === 'preset') { state.params.preset = value; if (state.collage && state.params.collageVary) { state.params.collageVary = false; toast(t('col.bulk')); } if (state.params.mode === 'hybrid' || state.params.mode === 'regions') Object.assign(state.params, presetDefaults(state.params.mode, value)); buildUI(); saveSettings(); }
   clearTimeout(debounce); debounce = setTimeout(refresh, state.collage ? 350 : 130); buildStyleLibrary(); if (key === 'lock') renderRandomLock();
+  if (key === 'tone' || key === 'halftone' || key === 'mode' || key === 'preset') buildColorPanel(onControl); // the ink colour control is only enabled while an ink layer exists
 }
 /** Applies a complete style (built-in or mine): every look parameter at once, one undo step. */
 async function applyWholeStyle(np, name, opts = {}) {
