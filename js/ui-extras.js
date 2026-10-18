@@ -3,7 +3,7 @@ import { t } from './i18n.js';
 import { TENDENCIES } from './style-tendency.js';
 import { state, saveSettings } from './state.js';
 import { slider, select, check } from './ui-controls.js';
-import { FONTS, ensureFont, isLatinOnly } from './style-text.js';
+import { FONT_CATS, DEFAULT_FONT, fontsOf, slotFontId, ensureFont, isLatinOnly } from './style-text.js';
 import { TEXT_SLOTS, tkey, INK_MODES, needsInk } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { getPreset } from './style-palette.js';
@@ -70,14 +70,24 @@ export function buildTextPanel(onChange) {
   const f = document.createElement('div'); f.className = 'field'; const lab = document.createElement('label'); lab.htmlFor = 'in-text'; lab.textContent = t('tx.text');
   const ta = document.createElement('textarea'); ta.id = 'in-text'; ta.rows = 2; ta.maxLength = 80; ta.value = state.params[K('text')] || ''; ta.placeholder = 'Vector Camera';
   const warn = document.createElement('p'); warn.className = 'note'; warn.hidden = true; warn.textContent = t('tx.latin');
-  ta.addEventListener('input', () => { state.params[K('text')] = ta.value; warn.hidden = isLatinOnly(ta.value); onChange(K('text')); }); ta.addEventListener('change', saveSettings);
+  const isJa = () => state.params[K('textLang')] === 'ja', showWarn = () => { warn.hidden = isJa() || isLatinOnly(ta.value); };
+  ta.addEventListener('input', () => { state.params[K('text')] = ta.value; showWarn(); onChange(K('text')); }); ta.addEventListener('change', saveSettings);
+  ta.placeholder = isJa() ? 'ベクターカメラ' : 'Vector Camera'; showWarn();
   f.append(lab, ta, warn);
+  // language of this text slot (English / Japanese): decides which fonts are offered; slots are independent, so both can be mixed in one image
+  const langSel = document.createElement('div'); langSel.className = 'field'; const ll = document.createElement('label'); ll.htmlFor = 'se-textLang'; ll.textContent = t('tx.lang');
+  const ls = document.createElement('select'); ls.id = 'se-textLang'; for (const l of ['en', 'ja']) { const o = document.createElement('option'); o.value = l; o.textContent = t('tx.lang.' + l); ls.append(o); }
+  ls.value = isJa() ? 'ja' : 'en';
+  ls.addEventListener('change', async () => {
+    state.params[K('textLang')] = ls.value; if (slotFontId({ textLang: ls.value, textFont: state.params[K('textFont')] }) !== state.params[K('textFont')]) state.params[K('textFont')] = DEFAULT_FONT[ls.value];
+    saveSettings(); buildTextPanel(onChange); await ensureFont(state.params[K('textFont')]); onChange(K('textFont'));
+  }); langSel.append(ll, ls);
   const fontSel = document.createElement('div'); fontSel.className = 'field'; const fl = document.createElement('label'); fl.htmlFor = 'se-textFont'; fl.textContent = t('tx.font');
-  const fs = document.createElement('select'); fs.id = 'se-textFont'; for (const cat of ['display', 'hand', 'type']) { const og = document.createElement('optgroup'); og.label = t('tx.cat.' + cat); for (const d of FONTS.filter((x) => x.cat === cat)) { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; og.append(o); } fs.append(og); }
-  fs.value = state.params[K('textFont')]; fs.addEventListener('change', async () => { state.params[K('textFont')] = fs.value; saveSettings(); await ensureFont(fs.value); onChange(K('textFont')); }); fontSel.append(fl, fs);
+  const fs = document.createElement('select'); fs.id = 'se-textFont'; const lang = isJa() ? 'ja' : 'en'; for (const cat of FONT_CATS[lang]) { const og = document.createElement('optgroup'); og.label = t('tx.cat.' + cat); for (const d of fontsOf(lang).filter((x) => x.cat === cat)) { const o = document.createElement('option'); o.value = d.id; o.textContent = d.name; og.append(o); } fs.append(og); }
+  fs.value = slotFontId({ textLang: lang, textFont: state.params[K('textFont')] }); fs.addEventListener('change', async () => { state.params[K('textFont')] = fs.value; saveSettings(); await ensureFont(fs.value); onChange(K('textFont')); }); fontSel.append(fl, fs);
   const S = (b, min, max) => sl(K(b), min, max, onChange, b);
   const showCb = check(K('textShow'), 'tx.show', (k) => { onChange(k); buildTextPanel(onChange); });
-  tx.append(tabs, showCb, f, fontSel, S('textSize', 4, 60), S('textX', 0, 100), S('textY', 0, 100), S('textAngle', -90, 90), S('textSpacing', -5, 30), S('textShadow', 0, 100),
+  tx.append(tabs, showCb, langSel, f, fontSel, S('textSize', 4, 60), S('textX', 0, 100), S('textY', 0, 100), S('textAngle', -90, 90), S('textSpacing', -5, 30), S('textShadow', 0, 100),
     S('textHalftone', 0, 100), select(K('textHalftoneType'), HT_TYPES.map((x) => [x, 'ht.' + x]), onChange, 'p.htype'), S('textHalftoneSize', 2, 14), S('textHalftoneAngle', 0, 90),
     select(K('textHalftoneMode'), [['down', 'tx.ht.down'], ['up', 'tx.ht.up'], ['right', 'tx.ht.right'], ['flat', 'tx.ht.flat']], onChange, 'tx.ht.mode'), S('textWear', 0, 100), S('textDirt', 0, 100));
   const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'btn btn-small'; rs.textContent = t('tx.reseed'); rs.addEventListener('click', () => { state.params[K('textSeed')] = (Math.random() * 1e6) | 0; saveSettings(); onChange(K('textSeed')); }); tx.append(rs);

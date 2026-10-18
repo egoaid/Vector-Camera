@@ -26,17 +26,17 @@ export const DEFAULT_PARAMS = {
   ttThreshold: 50, ttBias: 50, ttAdaptive: 0, ttDetail: 30, ttEdge: 0, ttClean: 20, ttBreakup: 0, ttStrict: true, htMix: 70,
   exportLong: 2048, wakeLock: true,
   lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
-  text: 'Vector Camera', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
+  text: 'Vector Camera', textLang: 'en', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
   vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
   collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '', collageEdge: 'organic',
   rndOpts: { mode: true, palette: true, shape: true, tone: true, halftone: true, texture: true, background: true, subject: true, lines: true, font: true, textOn: false, textFx: true, collage: true, aspect: true },
   customPreset: null, rndStyle: 'off',
   // text slots 2 and 3 (keys get a _1 / _2 suffix); slot 1 uses the plain keys above
-  text_1: '', textFont_1: 'marker', textSize_1: 11, textX_1: 50, textY_1: 22, textAngle_1: 0, textSpacing_1: 2, textColor_1: '#ffd23f', textShadow_1: 20, textShadowColor_1: '#17121c', textShow_1: false, textHalftone_1: 0, textHalftoneType_1: 'dot', textHalftoneSize_1: 5, textHalftoneAngle_1: 45, textHalftoneMode_1: 'down', textWear_1: 0, textDirt_1: 0, textSeed_1: 2,
-  text_2: '', textFont_2: 'typewriter', textSize_2: 9, textX_2: 50, textY_2: 50, textAngle_2: 0, textSpacing_2: 2, textColor_2: '#ffffff', textShadow_2: 0, textShadowColor_2: '#17121c', textShow_2: false, textHalftone_2: 0, textHalftoneType_2: 'dot', textHalftoneSize_2: 5, textHalftoneAngle_2: 45, textHalftoneMode_2: 'down', textWear_2: 0, textDirt_2: 0, textSeed_2: 3,
+  text_1: '', textLang_1: 'en', textFont_1: 'marker', textSize_1: 11, textX_1: 50, textY_1: 22, textAngle_1: 0, textSpacing_1: 2, textColor_1: '#ffd23f', textShadow_1: 20, textShadowColor_1: '#17121c', textShow_1: false, textHalftone_1: 0, textHalftoneType_1: 'dot', textHalftoneSize_1: 5, textHalftoneAngle_1: 45, textHalftoneMode_1: 'down', textWear_1: 0, textDirt_1: 0, textSeed_1: 2,
+  text_2: '', textLang_2: 'en', textFont_2: 'typewriter', textSize_2: 9, textX_2: 50, textY_2: 50, textAngle_2: 0, textSpacing_2: 2, textColor_2: '#ffffff', textShadow_2: 0, textShadowColor_2: '#17121c', textShow_2: false, textHalftone_2: 0, textHalftoneType_2: 'dot', textHalftoneSize_2: 5, textHalftoneAngle_2: 45, textHalftoneMode_2: 'down', textWear_2: 0, textDirt_2: 0, textSeed_2: 3,
 };
 export const TEXT_SLOTS = 3;
-export const TEXT_BASE = ['text', 'textFont', 'textSize', 'textX', 'textY', 'textAngle', 'textSpacing', 'textColor', 'textShadow', 'textShadowColor', 'textShow', 'textHalftone', 'textHalftoneType', 'textHalftoneSize', 'textHalftoneAngle', 'textHalftoneMode', 'textWear', 'textDirt', 'textSeed'];
+export const TEXT_BASE = ['text', 'textLang', 'textFont', 'textSize', 'textX', 'textY', 'textAngle', 'textSpacing', 'textColor', 'textShadow', 'textShadowColor', 'textShow', 'textHalftone', 'textHalftoneType', 'textHalftoneSize', 'textHalftoneAngle', 'textHalftoneMode', 'textWear', 'textDirt', 'textSeed'];
 /** Parameter key of text slot `i` (0..2): slot 0 uses the plain key, others get _1 / _2. */
 export const tkey = (k, i) => (i ? `${k}_${i}` : k);
 /** A view of slot `i` with the plain key names (what style-text / text-fx read). */

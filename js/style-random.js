@@ -3,7 +3,7 @@
 import { mulberry32, hslToHex } from './color-utils.js';
 import { PRESETS } from './style-palette.js';
 import { randomPreset } from './style-colors.js';
-import { FONTS } from './style-text.js';
+import { fontsOf } from './style-text.js';
 import { TEXT_SLOTS, tkey } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
@@ -42,7 +42,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
     for (let i = 0; i < TEXT_SLOTS; i++) {
       const K = (k) => tkey(k, i); if (!cur[K('textShow')] || !String(cur[K('text')] || '').trim()) continue; // only slots that are shown right now; visibility is never changed
       if (opts.font) {
-        Object.assign(patch, { [K('textFont')]: pick(r, FONTS).id, [K('textColor')]: pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0], pal.groups.bg.block[0]]), [K('textShadowColor')]: pal.ink,
+        Object.assign(patch, { [K('textFont')]: pick(r, fontsOf(cur[K('textLang')])).id, // stays within the slot's language [K('textColor')]: pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0], pal.groups.bg.block[0]]), [K('textShadowColor')]: pal.ink,
           [K('textShadow')]: pick(r, [0, 15, 25, 40]), [K('textSpacing')]: range(r, 0, 8), [K('textSize')]: range(r, i ? 7 : 11, i ? 16 : 24),
           [K('textAngle')]: pick(r, [0, 0, 0, range(r, -15, 15), range(r, -90, 90)]), [K('textX')]: range(r, 30, 70), [K('textY')]: range(r, lanes[i][0], lanes[i][1]) });
       }

@@ -71,7 +71,7 @@
 - 領域分割は色と輪郭を手がかりにしたもので、物体を意味的に理解するものではありません。被写体判定は位置・コントラスト等に基づく推定です。
 - シルクスクリーンモードの SVG / PDF では、初期設定では写真由来のインク層はラスター画像です。「ラスター部分もベクターに変換」をオンにすると完全なベクターになりますが、時間とファイルサイズが増え、細かな階調は段階的な色面になります。
 - コラージュでは、各画像の前景/背景は自動判定のみです（手動修正は1枚の画像のときだけ）。画像を変えるとピースの解析をやり直すため、スライダー操作後に少し待つことがあります。
-- 文字は同梱フォントの英数字・記号のみです。日本語の文字は表示されません。
+- 文字は3つまで重ねられます。それぞれ「英語」「日本語」を選べ、日本語では明朝体・ゴシック体・丸ゴシック体・手書き・ポップ系など19種のフォントから選べます（英語と日本語を1枚の画像に混在できます）。日本語フォントは、ひらがな・カタカナ・JIS第1/第2水準の漢字と主な記号に対応しています（一部の珍しい漢字は表示されないことがあります）。
 - ポスター用の超大サイズは、端末のメモリと時間に依存します（極端に大きいと失敗することがあります）。
 - 高解像度や「高精細」設定は、古い端末ではメモリ不足になることがあります。
 - 紙の質感（ノイズ）は PNG / JPEG と画面表示にのみ反映され、SVG / PDF には含まれません。
@@ -88,7 +88,7 @@
 
 同梱: [MediaPipe](https://github.com/google-ai-edge/mediapipe)（Tasks Vision の実行ファイルと Face Landmarker のモデル。Apache-2.0、vendor/mediapipe に無改変で同梱。ライセンス全文は vendor/mediapipe/LICENSE、詳細は vendor/mediapipe/NOTICE.txt）。顔のパーツ検出にのみ使い、端末内で動作します。
 
-同梱フォント（文字の輪郭化のみに使用）: Anton、Bebas Neue、Archivo Black、Abril Fatface、Shrikhand、Bungee、Pacifico、Caveat、Reenie Beanie、Covered By Your Grace、Gochi Hand ほか（SIL Open Font License 1.1）、Permanent Marker、Rock Salt、Special Elite、Homemade Apple（Apache License 2.0）。各ライセンスは `fonts/LICENSES.txt` にあります。
+同梱フォント（文字の輪郭化のみに使用。日本語フォントは Noto Sans/Serif JP、しっぽり明朝、Zen系、M PLUS Rounded 1c、キウイ丸、よもぎ、クレー、ユウセイマジック、はちまるポップ、デラゴシック、レゲエ、ロックンロール、ドットゴシック16、ポッタ など。いずれも SIL Open Font License 1.1）: Anton、Bebas Neue、Archivo Black、Abril Fatface、Shrikhand、Bungee、Pacifico、Caveat、Reenie Beanie、Covered By Your Grace、Gochi Hand ほか（SIL Open Font License 1.1）、Permanent Marker、Rock Salt、Special Elite、Homemade Apple（Apache License 2.0）。各ライセンスは `fonts/LICENSES.txt` にあります。
 
 プリセットの配色はこのプロジェクトのオリジナルです。特定のアーティストやレーベルとは関係ありません。
 
