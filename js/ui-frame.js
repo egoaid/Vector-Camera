@@ -11,7 +11,8 @@ export function buildFramePanel(onChange) {
   const shown = p.frame > 0; // the other controls appear once a margin is set (the panel is rebuilt only when that flips, not on every drag step)
   box.append(slider({ k: 'frame', min: 0, max: 100 }, (k) => { onChange(k); if ((state.params.frame > 0) !== shown) buildFramePanel(onChange); }));
   if (!shown) return;
-  for (const k of ['frameBottom', 'frameBleed', 'frameRub', 'frameShift']) box.append(slider({ k, min: 0, max: 100 }, onChange));
+  for (const k of ['framePlate', 'frameRub', 'frameShift']) box.append(slider({ k, min: 0, max: 100 }, onChange));
+  box.append(slider({ k: 'framePlateN', min: 1, max: 3 }, onChange));
   const auto = !/^#[0-9a-f]{6}$/i.test(p.frameColor || ''), row = document.createElement('div'); row.className = 'color-row field';
   const lab = document.createElement('label'), inp = document.createElement('input'); inp.type = 'color'; inp.value = auto ? getPreset(p).paper : p.frameColor;
   inp.addEventListener('input', () => { state.params.frameColor = inp.value; onChange('frameColor'); }); inp.addEventListener('change', () => { saveSettings(); buildFramePanel(onChange); });

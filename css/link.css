@@ -1,0 +1,7 @@
+/* link.css - modulation matrix of the linked random mode */
+.lk-grid { display: grid; grid-template-columns: 2.2em repeat(var(--cols, 7), minmax(0, 1fr)); gap: 3px 2px; align-items: center; margin: 8px 0; }
+.lk-h { font-size: .62rem; font-weight: 800; text-align: center; color: var(--muted); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; }
+.lk-src { color: var(--accent-2); font-size: .72rem; }
+.lk-cell { width: 100%; min-width: 0; margin: 0; height: 22px; padding: 0; }
+.lk-cell:disabled { opacity: .35; }
+.lk-state { font-weight: 700; }

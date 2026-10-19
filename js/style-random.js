@@ -9,7 +9,7 @@ import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 import { tendencyPatch } from './style-tendency.js';
 import { sampleLook } from './style-space.js';
-import { applyMacro } from './style-macro.js';
+import { applyMacro, parseMatrix } from './style-macro.js';
 import { lockedKeys } from './style-presets.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
@@ -36,7 +36,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
   const tend = opts.tendency && opts.tendency !== 'off' ? opts.tendency : null;
   const rf = mulberry32(((seed >>> 0) ^ 0x9e3779b9) >>> 0); // own stream for the paper margin: other draws stay exactly as they were for a given seed
   Object.assign(patch, tend ? tendencyPatch(tend, r, opts, cur, rf) : sampleLook(r, cur, opts, {}, rf)); // every look parameter, structure first (style-space.js)
-  if (opts.link) applyMacro(patch, cur, seed); // linked mode (opt-in): roughness / fineness / boldness axes pull related parameters together
+  let link = null; if (opts.link) link = applyMacro(patch, cur, seed, { depth: cur.linkDepth, cross: cur.linkCross, matrix: parseMatrix(cur.linkMatrix) }); // linked mode (opt-in): roughness / fineness / boldness axes pull related parameters together
   const pal0 = () => { const nx = { ...cur, ...patch }; return (nx.preset === 'random' && nx.customPreset ? nx.customPreset : PRESETS[nx.preset]) || PRESETS.pop; };
   // text: only when the "text" option is ticked (default off). Hidden slots / empty slots are never touched or switched on;
   // the wording itself is always yours. Every slot gets its own font, size, position, tilt, colours and print effects.
@@ -64,7 +64,7 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
   let overrides = null;
   if (opts.subject && res && groups && ['silhouette', 'hybrid'].includes(patch.mode ?? cur.mode)) overrides = r() < 0.3 ? [] : randomOverrides(r, res, groups, range(r, 1, 4));
   for (const k of lockedKeys(cur)) delete patch[k]; // colours locked on the colour tab stay as they are
-  return { params: patch, overrides };
+  return { params: patch, overrides, link };
 }
 /** Undo history of {params, overrides} snapshots. */
 export class History {

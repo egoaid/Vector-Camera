@@ -1,19 +1,20 @@
 // style-frame.js - a paper margin ("white border") around the picture, with the imperfect edge of a hand-pulled print:
-// the picture sits a little off-centre and slightly crooked, its edge is hand-cut (wobbly), ink bleeds a little into the margin and
-// the edge is worn (see frame-edge.js). The finished picture scene becomes one transformed + clipped group on a larger paper canvas,
+// the picture sits a little off-centre and slightly crooked, its edge is hand-cut (wobbly), the colour plates are misregistered so
+// flat colour peeks out past the picture edge (like a multi-plate screen print), and the edge is worn (see frame-edge.js). The finished picture scene becomes one transformed + clipped group on a larger paper canvas,
 // so every renderer (canvas, PNG, poster strips, SVG, PDF) draws it with the machinery that collage pieces already use.
 import { mulberry32, hexToRgb } from './color-utils.js';
-import { getPreset } from './style-palette.js';
+import { getPreset, allPresetColors } from './style-palette.js';
 import { frameEdgeLayers } from './frame-edge.js';
+import { polyGeom } from './style-collage.js';
 
-export const FRAME_KEYS = ['frame', 'frameBottom', 'frameBleed', 'frameRub', 'frameShift', 'frameColor', 'frameSeed'];
+export const FRAME_KEYS = ['frame', 'framePlate', 'framePlateN', 'frameRub', 'frameShift', 'frameColor', 'frameSeed'];
 const hexOk = (v) => /^#[0-9a-f]{6}$/i.test(v || '');
 export const frameOn = (p) => (p.frame | 0) > 0;
 
 /** Geometry of the framed canvas for a picture of w x h (scene units): outer size, picture transform and the (wobbly) clip polygon in outer coordinates. */
 export function frameGeometry(p, w, h) {
   const long = Math.max(w, h), s = (p.frameShift || 0) / 100, rub = (p.frameRub || 0) / 100;
-  const ms = (p.frame / 100) * 0.18 * long, mb = ms * (1 + ((p.frameBottom || 0) / 100) * 0.8);
+  const ms = (p.frame / 100) * 0.18 * long, mb = ms;
   const rnd = mulberry32((((p.frameSeed | 0) + 17) * 2654435761) >>> 0);
   const dx = (rnd() * 2 - 1) * s * 0.35 * ms, dy = (rnd() * 2 - 1) * s * 0.3 * ms, th = ((rnd() * 2 - 1) * s * 1.3 * Math.PI) / 180;
   const W = w + 2 * ms, H = ms + h + mb, cx = W / 2 + dx, cy = ms + h / 2 + dy, co = Math.cos(th), si = Math.sin(th);
@@ -36,26 +37,34 @@ export const pictureToScene = (fr, x, y) => [fr.tf[0] * x + fr.tf[2] * y + fr.tf
 /** Margin paper colour: the chosen colour, else the palette's paper. */
 export const marginColor = (p) => (hexOk(p.frameColor) ? p.frameColor : getPreset(p).paper);
 
-// colour of the picture's edge along its perimeter (from the fills that cover the border pixels), so the bleed has the colours the print had there
-function perimeterColors(inner, res, preset) {
-  const byRegion = new Map(); for (const L of inner.layers) if (L.kind === 'fills' && (L.name === 'color-blocks' || L.name === 'color-regions' || L.name === 'silhouette' || L.name === 'regions')) for (const it of L.items) if (it.fill) for (const r of it.regions) byRegion.set(r, it.fill);
-  const ink = hexToRgb(preset.ink || '#17121c'), N = 96, w = res.w, h = res.h, out = [];
-  for (let i = 0; i < N; i++) {
-    const t = (i / N) * 4, side = Math.floor(t), u = t - side; let x, y;
-    if (side === 0) { x = Math.floor(u * (w - 1)); y = 0; } else if (side === 1) { x = w - 1; y = Math.floor(u * (h - 1)); } else if (side === 2) { x = w - 1 - Math.floor(u * (w - 1)); y = h - 1; } else { x = 0; y = h - 1 - Math.floor(u * (h - 1)); }
-    const f = byRegion.get(res.labels[y * w + x]), c = f ? hexToRgb(f) : ink; out.push([c[0] * 0.7 + ink[0] * 0.3, c[1] * 0.7 + ink[1] * 0.3, c[2] * 0.7 + ink[2] * 0.3]);
-  }
+/** Flat colour for each misregistered plate: bright palette colours when the style has them, else a classic cyan / yellow / magenta set. */
+function plateColors(preset, rnd, n) {
+  const sat = (h) => { const [r, g, b] = hexToRgb(h), mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; }, lum = (h) => { const [r, g, b] = hexToRgb(h); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
+  const pool = [...new Set(allPresetColors(preset))].filter((h) => sat(h) > 0.3 && lum(h) > 0.35), base = ['#2fb4c8', '#f2dd3a', '#e0507a'];
+  const src = pool.length >= n ? pool : [...pool, ...base], out = [];
+  for (let i = 0; i < n; i++) out.push(src.splice(Math.floor(rnd() * src.length), 1)[0]);
   return out;
+}
+/** Plate rectangles (outer coordinates): each is the picture rectangle moved a little (mostly sideways or up/down), slightly stretched and turned. */
+export function platePolys(p, fr) {
+  const n = Math.max(1, Math.min(3, p.framePlateN | 0 || 1)), amt = (p.framePlate || 0) / 100, long = Math.max(fr.w, fr.h), rnd = mulberry32((((p.frameSeed | 0) + 311) * 2246822519) >>> 0), polys = [];
+  for (let i = 0; i < n; i++) {
+    const side = Math.floor(rnd() * 4), sgn = side % 2 ? 1 : -1, big = (0.004 + 0.05 * amt) * long * (0.45 + 0.55 * rnd()), small = (rnd() * 2 - 1) * 0.35 * big;
+    const dx = side < 2 ? sgn * big : small, dy = side < 2 ? small : sgn * big, st = 1 + (rnd() * 2 - 1) * 0.012 * amt, th = (rnd() * 2 - 1) * 0.5 * amt * Math.PI / 180, co = Math.cos(th), si = Math.sin(th);
+    const pts = []; for (const [x, y] of [[0, 0], [fr.w, 0], [fr.w, fr.h], [0, fr.h]]) { const ux = (x - fr.w / 2) * st, uy = (y - fr.h / 2) * st, gx = fr.w / 2 + ux * co - uy * si + dx, gy = fr.h / 2 + ux * si + uy * co + dy; pts.push(...pictureToScene(fr, gx, gy)); }
+    polys.push(Float64Array.from([...pts, pts[0], pts[1]]));
+  }
+  return polys;
 }
 /** Wraps a finished picture scene (no text yet) into the framed scene. */
 export function wrapFrame(inner, res, p) {
-  const fr = frameGeometry(p, inner.w, inner.h), preset = getPreset(p), paper = marginColor(p), cols = perimeterColors(inner, res, preset), N = cols.length;
-  const edgeAt = (X, Y) => { // nearest side of the (straightened) picture decides which perimeter colour the bleed takes
-    const [gx, gy] = sceneToPicture(fr, X, Y), u = Math.max(0, Math.min(1, gx / fr.w)), v = Math.max(0, Math.min(1, gy / fr.h)), dT = gy, dB = fr.h - gy, dL = gx, dR = fr.w - gx, m = Math.min(dT, dB, dL, dR);
-    const t = m === dT ? u / 4 : m === dR ? 0.25 + v / 4 : m === dB ? 0.5 + (1 - u) / 4 : 0.75 + (1 - v) / 4; return cols[Math.min(N - 1, Math.floor(t * N))];
-  };
+  const fr = frameGeometry(p, inner.w, inner.h), preset = getPreset(p), paper = marginColor(p);
   const group = { kind: 'group', name: 'picture', tf: fr.tf, clipPoly: fr.poly, w: inner.w, h: inner.h, paper: inner.paper, layers: inner.layers, geom: inner.geom || res.geom };
-  const long = Math.max(inner.w, inner.h), scale = (p.fxLong || 1000) / long;
-  const edge = frameEdgeLayers({ poly: fr.poly, longUnits: long, scale, bleed: p.frameBleed || 0, rub: p.frameRub || 0, seed: p.frameSeed, edgeAt, edgeKey: cols.map((c) => c.map(Math.round).join(',')).join(';'), paper, ink: preset.ink });
-  return { w: fr.W, h: fr.H, paper, paperAmount: inner.paperAmount, layers: [group, ...edge], mode: inner.mode, preset: inner.preset, geom: inner.geom || res.geom, frame: fr };
+  const long = Math.max(inner.w, inner.h), scale = (p.fxLong || 1000) / long, layers = [];
+  if ((p.framePlate || 0) > 0) { // colour plates under the picture: only the part that sticks out past the picture edge is visible
+    const polys = platePolys(p, fr), cols = plateColors(preset, mulberry32((((p.frameSeed | 0) + 733) * 3266489917) >>> 0), polys.length);
+    layers.push({ kind: 'fills', name: 'frame-plates', geom: polyGeom(polys, fr.W, fr.H), offset: [0, 0], rule: 'nonzero', blend: 'multiply', seal: 0, stroke: null, items: polys.map((_, i) => ({ fill: cols[i], regions: [i] })) });
+  }
+  layers.push(group, ...frameEdgeLayers({ poly: fr.poly, longUnits: long, scale, rub: p.frameRub || 0, seed: p.frameSeed, paper }));
+  return { w: fr.W, h: fr.H, paper, paperAmount: inner.paperAmount, layers, mode: inner.mode, preset: inner.preset, geom: inner.geom || res.geom, frame: fr };
 }

@@ -280,7 +280,7 @@ async function doRandom() {
   const o = state.params.rndOpts, solo = !state.collage; if (solo) computeGroups();
   const seed = (Math.random() * 4294967296) >>> 0;
   const out = randomize(seed, { ...o, tendency: state.params.rndStyle }, state.params, solo ? state.result : null, solo ? state.groups : null, { collage: !!state.collage });
-  Object.assign(state.params, out.params);
+  Object.assign(state.params, out.params); if (out.link) state.lastLink = out.link;
   if (out.overrides && solo) state.overrides = out.overrides;
   await ensureFonts({ ...state.params, ...out.params });
   saveSettings(); buildUI(); await refresh();
