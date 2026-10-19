@@ -81,3 +81,11 @@ export function hslToHex(h, s, l) {
   s /= 100; l /= 100; const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
   return '#' + [f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
 }
+
+/** Rotates the hue of a hex colour by `deg` degrees (RGB rotation about the grey axis; greys stay grey). 0 returns the input. */
+export function hueRotateHex(hex, deg) {
+  if (!deg || typeof hex !== 'string' || hex[0] !== '#') return hex;
+  const [r, g, b] = hexToRgb(hex), a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), k = 1 / 3, q = Math.sqrt(k);
+  const m = [c + (1 - c) * k, k * (1 - c) - q * s, k * (1 - c) + q * s, k * (1 - c) + q * s, c + k * (1 - c), k * (1 - c) - q * s, k * (1 - c) - q * s, k * (1 - c) + q * s, c + k * (1 - c)];
+  return rgbToHex(m[0] * r + m[1] * g + m[2] * b, m[3] * r + m[4] * g + m[5] * b, m[6] * r + m[7] * g + m[8] * b);
+}

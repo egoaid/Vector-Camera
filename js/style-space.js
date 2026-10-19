@@ -13,7 +13,7 @@ import { HT_TYPES } from './halftone-types.js';
 import { TONES, TONINGS } from './tone-photo.js';
 import { randomPreset, randomColor } from './style-colors.js';
 
-export const TARGETS = ['mode', 'palette', 'shape', 'tone', 'halftone', 'texture', 'background', 'subject', 'lines'];
+export const TARGETS = ['mode', 'palette', 'shape', 'tone', 'halftone', 'texture', 'background', 'subject', 'lines', 'frame'];
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 const range = (r, a, b) => Math.round(a + r() * (b - a));
 /** Weighted pick from { value: weight } (weights <= 0 are never picked). */
@@ -79,10 +79,14 @@ export const SPACE = [
   C('htColor', 'palette', (r, n, x) => (ink(n) ? { htColor: r() < 0.55 ? '' : inkColor(r, n, x) } : {}), { when: ink }),
   // ---- lines and outline
   C('lineWidth', 'lines', (r, n, x) => linesPatch(r, n, x)),                                                  // also lineScope, lineOffset, lineColor, lineColor2
+  // ---- paper margin and print edge: how worn / crooked the edge is follows how hand-made the texture is (grain, roughness, misregistration)
+  C('frame', 'frame', (r, n, x) => framePatch(r, n, x)),
+  C('lightDir', 'texture', (r, n, x) => ({ lightDir: x.rf() < 0.45 ? 45 : Math.round(x.rf() * 359) })), // direction of shadows and plate offsets (own RNG stream)
+  C('hueShift', 'palette', (r, n, x) => ({ hueShift: x.rf() < 0.7 ? 0 : Math.round((x.rf() * 2 - 1) * 70) })), // rotates the whole palette's hue a little
   C('outline', 'lines', (r, n, x) => (n.mode === 'hybrid' ? {} : outlinePatch(r, n, x)), { when: (n) => n.mode !== 'hybrid' }),   // also outlineColor
 ];
 /** Keys the generator fills as a side effect of a custom entry (so the coverage test knows them). */
-export const SIDE_KEYS = ['customPreset', 'silColors', 'silSample', 'halftoneType', 'lineScope', 'lineOffset', 'lineColor', 'lineColor2', 'outlineColor'];
+export const SIDE_KEYS = ['frameBottom', 'frameBleed', 'frameRub', 'frameShift', 'frameSeed', 'frameColor', 'customPreset', 'silColors', 'silSample', 'halftoneType', 'lineScope', 'lineOffset', 'lineColor', 'lineColor2', 'outlineColor'];
 /** Look parameters random generation deliberately never draws, with the reason. */
 export const EXCLUDED = { background: 'reserved (always "auto")', semStrength: 'only meaningful with the AI engine, which is a device capability', htLayers_etching: 'fixed by the etching renderer' };
 
@@ -114,6 +118,12 @@ function linesPatch(r, n, x) {
   if (!on) return { lineWidth: 0 };
   return { lineWidth: x.win('lineWidth', 10, 45), lineScope: pick(r, ['mid', 'all', 'fg']), lineOffset: r() < 0.5 ? 0 : range(r, 10, 45), lineColor: r() < 0.7 ? p.ink : randomColor(r, 'deep'), lineColor2: g ? pick(r, [g.fg.block[0], g.mid.block[0], g.bg.block[0]]) : randomColor(r, 'vivid') };
 }
+function framePatch(r0, n, x) {
+  const r = x.rf; if (r() >= (x.bias.frame ?? 0.3)) return { frame: 0 };
+  const hand = Math.max(0, Math.min(1, (((n.grain ?? 25) + (n.roughness ?? 20) + (n.misreg ?? 25)) / 3) / 60)); // 0 clean machine print .. 1 rough hand-pulled print
+  const j = (base, spread) => Math.max(0, Math.min(100, Math.round(base + (r() * 2 - 1) * spread)));
+  const fw = x.bias.win && x.bias.win.frame; return { frame: range(r, fw ? fw[0] : 14, fw ? fw[1] : 55), frameBottom: r() < 0.4 ? 0 : range(r, 20, 70), frameBleed: j(15 + 60 * hand, 18), frameRub: j(10 + 60 * hand, 20), frameShift: j(10 + 55 * hand, 20), frameSeed: range(r, 1, 99999), frameColor: '' };
+}
 function outlinePatch(r, n, x) {
   const p = palOf(n), on = r() < (x.bias.outline ?? 0.3);
   if (!on) return { outline: 0 };
@@ -123,11 +133,13 @@ function outlinePatch(r, n, x) {
 /**
  * Draws a patch of look parameters.
  * on: which targets are ticked ({ mode, palette, shape, tone, halftone, texture, background, subject, lines } booleans).
+ * rf (optional): random stream for the paper margin (defaults to r).
  * bias: a tendency profile ({ modes, tones, types, ht, bg, presets, lines, outline, angles, win: { key: [lo, hi] }, wild }) or {}.
  */
-export function sampleLook(r, cur, on, bias = {}) {
+export function sampleLook(r, cur, on, bias = {}, rf = r) {
   const patch = {}, wild = bias.wild ?? (bias.win ? 0.06 : 0.2);
-  const x = { bias, win: (k, lo, hi) => { const w = bias.win && bias.win[k]; return range(r, w ? w[0] : lo, w ? w[1] : hi); } };
+  const x = { bias, rf, // rf: a separate random stream for the margin, so adding it never changes what the same seed gave before for everything else
+     win: (k, lo, hi) => { const w = bias.win && bias.win[k]; return range(r, w ? w[0] : lo, w ? w[1] : hi); } };
   for (const e of SPACE) {
     if (!on[e.target]) continue;
     const next = { ...cur, ...patch };

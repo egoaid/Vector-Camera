@@ -9,6 +9,7 @@ import { loadSource, makeWorking } from './image-input.js';
 import { PipelineClient } from './pipeline-client.js';
 import { classifyGroups } from './seg-saliency.js';
 import { buildScene, sceneHasRaster } from './style-scene.js';
+import { sceneToPicture } from './style-frame.js';
 import { buildCollageScene } from './style-collage.js';
 import { vectorizeScene } from './vec-ink.js';
 import { TRACE_SHAPE } from './vec-ink.js';
@@ -92,7 +93,7 @@ async function runPipeline(force = false) {
   await ensurePipeline();
   const pp = pipelineParams(state.params, state.work.w, state.work.h), key = JSON.stringify(pp) + state.engineUsed;
   if (!force && key === lastKey && state.result) return false;
-  const res = await client.process(pp); lastKey = key; state.result = res; inkCache = null; return true;
+  const res = await client.process(pp); lastKey = key; state.result = res; if (inkCache && inkCache.f.dispose) inkCache.f.dispose(); inkCache = null; return true;
 }
 
 /* ---------- collage ---------- */
@@ -155,7 +156,10 @@ function ensureKinds(r) {
 }
 function previewInkFactory() {
   const long = Math.min(1100, Math.max(state.source.w, state.source.h));
-  if (!inkCache || inkCache.res !== state.result || inkCache.long !== long) inkCache = { res: state.result, long, f: makeInkFactory(state.source, state.result, long) };
+  if (!inkCache || inkCache.res !== state.result || inkCache.long !== long) {
+    if (inkCache && inkCache.f.dispose) inkCache.f.dispose();
+    inkCache = { res: state.result, long, f: makeInkFactory(state.source, state.result, long) };
+  }
   return inkCache.f;
 }
 function rebuildScene() {
@@ -166,7 +170,7 @@ function rebuildScene() {
   state.scene = buildScene(state.result, state.groups, state.params, needsInk(state.params) ? previewInkFactory() : null);
 }
 function redraw() {
-  if (!state.result) return; rebuildScene(); paint(); updateBadges(); updateExportNote(state.scene); ensureTextFonts();
+  if (!state.result) return; rebuildScene(); const fr = state.scene && state.scene.frame; if ((fr ? fr.tf.join() + state.scene.paper : '') !== origSig) drawOriginal(); paint(); updateBadges(); updateExportNote(state.scene); ensureTextFonts();
 }
 /** A shown text slot whose font is not loaded draws nothing (this hid text slots 2 and 3 when their default fonts were never opened in the font menu).
     Load what is missing, then redraw once; fonts that cannot be loaded are reported once instead of failing silently. */
@@ -184,9 +188,13 @@ function paint() {
   cv.width = Math.round(r.w * k); cv.height = Math.round(r.h * k); $('stage').style.setProperty('--ar', String(r.w / r.h));
   drawScene(cv, r, state.result.geom); if (handles) handles.update();
 }
+let origSig = '';
 function drawOriginal() {
-  const cv = $('cv-original'), r = state.result; if (!r) return; const src = state.canvas, k = Math.min(1, 1600 / Math.max(r.w, r.h));
-  cv.width = Math.round(r.w * k) || r.w; cv.height = Math.round(r.h * k) || r.h; cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+  const cv = $('cv-original'), r = state.result; if (!r) return; const src = state.canvas, sc = state.scene, fr = sc && sc.frame, W = fr ? fr.W : r.w, H = fr ? fr.H : r.h, k = Math.min(1, 1600 / Math.max(W, H));
+  cv.width = Math.round(W * k) || W; cv.height = Math.round(H * k) || H; const ctx = cv.getContext('2d');
+  if (fr) { ctx.fillStyle = sc.paper; ctx.fillRect(0, 0, cv.width, cv.height); ctx.save(); ctx.scale(k, k); ctx.transform(...fr.tf); ctx.drawImage(src, 0, 0, fr.w, fr.h); ctx.restore(); } // the original sits in the same paper margin as the result, so the compare slider lines up
+  else ctx.drawImage(src, 0, 0, cv.width, cv.height);
+  origSig = fr ? fr.tf.join() + sc.paper : '';
 }
 function updateBadges() { $('badges').replaceChildren(); } // the info chips were removed from the preview (v0.5)
 
@@ -226,9 +234,10 @@ const hideHint = () => { clearTimeout(hintTimer); $('edit-hint').hidden = true; 
 function setEdit(on) { editing = on; $('btn-edit').setAttribute('aria-pressed', String(on)); $('stage').classList.toggle('editing', on); if (on) { $('edit-hint').hidden = false; clearTimeout(hintTimer); hintTimer = setTimeout(hideHint, 6000); } else hideHint(); $('btn-edit-reset').hidden = !on && !state.overrides.length; }
 function onStageClick(ev) {
   if (!editing || !state.result || compare.isOn() || zoom.swallowClick() || ev.target.closest('.zoom-bar')) return;
-  const cv = $('cv-result'), box = cv.getBoundingClientRect(), r = state.result, sc = Math.min(box.width / r.w, box.height / r.h), cw = r.w * sc, ch = r.h * sc;
+  const cv = $('cv-result'), box = cv.getBoundingClientRect(), r = state.result, S = state.scene || { w: r.w, h: r.h }, sc = Math.min(box.width / S.w, box.height / S.h), cw = S.w * sc, ch = S.h * sc;
   const rc = { left: box.left + (box.width - cw) / 2, top: box.top + (box.height - ch) / 2, width: cw, height: ch };
-  const x = Math.floor(((ev.clientX - rc.left) / rc.width) * r.w), y = Math.floor(((ev.clientY - rc.top) / rc.height) * r.h);
+  let px = ((ev.clientX - rc.left) / rc.width) * S.w, py = ((ev.clientY - rc.top) / rc.height) * S.h; if (S.frame) [px, py] = sceneToPicture(S.frame, px, py); // inside a paper margin the picture is offset (and slightly tilted)
+  const x = Math.floor(px * (r.w / (S.frame ? S.frame.w : S.w))), y = Math.floor(py * (r.h / (S.frame ? S.frame.h : S.h)));
   if (x < 0 || y < 0 || x >= r.w || y >= r.h) return;
   const cur = state.groups[r.labels[y * r.w + x]]; trackDiscrete(); hideHint(); state.overrides.push({ x, y, g: (cur + 1) % 3 }); $('btn-edit-reset').hidden = false; base = snapshot(); redraw();
 }
@@ -241,7 +250,7 @@ async function getExportScene(kind) {
   if (state.collage) { scene = buildCollageScene(collageCells(() => want), { ...state.params, fxLong: want }, { inkLong: want }); }
   else {
     const r = state.result; computeGroups(); let f = null;
-    if (needsInk(state.params)) { const srcLong = Math.max(state.source.w, state.source.h); f = makeInkFactory(state.source, r, Math.min(want, srcLong)); }
+    if (needsInk(state.params)) { const srcLong = Math.max(state.source.w, state.source.h); f = makeInkFactory(state.source, r, Math.min(want, srcLong), { cache: false }); }
     scene = buildScene(r, state.groups, { ...state.params, fxLong: want }, f); geom = r.geom;
   }
   if (vec && sceneHasRaster(scene)) {

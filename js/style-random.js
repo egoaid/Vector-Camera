@@ -9,6 +9,7 @@ import { HT_TYPES } from './halftone-types.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
 import { tendencyPatch } from './style-tendency.js';
 import { sampleLook } from './style-space.js';
+import { applyMacro } from './style-macro.js';
 import { lockedKeys } from './style-presets.js';
 
 const pick = (r, a) => a[Math.floor(r() * a.length)];
@@ -33,7 +34,9 @@ export function randomOverrides(r, res, groups, n) {
 export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) {
   const r = mulberry32(seed >>> 0), patch = {};
   const tend = opts.tendency && opts.tendency !== 'off' ? opts.tendency : null;
-  Object.assign(patch, tend ? tendencyPatch(tend, r, opts, cur) : sampleLook(r, cur, opts, {})); // every look parameter, structure first (style-space.js)
+  const rf = mulberry32(((seed >>> 0) ^ 0x9e3779b9) >>> 0); // own stream for the paper margin: other draws stay exactly as they were for a given seed
+  Object.assign(patch, tend ? tendencyPatch(tend, r, opts, cur, rf) : sampleLook(r, cur, opts, {}, rf)); // every look parameter, structure first (style-space.js)
+  if (opts.link) applyMacro(patch, cur, seed); // linked mode (opt-in): roughness / fineness / boldness axes pull related parameters together
   const pal0 = () => { const nx = { ...cur, ...patch }; return (nx.preset === 'random' && nx.customPreset ? nx.customPreset : PRESETS[nx.preset]) || PRESETS.pop; };
   // text: only when the "text" option is ticked (default off). Hidden slots / empty slots are never touched or switched on;
   // the wording itself is always yours. Every slot gets its own font, size, position, tilt, colours and print effects.
@@ -41,8 +44,8 @@ export function randomize(seed, opts, cur, res = null, groups = null, ctx = {}) 
     const pal = pal0(), lanes = [[70, 90], [10, 30], [38, 62]];
     for (let i = 0; i < TEXT_SLOTS; i++) {
       const K = (k) => tkey(k, i); if (!cur[K('textShow')] || !String(cur[K('text')] || '').trim()) continue; // only slots that are shown right now; visibility is never changed
-      if (opts.font) {
-        Object.assign(patch, { [K('textFont')]: pick(r, fontsOf(cur[K('textLang')])).id, // stays within the slot's language [K('textColor')]: pick(r, [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0], pal.groups.bg.block[0]]), [K('textShadowColor')]: pal.ink,
+      if (opts.font) { // the font stays within the slot's language
+        Object.assign(patch, { [K('textFont')]: pick(r, fontsOf(cur[K('textLang')])).id, [K('textColor')]: pick(r, pal.groups ? [pal.paper, pal.groups.fg.block[0], pal.groups.mid.block[0], pal.groups.bg.block[0]] : [pal.paper, pal.ink, pal.paper, pal.ink]), [K('textShadowColor')]: pal.ink,
           [K('textShadow')]: pick(r, [0, 15, 25, 40]), [K('textSpacing')]: range(r, 0, 8), [K('textSize')]: range(r, i ? 7 : 11, i ? 16 : 24),
           [K('textAngle')]: pick(r, [0, 0, 0, range(r, -15, 15), range(r, -90, 90)]), [K('textX')]: range(r, 30, 70), [K('textY')]: range(r, lanes[i][0], lanes[i][1]) });
       }

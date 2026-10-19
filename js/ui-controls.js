@@ -19,7 +19,7 @@ function group(id, content) {
   d.addEventListener('toggle', () => { d.open ? openGroups.add(id) : openGroups.delete(id); }); d.append(sm, ...content); return d;
 }
 const ADV = [
-  { k: 'roughness', modes: INK_MODES, when: needsInk }, { k: 'paper', modes: ['hybrid'] },
+  { k: 'roughness', modes: INK_MODES, when: needsInk }, { k: 'lightDir', modes: ALL, min: 0, max: 359 }, { k: 'hueShift', modes: ALL, min: -180, max: 180 }, { k: 'paper', modes: ['hybrid'] },
   { k: 'boundary', modes: ALL }, { k: 'minRegion', modes: ALL }, { k: 'outline', modes: ['vector', 'regions', 'silhouette'] },
   { k: 'semStrength', modes: ALL, when: () => state.engineUsed === 'ai' },
 ];

@@ -75,7 +75,7 @@ export function lockConflicts(cur, style) {
 }
 
 const HEX = /^#[0-9a-f]{6}$/i, hexOk = (v) => typeof v === 'string' && HEX.test(v);
-const RANGE = { halftoneSize: [2, 20], halftoneAngle: [0, 180], separation: [2, 8], paletteK: [0, 32], textAngle: [-90, 90], textSize: [1, 100], textSpacing: [-10, 50], htLayers: [1, 4], htSpread: [10, 90], collageSlots: [0, 16], collageSeed: [0, 1e6], textSeed: [0, 1e6], textHalftoneSize: [2, 20], textHalftoneAngle: [0, 180] };
+const RANGE = { frameSeed: [0, 1e6], lightDir: [0, 359], hueShift: [-180, 180], halftoneSize: [2, 20], halftoneAngle: [0, 180], separation: [2, 8], paletteK: [0, 32], textAngle: [-90, 90], textSize: [1, 100], textSpacing: [-10, 50], htLayers: [1, 4], htSpread: [10, 90], collageSlots: [0, 16], collageSeed: [0, 1e6], textSeed: [0, 1e6], textHalftoneSize: [2, 20], textHalftoneAngle: [0, 180] };
 const rangeOf = (k) => RANGE[k.replace(/_\d$/, '')] || [0, 100];
 const ENUMS = { mode: MODES, halftoneType: HT_TYPES, textHalftoneType: HT_TYPES, textLang: ['en', 'ja'], bgTreatment: ['flat', 'photo', 'paper'], paletteMap: ['luma', 'nearest'], lineScope: ['mid', 'fg', 'all'], collageLayout: null, collageEdge: null, collageAspect: null, background: null, textHalftoneMode: ['down', 'up', 'right', 'flat'], tone: TONES, sgToning: TONINGS };
 const validPalette = (p) => p && typeof p === 'object' && ['key', 'bands'].includes(p.mode) && hexOk(p.ink) && hexOk(p.paper) && p.groups && ['bg', 'mid', 'fg'].every((g) => p.groups[g] && Array.isArray(p.groups[g].block) && p.groups[g].block.length > 0 && p.groups[g].block.length <= 8 && p.groups[g].block.every(hexOk) && (!p.groups[g].ramp || (Array.isArray(p.groups[g].ramp) && p.groups[g].ramp.length >= 2 && p.groups[g].ramp.length <= 8 && p.groups[g].ramp.every(hexOk))));
@@ -91,7 +91,7 @@ export function sanitizeParams(src) {
     if (ENUMS[base] && !ENUMS[base].includes(v)) continue;
     if (typeof d === 'number') { if (typeof v === 'number' && Number.isFinite(v)) { const [lo, hi] = rangeOf(k); out[k] = Math.min(hi, Math.max(lo, v)); } continue; }
     if (typeof d === 'boolean') { if (typeof v === 'boolean') out[k] = v; continue; }
-    if (typeof d === 'string') { if (typeof v !== 'string') continue; if ((/Color$|Color2$|Colors?$|^lineColor/.test(base) && base !== 'htColor') || (d.startsWith('#') && base !== 'collagePaper')) { if (hexOk(v)) out[k] = v; } else if (base === 'collagePaper' || base === 'htColor') { if (v === '' || hexOk(v)) out[k] = v; } else if (/^text(_\d)?$/.test(k)) out[k] = v.slice(0, 80); else out[k] = v.slice(0, 40); }
+    if (typeof d === 'string') { if (typeof v !== 'string') continue; if ((/Color$|Color2$|Colors?$|^lineColor/.test(base) && base !== 'htColor' && base !== 'frameColor') || (d.startsWith('#') && base !== 'collagePaper')) { if (hexOk(v)) out[k] = v; } else if (base === 'collagePaper' || base === 'htColor' || base === 'frameColor') { if (v === '' || hexOk(v)) out[k] = v; } else if (/^text(_\d)?$/.test(k)) out[k] = v.slice(0, 80); else out[k] = v.slice(0, 40); }
   }
   return out;
 }

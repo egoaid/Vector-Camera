@@ -4,6 +4,7 @@
 // layer path, it can be traced back into vector paths (SVG/PDF "convert raster to vector") like the photo ink.
 // Pure typed-array code (no DOM) so it runs in Node tests.
 import { hexToRgb } from './color-utils.js';
+import { rotOff } from './config.js';
 import { makeScreen, htOptsFrom } from './halftone-types.js';
 
 function hash(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -105,7 +106,7 @@ export function textFxLayers(geom, p, sceneW, sceneH, fxLong) {
   const mk = (hex) => { const [r, g, b] = hexToRgb(hex), rgba = new Uint8ClampedArray(n * 4); for (let i = 0; i < n; i++) { rgba[i * 4] = r; rgba[i * 4 + 1] = g; rgba[i * 4 + 2] = b; rgba[i * 4 + 3] = Math.round(a[i] * 255); } return rgba; };
   const bm = (hex, dx, dy) => ({ w: m.W, h: m.H, rgba: mk(hex), gx: bbox[0] + dx, gy: bbox[1] + dy, gw: m.W / scale, gh: m.H / scale });
   const out = [];
-  if (p.textShadow > 0) out.push({ kind: 'ink', name: 'text-shadow', noClip: true, regions: [], bitmap: bm(p.textShadowColor, off, off), blend: 'normal', spec: { mode: 'key', color: p.textShadowColor } });
+  if (p.textShadow > 0) out.push({ kind: 'ink', name: 'text-shadow', noClip: true, regions: [], bitmap: bm(p.textShadowColor, ...rotOff(off, off, p.lightDir)), blend: 'normal', spec: { mode: 'key', color: p.textShadowColor } });
   out.push({ kind: 'ink', name: 'text', noClip: true, regions: [], bitmap: bm(p.textColor, 0, 0), blend: 'normal', spec: { mode: 'key', color: p.textColor } });
   return out;
 }

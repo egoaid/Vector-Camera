@@ -12,7 +12,7 @@ function inkCanvas(b) {
   cv.getContext('2d').putImageData(new ImageData(b.rgba, b.w, b.h), 0, 0); b._cv = cv; return cv;
 }
 export function releaseScene(scene) {
-  const walk = (layers) => { for (const L of layers) { if (L.bitmap && L.bitmap._cv) { L.bitmap._cv.width = 0; L.bitmap._cv = null; } if (L.layers) walk(L.layers); L._p2 = null; if (L.items) for (const it of L.items) it._p2 = null; } };
+  const walk = (layers) => { for (const L of layers) { if (L.bitmap && L.bitmap._cv && !L.bitmap._shared) { L.bitmap._cv.width = 0; L.bitmap._cv = null; } if (L.layers) walk(L.layers); L._p2 = null; if (L.items) for (const it of L.items) it._p2 = null; } };
   walk(scene.layers);
 }
 const polyPath = (xy) => { const p = new Path2D(); p.moveTo(xy[0], xy[1]); for (let i = 2; i < xy.length; i += 2) p.lineTo(xy[i], xy[i + 1]); p.closePath(); return p; };

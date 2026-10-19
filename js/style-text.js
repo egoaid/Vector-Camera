@@ -1,7 +1,7 @@
 // style-text.js - typed text -> vector outline layers (TrueType glyph outlines, nonzero fill, optional offset shadow).
 import { parseTTF, contourToPath } from './font-ttf.js';
 import { fxActive, textFxLayers } from './text-fx.js';
-import { TEXT_SLOTS, slotView } from './config.js';
+import { TEXT_SLOTS, slotView, rotOff } from './config.js';
 
 export const FONT_LANGS = ['en', 'ja'];
 export const DEFAULT_FONT = { en: 'anton', ja: 'notosans' };
@@ -106,7 +106,7 @@ export function slotLayers(q, w, h, fxLong) {
   if (!geom) return [];
   if (fxActive(q)) return textFxLayers(geom, q, w, h, fxLong || 1000);
   const ids = Array.from({ length: geom.R }, (_, i) => i), out = [], off = (q.textShadow / 100) * 0.05 * h;
-  if (q.textShadow > 0) out.push({ kind: 'fills', name: 'text-shadow', geom, rule: 'nonzero', offset: [off, off], items: [{ fill: q.textShadowColor, regions: ids }] });
+  if (q.textShadow > 0) out.push({ kind: 'fills', name: 'text-shadow', geom, rule: 'nonzero', offset: rotOff(off, off, q.lightDir), items: [{ fill: q.textShadowColor, regions: ids }] });
   out.push({ kind: 'fills', name: 'text', geom, rule: 'nonzero', offset: [0, 0], items: [{ fill: q.textColor, regions: ids }] });
   return out;
 }

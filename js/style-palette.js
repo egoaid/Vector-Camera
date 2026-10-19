@@ -1,6 +1,6 @@
 // style-palette.js - print-style presets (original palettes, loosely inspired by pop-art screen prints and
 // retro record-sleeve graphics) and colour mapping helpers.
-import { hexToRgb, luma, rgbToLab } from './color-utils.js';
+import { hexToRgb, luma, rgbToLab, hueRotateHex } from './color-utils.js';
 
 export const PRESETS = {
   natural: { id: 'natural', mode: 'key', ink: '#17121c', paper: '#f6efe2', groups: null },
@@ -57,7 +57,16 @@ Object.assign(PRESETS, {
 });
 export const STYLE_ORDER = ['pop', 'sleeve', 'riso', 'duo', 'mono', 'unite', 'garden', 'lovepop', 'olive', 'earth', 'field', 'stripes', 'maroon', 'boombox', 'stadium', 'lavender', 'skygreen', 'bluepeach', 'kraft', 'palm', 'typewriter', 'sunhill', 'cyan', 'royal', 'tealpink', 'etching', 'etchblue', 'sanguine', 'silver', 'sepia', 'selenium'];
 /** Resolves the active preset: built-in id, or the user's randomised palette (params.customPreset). */
-export const getPreset = (p) => (p.preset === 'random' && p.customPreset ? p.customPreset : PRESETS[p.preset] || PRESETS.natural);
+const baseOf = (p) => (p.preset === 'random' && p.customPreset ? p.customPreset : PRESETS[p.preset] || PRESETS.natural);
+const rotated = new WeakMap();
+const rotAny = (v, d) => (typeof v === 'string' ? hueRotateHex(v, d) : Array.isArray(v) ? v.map((x) => rotAny(x, d)) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, rotAny(x, d)])) : v);
+/** Hue-rotated copy of a preset (memoized per preset object, so identity stays stable for caches). */
+export function shiftPreset(pr, deg) {
+  if (!deg) return pr; let m = rotated.get(pr); if (!m) rotated.set(pr, (m = new Map()));
+  if (!m.has(deg)) m.set(deg, { ...pr, ink: hueRotateHex(pr.ink, deg), paper: hueRotateHex(pr.paper, deg), groups: pr.groups ? rotAny(pr.groups, deg) : pr.groups });
+  return m.get(deg);
+}
+export const getPreset = (p) => shiftPreset(baseOf(p), +p.hueShift || 0);
 export const GROUP_KEYS = ['bg', 'mid', 'fg'];
 
 /** Assign palette colours to regions (ids) by area-weighted luminance rank ("luma") or nearest Lab colour. */

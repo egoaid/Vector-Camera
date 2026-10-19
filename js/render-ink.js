@@ -26,13 +26,13 @@ const smooth = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1
  * Factory bound to a source image + pipeline result. spec -> { w,h,rgba,gx,gy,gw,gh } (geometry-space rect).
  * targetLong: raster resolution (long edge in px).
  */
-export function makeInkFactory(src, res, targetLong) {
+export function makeInkFactory(src, res, targetLong, opts = {}) {
   const img = downscale(src, targetLong), tw = img.w, th = img.h, { w: gw0, h: gh0, labels } = res;
   const lum = new Float32Array(tw * th), blurMemo = new Map();
   for (let i = 0, j = 0; i < lum.length; i++, j += 4) lum[i] = (0.2126 * img.data[j] + 0.7152 * img.data[j + 1] + 0.0722 * img.data[j + 2]) / 255;
   const lab = new Int32Array(tw * th);
   for (let y = 0; y < th; y++) { const sy = Math.min(gh0 - 1, Math.floor((y * gh0) / th)) * gw0; for (let x = 0; x < tw; x++) lab[y * tw + x] = labels[sy + Math.min(gw0 - 1, Math.floor((x * gw0) / tw))]; }
-  return (spec) => {
+  const build = (spec) => {
     const elig = new Uint8Array(res.R); for (const r of spec.regions) elig[r] = 1;
     let x0 = tw, y0 = th, x1 = -1, y1 = -1; const hist = new Uint32Array(256); let cnt = 0;
     for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const i = y * tw + x; if (!elig[lab[i]]) continue; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; hist[Math.min(255, (lum[i] * 255) | 0)]++; cnt++; }
@@ -108,6 +108,24 @@ export function makeInkFactory(src, res, targetLong) {
     const k = gw0 / tw;
     return { w: W, h: H, rgba: out, gx: x0 * k, gy: y0 * k, gw: W * k, gh: H * k, opaque: spec.mode === 'bands' };
   };
+  if (opts.cache === false) return build;
+  // Result cache: the bitmap depends only on the spec (+ the source, the result and the face "kinds" this factory is bound to), so changing something the ink does not use
+  // (outline, lines, text, paper, misregistration, colours of other layers ...) reuses the finished bitmap instead of recomputing every pixel. Output is identical.
+  const cache = new Map(), LIMIT = opts.limit || 12, kid = new WeakMap(); let kn = 0;
+  const kindsId = (k) => { if (!k) return 0; if (!kid.has(k)) kid.set(k, ++kn); return kid.get(k); };
+  const fnv = (v) => { const u = new Uint8Array(v.buffer, v.byteOffset, v.byteLength); let h = 2166136261; for (let i = 0; i < u.length; i++) h = Math.imul(h ^ u[i], 16777619); return (h >>> 0).toString(36) + ':' + u.length; };
+  const keyOf = (spec) => JSON.stringify(spec, (_, v) => (ArrayBuffer.isView(v) ? 'ta:' + fnv(v) : v)) + '|k' + kindsId(res.kinds);
+  const drop = (e) => { if (e && e.bmp && e.bmp._cv) { e.bmp._cv.width = 0; e.bmp._cv = null; } };
+  const factory = (spec) => {
+    const key = keyOf(spec), hit = cache.get(key);
+    if (hit) { cache.delete(key); cache.set(key, hit); return hit.bmp; }
+    const bmp = build(spec); if (bmp) bmp._shared = true; // shared bitmaps are owned by the cache (releaseScene leaves them alone)
+    cache.set(key, { bmp }); if (cache.size > LIMIT) { const oldest = cache.keys().next().value; drop(cache.get(oldest)); cache.delete(oldest); }
+    return bmp;
+  };
+  factory.dispose = () => { for (const e of cache.values()) drop(e); cache.clear(); };
+  factory.size = () => cache.size;
+  return factory;
 }
 /** Deterministic paper-grain amount in [0,1] for a pixel (used by the canvas renderer). */
 export const paperNoise = (x, y) => hash(x, y, 3) * 0.6 + vnoise(x, y, 4, 9) * 0.4;

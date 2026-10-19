@@ -1,9 +1,11 @@
 // style-scene.js - turns pipeline output + style params into a renderer-neutral "scene" (layer list).
 // SVG, Canvas and PDF renderers all consume this same structure, so every output matches.
 import { htOptsFrom } from './halftone-types.js';
+import { rotOff } from './config.js';
 import { PRESETS, GROUP_KEYS, mapRegionsToPalette, allPresetColors, getPreset } from './style-palette.js';
-import { rgbToHex, hexToRgb } from './color-utils.js';
+import { rgbToHex, hexToRgb, hueRotateHex } from './color-utils.js';
 import { textLayers } from './style-text.js';
+import { frameOn, wrapFrame } from './style-frame.js';
 import { sgOptsFrom, ttOptsFrom, tonedRamp, neutralRamp } from './tone-photo.js';
 
 const hexColor = (v) => (/^#[0-9a-f]{6}$/i.test(v || '') ? v : null); // halftone / tone ink colour override ('' = follow the palette)
@@ -15,7 +17,10 @@ function groupBy(map) { const m = new Map(); for (const [r, fill] of map) { if (
  * inkFactory(spec) -> bitmap | null (hybrid raster layers; omitted when null).
  */
 export function buildScene(res, groups, p, inkFactory = null) {
-  const scene = buildBase(res, groups, p, inkFactory); addOverlays(scene, res, groups, p); return scene;
+  const base = buildBase(res, groups, p, inkFactory); addLines(base, res, groups, p); base.geom = res.geom;
+  const scene = frameOn(p) ? wrapFrame(base, res, p) : base; // a paper margin around the picture; text then lives on the whole canvas (it may sit in the margin)
+  for (const L of textLayers(p, scene.w, scene.h)) scene.layers.push(L);
+  scene.geom = res.geom; return scene;
 }
 
 /** Overlays shared by every mode: contour lines (region boundaries, optional offset copy) and vector text. */
@@ -25,7 +30,7 @@ export function addLines(scene, res, groups, p) {
     const ids = []; for (let r = 0; r < R; r++) if (p.lineScope === 'all' || (p.lineScope === 'fg' ? groups[r] === 2 : groups[r] >= 1)) ids.push(r);
     if (ids.length) {
       const lw = (p.lineWidth / 100) * 3 * sc, off = (p.lineOffset / 100) * 0.02 * Math.max(w, h);
-      if (off > 0.2) scene.layers.push({ kind: 'fills', name: 'lines-offset', offset: [off, off * 0.7], seal: 0, stroke: { w: lw, color: p.lineColor2 }, items: [{ fill: null, regions: ids }] });
+      if (off > 0.2) scene.layers.push({ kind: 'fills', name: 'lines-offset', offset: rotOff(off, off * 0.7, p.lightDir), seal: 0, stroke: { w: lw, color: p.lineColor2 }, items: [{ fill: null, regions: ids }] });
       scene.layers.push({ kind: 'fills', name: 'lines', offset: [0, 0], seal: 0, stroke: { w: lw, color: p.lineColor }, items: [{ fill: null, regions: ids }] });
     }
   }
@@ -64,7 +69,7 @@ export function buildBase(res, groups, p, inkFactory) {
   const stroke = p.outline > 0 ? { w: (p.outline / 100) * 3 * sc, color: p.outlineColor } : null;
   let tw = 0, tr = 0, tg = 0, tb = 0;
   for (let r = 0; r < R; r++) { tw += st.area[r]; tr += st.rgb[r * 3] * st.area[r]; tg += st.rgb[r * 3 + 1] * st.area[r]; tb += st.rgb[r * 3 + 2] * st.area[r]; }
-  const meanHex = rgbToHex(tr / tw, tg / tw, tb / tw);
+  const hs = +p.hueShift || 0, meanHex = hueRotateHex(rgbToHex(tr / tw, tg / tw, tb / tw), hs);
 
   if (p.mode === 'vector' || p.mode === 'regions') {
     scene.paper = meanHex;
@@ -77,7 +82,7 @@ export function buildBase(res, groups, p, inkFactory) {
       const reps = [...rep.values()].map((l) => l[0]);
       const m = mapRegionsToPalette(reps, st, pal, p.paletteMap);
       for (const l of rep.values()) for (const r of l) map.set(r, m.get(l[0]));
-    } else for (const r of all) map.set(r, hexOf(st, r));
+    } else for (const r of all) map.set(r, hueRotateHex(hexOf(st, r), hs));
     scene.layers.push({ kind: 'rect', fill: meanHex });
     scene.layers.push({ kind: 'fills', name: p.mode === 'vector' ? 'regions' : 'color-regions', offset: [0, 0], items: groupBy(map), seal, stroke });
     if (inkFactory) addOverlayInk(scene, res, groups, p, preset, all, inkFactory);
@@ -112,7 +117,7 @@ export function buildBase(res, groups, p, inkFactory) {
   const bgPaper = p.bgTreatment === 'paper';
   const blockItems = groupBy(new Map([...map].filter(([r]) => !(bgPaper && groups[r] === 0))));
   const off = (p.misreg / 100) * 0.012 * long;
-  if (tone !== 'twotone') scene.layers.push({ kind: 'fills', name: 'color-blocks', offset: [off, off * 0.7], items: blockItems, seal, stroke: null }); // two-tone has no flat colour blocks: just ink on paper
+  if (tone !== 'twotone') scene.layers.push({ kind: 'fills', name: 'color-blocks', offset: rotOff(off, off * 0.7, p.lightDir), items: blockItems, seal, stroke: null }); // two-tone has no flat colour blocks: just ink on paper
   if (inkFactory) {
     const flatThr = 0.12 * (1 - p.retention / 100);
     const htCol = hexColor(p.htColor); // ink colour override: key plate ink / darkest tone of the bands (whatever the tone and halftone settings)

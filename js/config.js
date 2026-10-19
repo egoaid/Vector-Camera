@@ -27,9 +27,10 @@ export const DEFAULT_PARAMS = {
   exportLong: 2048, wakeLock: true,
   lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
   text: 'Vector Camera', textLang: 'en', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
+  frame: 0, frameBottom: 30, frameBleed: 40, frameRub: 35, frameShift: 35, frameColor: '', frameSeed: 1, lightDir: 45, hueShift: 0, // paper margin around the picture (style-frame.js): width, extra bottom, ink bleed, edge wear, crookedness
   vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
   collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '', collageEdge: 'organic',
-  rndOpts: { mode: true, palette: true, shape: true, tone: true, halftone: true, texture: true, background: true, subject: true, lines: true, font: true, textOn: false, textFx: true, collage: true, aspect: true },
+  rndOpts: { mode: true, palette: true, shape: true, tone: true, halftone: true, texture: true, background: true, subject: true, lines: true, frame: true, link: false, font: true, textOn: false, textFx: true, collage: true, aspect: true },
   customPreset: null, rndStyle: 'off',
   // text slots 2 and 3 (keys get a _1 / _2 suffix); slot 1 uses the plain keys above
   text_1: '', textLang_1: 'en', textFont_1: 'marker', textSize_1: 11, textX_1: 50, textY_1: 22, textAngle_1: 0, textSpacing_1: 2, textColor_1: '#ffd23f', textShadow_1: 20, textShadowColor_1: '#17121c', textShow_1: false, textHalftone_1: 0, textHalftoneType_1: 'dot', textHalftoneSize_1: 5, textHalftoneAngle_1: 45, textHalftoneMode_1: 'down', textWear_1: 0, textDirt_1: 0, textSeed_1: 2,
@@ -41,7 +42,9 @@ export const TEXT_BASE = ['text', 'textLang', 'textFont', 'textSize', 'textX', '
 export const tkey = (k, i) => (i ? `${k}_${i}` : k);
 /** A view of slot `i` with the plain key names (what style-text / text-fx read). */
 export const slotView = (p, i) => { const o = {}; for (const k of TEXT_BASE) o[k] = p[tkey(k, i)]; for (const k of HT_KEYS) o[k] = p[k]; return o; };
-export const HT_KEYS = ['htWeight', 'htLayers', 'htSpread', 'htCurve', 'htSketch', 'htWave', 'htWaveLen', 'htGuilloche', 'htLen', 'htDepth', 'htContour'];
+/** Rotate an offset (dx,dy) from the classic light direction (45deg) to `lightDir` degrees. 45 returns the input untouched (old results stay identical). */
+export const rotOff = (dx, dy, dir) => { const d = ((dir ?? 45) - 45) * Math.PI / 180; if (!d) return [dx, dy]; const c = Math.cos(d), s = Math.sin(d); return [dx * c - dy * s, dx * s + dy * c]; };
+export const HT_KEYS = ['lightDir', 'htWeight', 'htLayers', 'htSpread', 'htCurve', 'htSketch', 'htWave', 'htWaveLen', 'htGuilloche', 'htLen', 'htDepth', 'htContour'];
 export const MODE_DEFAULTS = {
   vector: { detail: 62, paletteK: 0, simplify: 30, angularity: 20, outline: 0 },
   silhouette: { detail: 24, paletteK: 0, simplify: 45, angularity: 35, subjectSize: 30 },
