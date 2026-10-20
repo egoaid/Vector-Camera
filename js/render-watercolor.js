@@ -1,17 +1,17 @@
 // render-watercolor.js - the "watercolour" mode: the photo painted with a brush, translucent patches layered on real paper.
 // Steps (all typed-array code, no DOM; paint is kept as optical density, see wc-strokes.js):
 //  1 pigment     photo colours as density, with more chroma (watercolour pigments are cleaner than the real world) but not more density
-//  2 gaps        bare paper just inside the boundary of some colour faces, only in places (wc-field.js)
-//  3 under-wash  a thin, broken first wash: flat colour of each face mixed with a little of the blurred photo
-//  4 strokes     brush patches, broad to small, layered; the amount of layering and the brush size are settings (wc-strokes.js)
-//  5 lightness   transparency: the whole painting is lifted toward the paper
-//  6 wet bleed   in a few wet places colours run into each other
-//  7 granulation pigment settles into the fine tooth of the paper; mottling = small uneven density and small "blooms" (backruns)
+//  2 reserve     unpainted paper: irregular patches between brush marks, anywhere (not tied to brightness), more next to boundaries (wc-field.js)
+//  3 strokes     brush patches, broad wash to small, layered, each in one of two pigments that mix to the photo colour (wc-strokes.js)
+//  4 lightness   transparency: the whole painting is lifted toward the paper
+//  5 wet bleed   in a few wet places colours run into each other
+//  6 granulation pigment settles into the fine tooth of the paper; mottling = small uneven density and small "blooms" (backruns)
 // The result is multiplied by the paper colour. Returns RGBA bytes (opaque).
 import { boxBlur, hash, vnoise } from './tone-photo.js';
 import { hexToRgb, mulberry32, hueMatrix } from './color-utils.js';
-import { orientationField, boundaryDistance, regionContrast, gapField, refineLabels, modeFilter } from './wc-field.js';
+import { orientationField, boundaryDistance, regionContrast, reserveField, refineLabels, modeFilter } from './wc-field.js';
 import { paintStrokes, noiseTile } from './wc-strokes.js';
+import { strokeCollector, vectorItems } from './wc-vector.js';
 
 export const PAPERS = {
   hot: { color: '#fbf8f1', grain: 0.35, amount: 0.12 },   // smooth hot-pressed: fine tooth, little granulation
@@ -29,11 +29,11 @@ function paperHeight(id, x, y, k, seed) {
 }
 const dens = (v) => -Math.log(Math.max(10, Math.min(255, v)) / 255);
 
-/** img {w,h,data RGBA}, lab Int32Array(w*h) region ids, stats {rgb} (0..255 per region), spec {bleed,edge,gran,light,hl,bloom,brush,layer 0..100, paper id, seed}. */
-export function watercolorBitmap(img, lab0, stats, spec) {
+/** Everything up to the finished density map (shared by the raster picture and the vector export). */
+function core(img, lab0, stats, spec, onStroke) {
   const tw = img.w, th = img.h, N = tw * th, data = img.data, long = Math.max(tw, th), k = Math.max(1, long / 1000), seed = (spec.seed | 0) + 13;
-  const f01 = (v, d) => Math.max(0, Math.min(100, v ?? d)) / 100, bleed = f01(spec.bleed, 45), edge = f01(spec.edge, 50), gran = f01(spec.gran, 50), light = f01(spec.light, 30), hl = f01(spec.hl, 40), bloom = f01(spec.bloom, 35), brush = f01(spec.brush, 50), layer = f01(spec.layer, 50);
-  const pid = PAPERS[spec.paper] ? spec.paper : 'cold', paper = PAPERS[pid], pc = hexToRgb(paper.color), rgb = stats.rgb, rnd = mulberry32((seed * 2654435761) >>> 0);
+  const f01 = (v, d) => Math.max(0, Math.min(100, v ?? d)) / 100, bleed = f01(spec.bleed, 45), edge = f01(spec.edge, 50), gran = f01(spec.gran, 50), light = f01(spec.light, 30), hl = f01(spec.hl, 40), bloom = f01(spec.bloom, 35), brush = f01(spec.brush, 50), layer = f01(spec.layer, 50), mix = f01(spec.mix, 35);
+  const pid = PAPERS[spec.paper] ? spec.paper : 'cold', paper = PAPERS[pid], rgb = stats.rgb, rnd = mulberry32((seed * 2654435761) >>> 0);
   const blur = (A, r) => boxBlur(A, tw, th, Math.max(1, r)), mk = () => [new Float32Array(N), new Float32Array(N), new Float32Array(N)];
   const pr = mk(); for (let i = 0, j = 0; i < N; i++, j += 4) { pr[0][i] = data[j]; pr[1][i] = data[j + 1]; pr[2][i] = data[j + 2]; }
   const rs = Math.max(1, Math.round(0.003 * long)), ps = pr.map((A) => blur(A, rs)), field = orientationField(pr, tw, th);
@@ -42,28 +42,32 @@ export function watercolorBitmap(img, lab0, stats, spec) {
   // 1 pigment density of the photo (chroma stretched, darkness kept)
   const Dp = mk(), sat = (a, b, c, o, i) => { const m = (a + b + c) / 3; o[0][i] = Math.max(0, m + (a - m) * SAT); o[1][i] = Math.max(0, m + (b - m) * SAT); o[2][i] = Math.max(0, m + (c - m) * SAT); };
   for (let i = 0; i < N; i++) sat(dens(ps[0][i]), dens(ps[1][i]), dens(ps[2][i]), Dp, i);
-  // 2 gaps of bare paper next to the boundaries of colour faces
-  const dist = boundaryDistance(lab, tw, th, 0.08 * long), open = hl > 0 ? gapField(lab, dist, regionContrast(lab, tw, th, rgb), tw, th, k, hl, seed + 30, rnd) : null;
-  // 3 under-wash: thin and broken
-  const D = mk(), pb = pr.map((A) => blur(A, Math.max(2, Math.round(0.008 * tw)))), tmp = mk();
-  for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
-    const i = y * tw + x, l = lab[i]; sat(dens(rgb[l * 3] * 0.55 + pb[0][i] * 0.45), dens(rgb[l * 3 + 1] * 0.55 + pb[1][i] * 0.45), dens(rgb[l * 3 + 2] * 0.55 + pb[2][i] * 0.45), tmp, i);
-    const w = 0.3 * (0.55 + 0.45 * smooth(0.25, 0.75, vnoise(x, y, 0.05 * long, seed + 40))) * (open ? open[i] : 1);
-    D[0][i] = tmp[0][i] * w; D[1][i] = tmp[1][i] * w; D[2][i] = tmp[2][i] * w;
-  }
-  tmp.length = 0; pb.length = 0;
-  // 4 strokes
-  paintStrokes({ tw, th, long, k, lab, ps, Dp, field, open, D, rnd, tile: noiseTile(seed + 50), seed: seed + 60, hand: -0.95 + (rnd() - 0.5) * 0.6 }, { brush, layer, edge, bleed, hl });
-  // keep the overall density where the photo has it (more overlap must not mean a darker picture), then 5 lightness
+  // 2 unpainted paper
+  const tile = noiseTile(seed + 50), hand = -0.95 + (rnd() - 0.5) * 0.6, dist = boundaryDistance(lab, tw, th, 0.08 * long), open = hl > 0 ? reserveField(lab, ps, dist, regionContrast(lab, tw, th, rgb), field, tw, th, k, hl, brush, seed + 30, hand, rnd, tile) : null;
+  // 3 strokes
+  const D = mk(), count = paintStrokes({ tw, th, long, k, lab, ps, Dp, field, open, D, rnd, tile, seed: seed + 60, hand }, { brush, layer, edge, bleed, hl, mix, onStroke });
+  // keep the overall density where the photo has it (more overlap must not mean a darker picture), then 4 lightness
   let sd = 0, sp = 0; for (let i = 0; i < N; i++) { if (open && open[i] < 0.99) continue; sd += D[0][i] + D[1][i] + D[2][i]; sp += Dp[0][i] + Dp[1][i] + Dp[2][i]; }
   const gain = Math.max(0.55, Math.min(1.7, sp / (sd || 1))) * (1 - 0.55 * light) * 0.9;
+  return { tw, th, N, long, k, seed, rnd, bleed, edge, gran, bloom, pid, paper, D, open, gain, count, blur };
+}
+
+/** img {w,h,data RGBA}, lab Int32Array(w*h) region ids, stats {rgb} (0..255 per region), spec {bleed,edge,gran,light,hl,bloom,brush,layer,mix 0..100, paper id, seed}. */
+export function watercolorBitmap(img, lab0, stats, spec) {
+  const C = core(img, lab0, stats, spec), { tw, th, N, long, k, seed, rnd, bleed, edge, gran, bloom, pid, paper, D, open, gain, blur } = C, pc = hexToRgb(paper.color);
   for (let c = 0; c < 3; c++) for (let i = 0; i < N; i++) D[c][i] *= gain;
-  // 6 wet bleed in a few places
+  // pigment pools around the bare paper (the edge of a wash that stopped)
+  if (open && edge > 0) {
+    const R = new Float32Array(N); for (let i = 0; i < N; i++) R[i] = 1 - open[i];
+    const rb = Math.max(1, Math.round(0.0035 * long)), Rb = blur(blur(R, rb), rb);
+    for (let i = 0; i < N; i++) { const ring = Math.max(0, Math.min(1, (Rb[i] - R[i]) * 3.2)); if (ring > 0.01) { const f = 1 + 1.6 * edge * ring; D[0][i] *= f; D[1][i] *= f; D[2][i] *= f; } }
+  }
+  // 5 wet bleed in a few places
   if (bleed > 0) {
     const rb = Math.max(1, Math.round((0.0015 + 0.01 * bleed) * long)), bl = D.map((A) => blur(blur(A, rb), rb));
     for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const i = y * tw + x, w = (0.12 + 0.88 * smooth(0.3, 0.7, vnoise(x, y, 0.1 * long, seed + 70))) * bleed * 0.7; for (let c = 0; c < 3; c++) D[c][i] += (bl[c][i] - D[c][i]) * w; }
   }
-  // 7 granulation (fine) + mottling (small)
+  // 6 granulation (fine) + mottling (small)
   const gc = paper.grain * gran * 1.1;
   for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
     const i = y * tw + x, Hp = paperHeight(pid, x, y, k, seed + 20), dm = Math.min(1, (D[0][i] + D[1][i] + D[2][i]) / 3), f = 1 + gc * (0.5 - Hp) * 2 * (0.2 + dm);
@@ -87,4 +91,10 @@ export function watercolorBitmap(img, lab0, stats, spec) {
     out[j] = r * pc[0] / 255; out[j + 1] = g * pc[1] / 255; out[j + 2] = b * pc[2] / 255; out[j + 3] = 255;
   }
   return out;
+}
+
+/** The same painting as vector shapes: [{rings:[flat xy,...], fill, rim?, rimW?}] in pixel units of img, to be blended by multiply over the paper. */
+export function watercolorVector(img, lab0, stats, spec) {
+  const col = strokeCollector(Math.max(1, Math.max(img.w, img.h) / 1000)), C = core(img, lab0, stats, spec, (s) => col.onStroke(s));
+  return { w: img.w, h: img.h, items: vectorItems(col.recs, C.gain, spec.hue || 0, C.k), strokes: col.recs.length };
 }

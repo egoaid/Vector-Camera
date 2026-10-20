@@ -1,6 +1,6 @@
 /* service-worker.js - app-shell cache (same-origin only). */
-const VERSION = '0.14.0-beta.2';
-const BUILD = '20261020.4';
+const VERSION = '0.14.0-beta.3';
+const BUILD = '20261021.1';
 const CACHE = `vector-camera-${VERSION}-${BUILD}`;
 const SHELL = [
   './', 'index.html', 'manifest.json',
@@ -11,7 +11,7 @@ const SHELL = [
   'js/ui-views.js', 'js/ui-controls.js', 'js/ui-compare.js', 'js/ui-export.js', 'js/ui-about.js', 'js/ui-toast.js',
   'js/color-utils.js', 'js/seg-slic.js', 'js/seg-edges.js', 'js/seg-merge.js', 'js/seg-stats.js', 'js/seg-semantic.js', 'js/seg-saliency.js',
   'js/vec-chains.js', 'js/vec-smooth.js', 'js/vec-curves.js', 'js/vec-geometry.js', 'js/style-palette.js', 'js/style-scene.js',
-  'js/render-svg.js', 'js/render-canvas.js', 'js/render-ink.js', 'js/wc-field.js', 'js/wc-strokes.js', 'js/render-pdf.js', 'js/render-png.js', 'js/util-deflate.js', 'js/export-files.js',
+  'js/render-svg.js', 'js/render-canvas.js', 'js/render-ink.js', 'js/wc-field.js', 'js/wc-strokes.js', 'js/wc-vector.js', 'js/render-pdf.js', 'js/render-png.js', 'js/util-deflate.js', 'js/export-files.js',
   'js/pipeline-core.js', 'js/pipeline-worker.js', 'js/pipeline-client.js',
   'js/i18n-ja-v2.js', 'js/i18n-en-v2.js', 'js/tone-photo.js', 'js/style-space.js', 'js/style-colors.js', 'js/face-engines.js', 'js/face-engine-modern.js', 'js/face-frame-modern.js', 'engine/modern-frame.html', 'js/ui-faces.js', 'css/faces.css', 'js/ui-tone.js', 'js/i18n-ja-v4.js', 'js/i18n-en-v4.js', 'js/font-ttf.js', 'js/style-text.js', 'js/style-collage.js', 'js/style-random.js', 'js/ui-extras.js', 'js/vec-ink.js', 'js/render-strips.js', 'js/text-fx.js', 'js/ui-camera.js', 'js/i18n-styles.js', 'js/style-presets.js', 'js/style-tendency.js', 'js/ui-styles.js', 'js/face-landmarks.js', 'js/scene-kinds.js', 'js/ui-zoom.js', 'js/ui-stage.js', 'js/ui-sheet.js', 'js/ui-layout.js', 'js/etching.js', 'js/i18n-manual-ja.js', 'js/i18n-manual-en.js', 'js/ui-textbox.js', 'js/halftone-types.js', 'js/ui-hub.js', 'js/i18n-ja-v3.js', 'js/i18n-en-v3.js', 'js/i18n-ja-v5.js', 'js/i18n-en-v5.js', 'js/render-watercolor.js', 'js/ui-inkfx.js', 'js/ink-dirt.js', 'js/style-frame.js', 'js/style-macro.js', 'js/frame-edge.js', 'js/ui-frame.js',
 ];  // fonts/*.ttf are fetched on demand and cached at runtime

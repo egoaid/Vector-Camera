@@ -104,8 +104,9 @@ export function buildBase(res, groups, p, inkFactory) {
   if (p.mode === 'watercolor') { // photo painted as watercolour washes on the chosen paper (raster, see render-watercolor.js); without an ink factory (first quick preview) flat region colours stand in
     const wp = PAPERS[p.wcPaper] || PAPERS.cold; scene.paper = wp.color; scene.paperAmount = wp.amount;
     scene.layers.push({ kind: 'rect', fill: wp.color });
-    const bmp = inkFactory ? inkFactory({ mode: 'wc', regions: all, bleed: p.wcBleed, edge: p.wcEdge, gran: p.wcGran, light: p.wcLight, hl: p.wcHl, bloom: p.wcBloom, brush: p.wcBrush, layer: p.wcLayer, paper: p.wcPaper, seed: p.wcSeed, hue: +p.hueShift || 0 }) : null;
-    if (bmp) scene.layers.push({ kind: 'ink', name: 'watercolor', noClip: true, regions: [], bitmap: bmp, blend: 'normal', spec: { mode: 'raw' } });
+    const bmp = inkFactory ? inkFactory({ mode: 'wc', regions: all, bleed: p.wcBleed, edge: p.wcEdge, gran: p.wcGran, light: p.wcLight, hl: p.wcHl, bloom: p.wcBloom, brush: p.wcBrush, layer: p.wcLayer, mix: p.wcMix, paper: p.wcPaper, seed: p.wcSeed, hue: +p.hueShift || 0, vector: !!p.wcVector }) : null;
+    if (bmp && bmp.vector) { const k = bmp.gw / bmp.w; for (const it of bmp.items) { for (const r of it.rings) for (let i = 0; i < r.length; i += 2) { r[i] = r[i] * k + bmp.gx; r[i + 1] = r[i + 1] * k + bmp.gy; } if (it.rimW) it.rimW *= k; } scene.layers.push({ kind: 'polys', name: 'watercolor', items: bmp.items, blend: 'multiply' }); }
+    else if (bmp) scene.layers.push({ kind: 'ink', name: 'watercolor', noClip: true, regions: [], bitmap: bmp, blend: 'normal', spec: { mode: 'raw' } });
     else { const map = new Map(); for (const r of all) map.set(r, hueRotateHex(hexOf(st, r), hs)); scene.layers.push({ kind: 'fills', name: 'regions', offset: [0, 0], items: groupBy(map), seal, stroke }); }
     return scene;
   }

@@ -1,5 +1,5 @@
 // render-canvas.js - draws a scene to a 2D canvas (preview, PNG / JPEG export, poster strips).
-// Scene layers (see ARCHITECTURE.md "Scene model"): rect | fills | ink | group. Every layer may carry its own `geom`
+// Scene layers (see ARCHITECTURE.md "Scene model"): rect | fills | polys | ink | group. Every layer may carry its own `geom`
 // (otherwise the parent's is used). Vector paths are Path2D objects built once in scene units and drawn through the
 // canvas transform, so the same cached path serves the preview, the PNG export and every poster strip.
 import { groupPathD } from './vec-geometry.js';
@@ -34,6 +34,10 @@ function drawLayers(ctx, layers, geom) {
         if (L.stroke) { ctx.strokeStyle = L.stroke.color; ctx.lineWidth = L.stroke.w; ctx.stroke(p2); }
         else if (L.seal && it.fill) { ctx.strokeStyle = it.fill; ctx.lineWidth = L.seal; ctx.stroke(p2); }
       }
+      ctx.restore();
+    } else if (L.kind === 'polys') {
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.lineJoin = 'round';
+      for (const it of L.items) { const p2 = it._p2 || (it._p2 = (() => { const q = new Path2D(); for (const r of it.rings) q.addPath(polyPath(r)); return q; })()); ctx.fillStyle = it.fill; ctx.fill(p2, 'evenodd'); if (it.rim) { ctx.strokeStyle = it.rim; ctx.lineWidth = it.rimW; ctx.stroke(p2); } }
       ctx.restore();
     } else if (L.kind === 'ink') {
       const b = L.bitmap; ctx.save(); if (!L.noClip) ctx.clip(L._p2 || (L._p2 = new Path2D(groupPathD(g, L.regions, { prec: 3 }))), 'evenodd');

@@ -43,6 +43,24 @@ export function inkToLabels(b, spec, speck = 2) {
   despeckle(lab, b.w, b.h, speck);
   return { labels: lab, R: L + 1, colors: [...pal.map((c) => rgbToHex(c[0], c[1], c[2])), null] };
 }
+/**
+ * Free-colour ink bitmaps (spatter, stains: spec.mode 'raw') -> a few flat colours. The most common colours (4 bits per channel) become the palette,
+ * pixels go to the nearest one, transparent pixels to "nothing". Soft (translucent) paint is flattened: each colour is mixed toward white by its mean
+ * opacity and the layer is multiplied, so a pale stain stays pale.
+ */
+export function rawToLabels(b, nCol = 6, speck = 2) {
+  const n = b.w * b.h, lab = new Int32Array(n), hist = new Map(), d = b.rgba;
+  for (let i = 0; i < n; i++) if (d[i * 4 + 3] >= 40) { const k = ((d[i * 4] >> 4) << 8) | ((d[i * 4 + 1] >> 4) << 4) | (d[i * 4 + 2] >> 4); hist.set(k, (hist.get(k) || 0) + 1); }
+  const pal = [...hist].sort((a, c) => c[1] - a[1]).slice(0, nCol).map(([k]) => [((k >> 8) << 4) | 8, (((k >> 4) & 15) << 4) | 8, ((k & 15) << 4) | 8]), L = Math.max(1, pal.length), as = new Float64Array(L), ac = new Float64Array(L);
+  for (let i = 0; i < n; i++) {
+    const a = d[i * 4 + 3]; if (a < 40 || !pal.length) { lab[i] = L; continue; }
+    let best = 0, bd = Infinity; for (let j = 0; j < pal.length; j++) { const e = (d[i * 4] - pal[j][0]) ** 2 + (d[i * 4 + 1] - pal[j][1]) ** 2 + (d[i * 4 + 2] - pal[j][2]) ** 2; if (e < bd) { bd = e; best = j; } }
+    lab[i] = best; as[best] += a; ac[best]++;
+  }
+  despeckle(lab, b.w, b.h, speck);
+  const colors = pal.map((c, j) => { const m = ac[j] ? as[j] / ac[j] / 255 : 1; return rgbToHex(255 + (c[0] - 255) * m, 255 + (c[1] - 255) * m, 255 + (c[2] - 255) * m); });
+  return { labels: lab, R: L + 1, colors: [...colors, ...(pal.length ? [] : [null]), null].slice(0, L + 1) };
+}
 /** Scale chain coordinates in place: x*k+ox, y*k+oy. */
 export function scaleGeom(geom, k, ox, oy) {
   for (const c of geom.chains) { const p = c.pts; for (let i = 0; i < p.length; i += 2) { p[i] = p[i] * k + ox; p[i + 1] = p[i + 1] * k + oy; } }
@@ -61,13 +79,13 @@ export function vectorLayer(L, geom, info) {
  * Replace every ink layer of a scene (recursing into groups) with traced vector layers.
  * tracer(labels,w,h,R) -> Promise<geom>; onProgress(done,total).
  */
-export async function vectorizeScene(scene, tracer, { speck = 2, onProgress = () => {} } = {}) {
-  const jobs = []; const walk = (layers) => { for (const L of layers) { if (L.kind === 'ink' && !(L.spec && L.spec.mode === 'raw')) jobs.push(L); if (L.layers) walk(L.layers); } }; walk(scene.layers);
+export async function vectorizeScene(scene, tracer, { speck = 2, onProgress = () => {}, raw = false } = {}) {
+  const jobs = []; const walk = (layers) => { for (const L of layers) { if (L.kind === 'ink' && (raw || !(L.spec && L.spec.mode === 'raw'))) jobs.push(L); if (L.layers) walk(L.layers); } }; walk(scene.layers);
   let done = 0; onProgress(0, jobs.length);
   const repl = new Map();
   for (const L of jobs) {
-    const b = L.bitmap, info = inkToLabels(b, L.spec, speck), geom = await tracer(info.labels, b.w, b.h, info.R);
-    repl.set(L, vectorLayer(L, geom, info)); onProgress(++done, jobs.length);
+    const b = L.bitmap, isRaw = L.spec && L.spec.mode === 'raw', info = isRaw ? rawToLabels(b, 6, speck) : inkToLabels(b, L.spec, speck), geom = await tracer(info.labels, b.w, b.h, info.R), vl = vectorLayer(L, geom, info); if (isRaw) vl.blend = 'multiply';
+    repl.set(L, vl); onProgress(++done, jobs.length);
   }
   const apply = (layers) => layers.map((L) => (repl.has(L) ? repl.get(L) : L.layers ? { ...L, layers: apply(L.layers) } : L));
   scene.layers = apply(scene.layers); return jobs.length;

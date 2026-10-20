@@ -11,7 +11,7 @@ const ALL = MODES;
 const MAIN = [
   { k: 'detail', modes: ALL, g: 'shape' }, { k: 'simplify', modes: ALL, g: 'shape' }, { k: 'angularity', modes: ALL, g: 'shape' }, { k: 'curveFit', modes: ALL, g: 'shape' }, { k: 'regionSmooth', modes: ALL, g: 'shape' },
   { k: 'paletteK', modes: ['regions'], min: 2, max: 24, g: 'shape' }, { k: 'subjectSize', modes: ['silhouette', 'hybrid'], min: 5, max: 70, g: 'subject' },
-  ...['wcBrush', 'wcLayer', 'wcBleed', 'wcEdge', 'wcGran', 'wcLight', 'wcHl', 'wcBloom'].map((k) => ({ k, modes: ['watercolor'], g: 'wc' })),
+  ...['wcBrush', 'wcLayer', 'wcMix', 'wcBleed', 'wcEdge', 'wcGran', 'wcLight', 'wcHl', 'wcBloom'].map((k) => ({ k, modes: ['watercolor'], g: 'wc' })),
   { k: 'separation', modes: INK_MODES, min: 2, max: 6, g: 'tone', when: needsInk }, { k: 'retention', modes: INK_MODES, g: 'tone', when: needsInk }, { k: 'grain', modes: INK_MODES, g: 'tone', when: needsInk }, { k: 'misreg', modes: ['hybrid'], g: 'tone' },
 ];
 const GROUP_ORDER = ['shape', 'subject', 'wc', 'tone'], openGroups = new Set(['shape']);

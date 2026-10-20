@@ -71,6 +71,11 @@ export async function sceneToPDF(scene, geom, opts = {}) {
           else if (it.fill) { ops.push(`${col(it.fill)} rg`, path); if (L.seal) { ops.push(`${col(it.fill)} RG ${num(L.seal)} w`, nz ? 'B' : 'B*'); } else ops.push(nz ? 'f' : 'f*'); }
         }
         ops.push('Q');
+      } else if (L.kind === 'polys') {
+        if (!gs.has('M')) gs.set('M', '/GSm <</Type/ExtGState/BM/Multiply>>');
+        ops.push('q', '/GSm gs', '1 j 1 J');
+        for (const it of L.items) { const path = it.rings.map(poly).join('\n'); ops.push(`${col(it.fill)} rg`, path, 'f*'); if (it.rim) ops.push(`${col(it.rim)} RG ${num(it.rimW)} w`, path, 'S'); }
+        ops.push('Q');
       } else if (L.kind === 'ink') {
         const b = L.bitmap, name = `Im${++imN}`, n = b.w * b.h, rgb = new Uint8Array(n * 3), al = new Uint8Array(n); let opaque = true;
         for (let i = 0; i < n; i++) { rgb[i * 3] = b.rgba[i * 4]; rgb[i * 3 + 1] = b.rgba[i * 4 + 1]; rgb[i * 3 + 2] = b.rgba[i * 4 + 2]; al[i] = b.rgba[i * 4 + 3]; if (al[i] !== 255) opaque = false; }

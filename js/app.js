@@ -245,17 +245,18 @@ async function getExportScene(kind) {
   const lite = /-lite$/.test(kind); if (lite) kind = kind.replace('-lite', '');
   const poster = kind === 'poster', vec = poster || (state.params.vecInk && (kind === 'svg' || kind === 'pdf'));
   await ensureFonts(state.params);
-  const want = vec ? (poster ? Math.max(state.params.vecInkLong, 1400) : state.params.vecInkLong) : (kind === 'svg' || kind === 'pdf' ? LIMITS.hybridRasterMax : lite ? LIMITS.liteLong : state.params.exportLong);
+  const want = vec ? (poster ? Math.max(state.params.vecInkLong, 1400) : state.params.vecInkLong) : state.params.mode === 'watercolor' && (kind === 'svg' || kind === 'pdf') ? state.params.vecInkLong : (kind === 'svg' || kind === 'pdf' ? LIMITS.hybridRasterMax : lite ? LIMITS.liteLong : state.params.exportLong);
+  const wcVec = state.params.mode === 'watercolor' && (kind === 'svg' || kind === 'pdf'); // watercolour is exported as real vector strokes
   let scene, geom = null;
-  if (state.collage) { scene = buildCollageScene(collageCells(() => want), { ...state.params, fxLong: want }, { inkLong: want }); }
+  if (state.collage) { scene = buildCollageScene(collageCells(() => want), { ...state.params, fxLong: want, wcVector: wcVec }, { inkLong: want }); }
   else {
     const r = state.result; computeGroups(); let f = null;
     if (needsInk(state.params)) { const srcLong = Math.max(state.source.w, state.source.h); f = makeInkFactory(state.source, r, Math.min(want, srcLong), { cache: false }); }
-    scene = buildScene(r, state.groups, { ...state.params, fxLong: want }, f); geom = r.geom;
+    scene = buildScene(r, state.groups, { ...state.params, fxLong: want, wcVector: wcVec }, f); geom = r.geom;
   }
-  if (vec && sceneHasRaster(scene)) {
+  if ((vec || wcVec) && sceneHasRaster(scene)) { // watercolour export: the spatter and margin textures are traced too, so nothing is left as a picture
     cancelled = false; showProcessing('proc.vectorink', 0.02, { n: 0, m: 1 });
-    try { await vectorizeScene(scene, (lab, w, h, R) => client.trace(lab, w, h, R, TRACE_SHAPE), { speck: state.params.vecInkSpeck, onProgress: (d, n) => showProcessing('proc.vectorink', 0.05 + 0.9 * (d / n), { n: Math.min(d + 1, n), m: n }) }); }
+    try { await vectorizeScene(scene, (lab, w, h, R) => client.trace(lab, w, h, R, TRACE_SHAPE), { speck: state.params.vecInkSpeck, raw: wcVec, onProgress: (d, n) => showProcessing('proc.vectorink', 0.05 + 0.9 * (d / n), { n: Math.min(d + 1, n), m: n }) }); }
     finally { hideProcessing(); }
   }
   return { scene, geom };
