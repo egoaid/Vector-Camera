@@ -7,7 +7,7 @@ import { getPreset, allPresetColors } from './style-palette.js';
 import { frameEdgeLayers } from './frame-edge.js';
 import { polyGeom } from './style-collage.js';
 
-export const FRAME_KEYS = ['frame', 'framePlate', 'framePlateN', 'frameRub', 'frameShift', 'frameColor', 'frameSeed'];
+export const FRAME_KEYS = ['frame', 'framePlate', 'framePlateN', 'frameRub', 'frameSplat', 'frameStain', 'frameShift', 'frameColor', 'frameSeed'];
 const hexOk = (v) => /^#[0-9a-f]{6}$/i.test(v || '');
 export const frameOn = (p) => (p.frame | 0) > 0;
 
@@ -61,10 +61,12 @@ export function wrapFrame(inner, res, p) {
   const fr = frameGeometry(p, inner.w, inner.h), preset = getPreset(p), paper = marginColor(p);
   const group = { kind: 'group', name: 'picture', tf: fr.tf, clipPoly: fr.poly, w: inner.w, h: inner.h, paper: inner.paper, layers: inner.layers, geom: inner.geom || res.geom };
   const long = Math.max(inner.w, inner.h), scale = (p.fxLong || 1000) / long, layers = [];
+  let plateInfo = [];
   if ((p.framePlate || 0) > 0) { // colour plates under the picture: only the part that sticks out past the picture edge is visible
     const polys = platePolys(p, fr), cols = plateColors(preset, mulberry32((((p.frameSeed | 0) + 733) * 3266489917) >>> 0), polys.length);
+    plateInfo = polys.map((poly, i) => ({ poly, color: cols[i] }));
     layers.push({ kind: 'fills', name: 'frame-plates', geom: polyGeom(polys, fr.W, fr.H), offset: [0, 0], rule: 'nonzero', blend: 'multiply', seal: 0, stroke: null, items: polys.map((_, i) => ({ fill: cols[i], regions: [i] })) });
   }
-  layers.push(group, ...frameEdgeLayers({ poly: fr.poly, longUnits: long, scale, rub: p.frameRub || 0, seed: p.frameSeed, paper }));
+  layers.push(group, ...frameEdgeLayers({ poly: fr.poly, plates: plateInfo, longUnits: long, scale, rub: p.frameRub || 0, splat: p.frameSplat || 0, stain: p.frameStain || 0, seed: p.frameSeed, paper, ink: preset.ink }));
   return { w: fr.W, h: fr.H, paper, paperAmount: inner.paperAmount, layers, mode: inner.mode, preset: inner.preset, geom: inner.geom || res.geom, frame: fr };
 }

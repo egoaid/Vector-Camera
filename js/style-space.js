@@ -86,7 +86,7 @@ export const SPACE = [
   C('outline', 'lines', (r, n, x) => (n.mode === 'hybrid' ? {} : outlinePatch(r, n, x)), { when: (n) => n.mode !== 'hybrid' }),   // also outlineColor
 ];
 /** Keys the generator fills as a side effect of a custom entry (so the coverage test knows them). */
-export const SIDE_KEYS = ['linkDepth', 'linkCross', 'linkMatrix', 'framePlate', 'framePlateN', 'frameRub', 'frameShift', 'frameSeed', 'frameColor', 'customPreset', 'silColors', 'silSample', 'halftoneType', 'lineScope', 'lineOffset', 'lineColor', 'lineColor2', 'outlineColor'];
+export const SIDE_KEYS = ['linkDepth', 'linkCross', 'linkMatrix', 'framePlate', 'framePlateN', 'frameRub', 'frameSplat', 'frameStain', 'frameShift', 'frameSeed', 'frameColor', 'customPreset', 'silColors', 'silSample', 'halftoneType', 'lineScope', 'lineOffset', 'lineColor', 'lineColor2', 'outlineColor'];
 /** Look parameters random generation deliberately never draws, with the reason. */
 export const EXCLUDED = { background: 'reserved (always "auto")', semStrength: 'only meaningful with the AI engine, which is a device capability', htLayers_etching: 'fixed by the etching renderer' };
 
@@ -122,7 +122,7 @@ function framePatch(r0, n, x) {
   const r = x.rf; if (r() >= (x.bias.frame ?? 0.3)) return { frame: 0 };
   const hand = Math.max(0, Math.min(1, (((n.grain ?? 25) + (n.roughness ?? 20) + (n.misreg ?? 25)) / 3) / 60)); // 0 clean machine print .. 1 rough hand-pulled print
   const j = (base, spread) => Math.max(0, Math.min(100, Math.round(base + (r() * 2 - 1) * spread)));
-  const fw = x.bias.win && x.bias.win.frame; return { frame: range(r, fw ? fw[0] : 14, fw ? fw[1] : 55), framePlate: j(25 + 55 * hand, 25), framePlateN: 1 + Math.floor(r() * 3), frameRub: j(10 + 60 * hand, 20), frameShift: j(5 + 30 * hand, 15), frameSeed: range(r, 1, 99999), frameColor: '' };
+  const fw = x.bias.win && x.bias.win.frame; return { frame: range(r, fw ? fw[0] : 14, fw ? fw[1] : 55), framePlate: j(25 + 55 * hand, 25), framePlateN: 1 + Math.floor(r() * 3), frameRub: j(10 + 60 * hand, 20), frameSplat: r() < 0.55 ? j(15 + 50 * hand, 20) : 0, frameStain: r() < 0.55 ? j(15 + 50 * hand, 20) : 0, frameShift: j(5 + 30 * hand, 15), frameSeed: range(r, 1, 99999), frameColor: '' };
 }
 function outlinePatch(r, n, x) {
   const p = palOf(n), on = r() < (x.bias.outline ?? 0.3);

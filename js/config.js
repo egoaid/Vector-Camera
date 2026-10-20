@@ -27,7 +27,7 @@ export const DEFAULT_PARAMS = {
   exportLong: 2048, wakeLock: true,
   lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
   text: 'Vector Camera', textLang: 'en', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
-  frame: 0, framePlate: 55, framePlateN: 2, frameRub: 35, frameShift: 15, frameColor: '', frameSeed: 1, lightDir: 45, linkDepth: 60, linkCross: 35, linkMatrix: '', hueShift: 0, // paper margin around the picture (style-frame.js): width, extra bottom, ink bleed, edge wear, crookedness
+  frame: 0, framePlate: 55, framePlateN: 2, frameRub: 35, frameSplat: 30, frameStain: 30, frameShift: 15, frameColor: '', frameSeed: 1, lightDir: 45, linkDepth: 60, linkCross: 35, linkMatrix: '', hueShift: 0, // paper margin around the picture (style-frame.js): width, extra bottom, ink bleed, edge wear, crookedness
   vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
   collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '', collageEdge: 'organic',
   rndOpts: { mode: true, palette: true, shape: true, tone: true, halftone: true, texture: true, background: true, subject: true, lines: true, frame: true, link: false, font: true, textOn: false, textFx: true, collage: true, aspect: true },
