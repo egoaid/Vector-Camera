@@ -82,6 +82,11 @@ export function hslToHex(h, s, l) {
   return '#' + [f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
 }
 
+/** 3x3 RGB matrix that rotates hue by `deg` degrees about the grey axis (row-major). */
+export function hueMatrix(deg) {
+  const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), k = 1 / 3, q = Math.sqrt(k);
+  return [c + (1 - c) * k, k * (1 - c) - q * s, k * (1 - c) + q * s, k * (1 - c) + q * s, c + k * (1 - c), k * (1 - c) - q * s, k * (1 - c) - q * s, k * (1 - c) + q * s, c + k * (1 - c)];
+}
 /** Rotates the hue of a hex colour by `deg` degrees (RGB rotation about the grey axis; greys stay grey). 0 returns the input. */
 export function hueRotateHex(hex, deg) {
   if (!deg || typeof hex !== 'string' || hex[0] !== '#') return hex;

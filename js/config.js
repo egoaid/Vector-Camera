@@ -1,11 +1,11 @@
 // config.js - defaults, limits, presets and slider -> pipeline parameter mapping.
-export const MODES = ['vector', 'silhouette', 'regions', 'hybrid'];
+export const MODES = ['vector', 'silhouette', 'regions', 'hybrid', 'watercolor'];
 /** Modes whose picture can carry the tone (silver / two-tone) and halftone ink: hybrid (the main use) and, as an overlay on the photo-colour fills, vector and regions. */
 export const INK_MODES = ['vector', 'regions', 'hybrid'];
 /** true when the params ask for tone or halftone ink on a vector / regions picture (classic tone and halftone off = a plain vector picture, nothing overlaid). */
 export const overlayInk = (p) => (p.mode === 'vector' || p.mode === 'regions') && (p.tone === 'silver' || p.tone === 'twotone' || p.halftone > 0);
 /** true when an ink factory is needed at all (hybrid always; vector / regions only with an overlay). */
-export const needsInk = (p) => p.mode === 'hybrid' || overlayInk(p);
+export const needsInk = (p) => p.mode === 'hybrid' || p.mode === 'watercolor' || overlayInk(p);
 export const LIMITS = {
   working: { low: 512, standard: 768, high: 1024 },   // long edge of the segmentation working copy
   sourceMax: 2400,                                     // long edge kept for hybrid raster / PNG export
@@ -27,10 +27,10 @@ export const DEFAULT_PARAMS = {
   exportLong: 2048, wakeLock: true,
   lineWidth: 0, lineColor: '#17121c', lineColor2: '#ff7a3a', lineOffset: 0, lineScope: 'mid',
   text: 'Vector Camera', textLang: 'en', textFont: 'anton', textSize: 16, textX: 50, textY: 78, textAngle: 0, textSpacing: 2, textColor: '#fff4f4', textShadow: 20, textShadowColor: '#17121c', textShow: false, textHalftone: 0, textHalftoneType: 'dot', textHalftoneSize: 5, textHalftoneAngle: 45, textHalftoneMode: 'down', textWear: 0, textDirt: 0, textSeed: 1,
-  frame: 0, framePlate: 55, framePlateN: 2, frameRub: 35, frameSplat: 30, frameStain: 30, frameShift: 15, frameColor: '', frameSeed: 1, lightDir: 45, linkDepth: 60, linkCross: 35, linkMatrix: '', hueShift: 0, // paper margin around the picture (style-frame.js): width, extra bottom, ink bleed, edge wear, crookedness
+  frame: 0, framePlate: 55, framePlateN: 2, frameRub: 35, frameSplat: 30, frameStain: 30, frameShift: 15, frameColor: '', frameSeed: 1, lightDir: 45, inkStain: 0, inkSplat: 0, inkSeed: 1, wcPaper: 'cold', wcBleed: 45, wcEdge: 50, wcGran: 50, wcLight: 30, wcHl: 40, wcBloom: 35, wcSeed: 1, hueShift: 0, // paper margin around the picture (style-frame.js): width, extra bottom, ink bleed, edge wear, crookedness
   vecInk: false, vecInkLong: 1400, vecInkSpeck: 2,
   collageLayout: 'torn', collageAspect: '4:5', collageSlots: 0, collageTorn: 60, collageGap: 30, collageRotate: 40, collageVary: false, collageSeed: 1, collagePaper: '', collageEdge: 'organic',
-  rndOpts: { mode: true, palette: true, shape: true, tone: true, halftone: true, texture: true, background: true, subject: true, lines: true, frame: true, link: false, font: true, textOn: false, textFx: true, collage: true, aspect: true },
+  rndOpts: { mode: true, palette: true, shape: true, tone: true, halftone: true, texture: true, background: true, subject: true, lines: true, frame: true, font: true, textOn: false, textFx: true, collage: true, aspect: true },
   customPreset: null, rndStyle: 'off',
   // text slots 2 and 3 (keys get a _1 / _2 suffix); slot 1 uses the plain keys above
   text_1: '', textLang_1: 'en', textFont_1: 'marker', textSize_1: 11, textX_1: 50, textY_1: 22, textAngle_1: 0, textSpacing_1: 2, textColor_1: '#ffd23f', textShadow_1: 20, textShadowColor_1: '#17121c', textShow_1: false, textHalftone_1: 0, textHalftoneType_1: 'dot', textHalftoneSize_1: 5, textHalftoneAngle_1: 45, textHalftoneMode_1: 'down', textWear_1: 0, textDirt_1: 0, textSeed_1: 2,
@@ -46,13 +46,14 @@ export const slotView = (p, i) => { const o = {}; for (const k of TEXT_BASE) o[k
 export const rotOff = (dx, dy, dir) => { const d = ((dir ?? 45) - 45) * Math.PI / 180; if (!d) return [dx, dy]; const c = Math.cos(d), s = Math.sin(d); return [dx * c - dy * s, dx * s + dy * c]; };
 export const HT_KEYS = ['lightDir', 'htWeight', 'htLayers', 'htSpread', 'htCurve', 'htSketch', 'htWave', 'htWaveLen', 'htGuilloche', 'htLen', 'htDepth', 'htContour'];
 export const MODE_DEFAULTS = {
+  watercolor: { detail: 36, simplify: 40, angularity: 15, curveFit: 40, regionSmooth: 45, paletteK: 0, inkStain: 25, inkSplat: 12 },
   vector: { detail: 62, paletteK: 0, simplify: 30, angularity: 20, outline: 0 },
   silhouette: { detail: 24, paletteK: 0, simplify: 45, angularity: 35, subjectSize: 30 },
   regions: { detail: 40, paletteK: 8, simplify: 40, angularity: 40, paletteMap: 'nearest' },
   hybrid: { detail: 42, paletteK: 0, simplify: 35, angularity: 25, separation: 3, retention: 45, grain: 25, misreg: 25 },
 };
 const STYLES = ['pop', 'sleeve', 'riso', 'duo', 'mono', 'unite', 'garden', 'lovepop', 'olive', 'earth', 'field', 'stripes', 'maroon', 'boombox', 'stadium', 'lavender', 'skygreen', 'bluepeach', 'kraft', 'palm', 'typewriter', 'sunhill', 'cyan', 'royal', 'tealpink', 'etching', 'etchblue', 'sanguine', 'silver', 'sepia', 'selenium'];
-export const MODE_PRESETS = { vector: ['natural', ...STYLES], silhouette: STYLES, regions: ['natural', ...STYLES], hybrid: STYLES };
+export const MODE_PRESETS = { vector: ['natural', ...STYLES], silhouette: STYLES, regions: ['natural', ...STYLES], hybrid: STYLES, watercolor: ['natural'] };
 
 /** detail 0..100 -> target region count (6 .. 900, log scale) */
 export const regionTarget = (detail) => Math.round(6 * Math.pow(150, detail / 100));

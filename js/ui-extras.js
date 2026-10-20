@@ -8,8 +8,8 @@ import { TEXT_SLOTS, tkey, INK_MODES, needsInk } from './config.js';
 import { HT_TYPES } from './halftone-types.js';
 import { getPreset } from './style-palette.js';
 import { LAYOUTS, ASPECTS, EDGES } from './style-collage.js';
-import { buildLinkPanel } from './ui-link.js';
 import { buildFramePanel } from './ui-frame.js';
+import { buildInkFxPanel } from './ui-inkfx.js';
 const $ = (id) => document.getElementById(id);
 
 export function colorInput(key, labelKey, onChange) {
@@ -24,16 +24,16 @@ export function buildExtras(onChange, hooks) {
   const rs = $('sel-rnd-style'); if (rs) { rs.replaceChildren(); for (const k of ['off', ...TENDENCIES]) { const o = document.createElement('option'); o.value = k; o.textContent = t('rnd.tend.' + k); rs.append(o); } rs.value = state.params.rndStyle || 'off'; rs.onchange = () => { state.params.rndStyle = rs.value; saveSettings(); }; }
   renderRandomLock();
   const ro = $('random-opts'); ro.replaceChildren();
-  for (const k of ['mode', 'palette', 'shape', 'tone', 'halftone', 'texture', 'background', 'subject', 'lines', 'frame', 'link', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
+  for (const k of ['mode', 'palette', 'shape', 'tone', 'halftone', 'texture', 'background', 'subject', 'lines', 'frame', 'collage', 'aspect', 'textOn', 'font', 'textFx']) {
     const l = document.createElement('label'); l.className = 'check'; const i = document.createElement('input'); i.type = 'checkbox'; i.checked = state.params.rndOpts[k] ?? true;
-    const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); if (k === 'link') buildLinkPanel(); }); l.append(i, s); ro.append(l);
+    const s = document.createElement('span'); s.textContent = t('rnd.o.' + k); i.addEventListener('change', () => { state.params.rndOpts[k] = i.checked; saveSettings(); }); l.append(i, s); ro.append(l);
   }
   // --- colour tab: halftone colour, line colours, collage paper and the colour locks (palette chips are built in ui-controls)
   buildColorPanel(onChange);
   // --- contour lines
   const ln = $('lines-ctl'); ln.replaceChildren();
   ln.append(sl('lineWidth', 0, 100, onChange), select('lineScope', [['mid', 'ln.scope.mid'], ['fg', 'ln.scope.fg'], ['all', 'ln.scope.all']], onChange, 'ln.scope'), sl('lineOffset', 0, 100, onChange));
-  buildLinkPanel();
+  buildInkFxPanel(onChange);
   buildFramePanel(onChange); // paper margin and print edge
   // --- text (3 slots; each has its own wording, font, size, position, tilt, colours and print effects)
   buildTextPanel(onChange);

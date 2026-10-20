@@ -3,6 +3,7 @@
 // is meant to be clipped by VECTOR paths of those regions.
 import { makeScreen, htGain } from './halftone-types.js';
 import { hexToRgb, mulberry32 } from './color-utils.js';
+import { watercolorBitmap } from './render-watercolor.js';
 import { etchMask } from './etching.js';
 import { hash, vnoise, boxBlur, silverTone, silverGrain, prepTwoTone } from './tone-photo.js';
 
@@ -33,6 +34,7 @@ export function makeInkFactory(src, res, targetLong, opts = {}) {
   const lab = new Int32Array(tw * th);
   for (let y = 0; y < th; y++) { const sy = Math.min(gh0 - 1, Math.floor((y * gh0) / th)) * gw0; for (let x = 0; x < tw; x++) lab[y * tw + x] = labels[sy + Math.min(gw0 - 1, Math.floor((x * gw0) / tw))]; }
   const build = (spec) => {
+    if (spec.mode === 'wc') return { w: tw, h: th, rgba: watercolorBitmap(img, lab, res.stats, spec), gx: 0, gy: 0, gw: tw * (gw0 / tw), gh: th * (gh0 / th), opaque: true }; // watercolour mode: the whole picture, opaque
     const elig = new Uint8Array(res.R); for (const r of spec.regions) elig[r] = 1;
     let x0 = tw, y0 = th, x1 = -1, y1 = -1; const hist = new Uint32Array(256); let cnt = 0;
     for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const i = y * tw + x; if (!elig[lab[i]]) continue; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; hist[Math.min(255, (lum[i] * 255) | 0)]++; cnt++; }

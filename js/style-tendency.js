@@ -6,7 +6,7 @@
 import { sampleLook } from './style-space.js';
 
 /** Tendency ids, in the order of the selector. */
-export const TENDENCIES = ['etching', 'engraving', 'silver', 'twotone', 'silkscreen', 'popart', 'vector', 'poster'];
+export const TENDENCIES = ['etching', 'engraving', 'silver', 'twotone', 'silkscreen', 'popart', 'vector', 'poster', 'watercolor'];
 
 const W = (o) => o; // readability: window tables
 export const BIASES = {
@@ -39,6 +39,10 @@ export const BIASES = {
   vector: { modes: { vector: 1 }, tones: { classic: 5, silver: 1.5, twotone: 1.5 }, ht: 0.25, types: { dot: 3, line: 2, etching: 2, cross: 1, engrave: 1 }, lines: 0.2, frame: 0.2, outline: 0.35, angles: [15, 45, 75],
     presets: ['natural', 'natural', 'etching', 'mono', 'silver', 'sepia', 'pop', 'riso'],
     win: W({ frame: [12, 40], detail: [45, 85], simplify: [15, 45], angularity: [0, 45], curveFit: [40, 95], regionSmooth: [35, 85], minRegion: [10, 50], retention: [30, 85], grain: [0, 30], roughness: [0, 30] }) },
+  // watercolour: the photo painted on paper (watercolour mode), usually with a little ink bleed / spatter
+  watercolor: { modes: { watercolor: 1 }, tones: { classic: 1 }, ht: 0, types: { dot: 1 }, lines: 0.15, frame: 0.3, outline: 0.1, inkfx: 0.85, angles: [45],
+    presets: ['natural'],
+    win: W({ frame: [10, 35], detail: [25, 55], simplify: [30, 60], angularity: [0, 40], curveFit: [30, 80], regionSmooth: [30, 70] }) },
   // poster: a few colours (colour regions)
   poster: { modes: { regions: 1 }, tones: { classic: 6, silver: 1, twotone: 1 }, ht: 0.25, types: { dot: 4, line: 2, etching: 1 }, lines: 0.2, frame: 0.25, outline: 0.4, angles: [15, 45, 75],
     presets: ['natural', 'pop', 'riso', 'lovepop', 'garden', 'sunhill', 'tealpink', 'stadium', 'royal', 'cyan', 'earth', 'olive'],

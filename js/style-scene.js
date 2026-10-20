@@ -6,6 +6,8 @@ import { PRESETS, GROUP_KEYS, mapRegionsToPalette, allPresetColors, getPreset } 
 import { rgbToHex, hexToRgb, hueRotateHex } from './color-utils.js';
 import { textLayers } from './style-text.js';
 import { frameOn, wrapFrame } from './style-frame.js';
+import { PAPERS } from './render-watercolor.js';
+import { inkDirtLayers } from './ink-dirt.js';
 import { sgOptsFrom, ttOptsFrom, tonedRamp, neutralRamp } from './tone-photo.js';
 
 const hexColor = (v) => (/^#[0-9a-f]{6}$/i.test(v || '') ? v : null); // halftone / tone ink colour override ('' = follow the palette)
@@ -18,6 +20,7 @@ function groupBy(map) { const m = new Map(); for (const [r, fill] of map) { if (
  */
 export function buildScene(res, groups, p, inkFactory = null) {
   const base = buildBase(res, groups, p, inkFactory); addLines(base, res, groups, p); base.geom = res.geom;
+  addInkFx(base, res, p);
   const scene = frameOn(p) ? wrapFrame(base, res, p) : base; // a paper margin around the picture; text then lives on the whole canvas (it may sit in the margin)
   for (const L of textLayers(p, scene.w, scene.h)) scene.layers.push(L);
   scene.geom = res.geom; return scene;
@@ -60,6 +63,15 @@ function addOverlayInk(scene, res, groups, p, preset, all, inkFactory) {
   }
 }
 
+/** Ink stains / bleed and ink spatter over the whole picture (any mode): coloured from the picture's own colour areas. */
+export function addInkFx(scene, res, p) {
+  if (!(p.inkStain > 0) && !(p.inkSplat > 0)) return;
+  const colors = new Array(res.R).fill(null);
+  for (const L of scene.layers) if (L.kind === 'fills' && L.items) for (const it of L.items) if (it.fill && it.regions) for (const r of it.regions) if (!colors[r]) colors[r] = it.fill;
+  const st = res.stats; if (st) for (let r = 0; r < res.R; r++) if (!colors[r]) colors[r] = rgbToHex(st.rgb[r * 3], st.rgb[r * 3 + 1], st.rgb[r * 3 + 2]);
+  const preset = getPreset(p);
+  for (const D of inkDirtLayers(res, colors, hexColor(p.htColor) || preset.ink, p)) { D.bitmap._shared = true; scene.layers.push({ kind: 'ink', name: D.name, noClip: true, regions: [], bitmap: D.bitmap, blend: 'multiply', spec: { mode: 'raw' } }); }
+}
 export function buildBase(res, groups, p, inkFactory) {
   const { w, h, R, stats: st } = res, long = Math.max(w, h), sc = long / 640;
   const preset = getPreset(p);
@@ -89,6 +101,14 @@ export function buildBase(res, groups, p, inkFactory) {
     return scene;
   }
 
+  if (p.mode === 'watercolor') { // photo painted as watercolour washes on the chosen paper (raster, see render-watercolor.js); without an ink factory (first quick preview) flat region colours stand in
+    const wp = PAPERS[p.wcPaper] || PAPERS.cold; scene.paper = wp.color; scene.paperAmount = wp.amount;
+    scene.layers.push({ kind: 'rect', fill: wp.color });
+    const bmp = inkFactory ? inkFactory({ mode: 'wc', regions: all, bleed: p.wcBleed, edge: p.wcEdge, gran: p.wcGran, light: p.wcLight, hl: p.wcHl, bloom: p.wcBloom, paper: p.wcPaper, seed: p.wcSeed, hue: +p.hueShift || 0 }) : null;
+    if (bmp) scene.layers.push({ kind: 'ink', name: 'watercolor', noClip: true, regions: [], bitmap: bmp, blend: 'normal', spec: { mode: 'raw' } });
+    else { const map = new Map(); for (const r of all) map.set(r, hueRotateHex(hexOf(st, r), hs)); scene.layers.push({ kind: 'fills', name: 'regions', offset: [0, 0], items: groupBy(map), seal, stroke }); }
+    return scene;
+  }
   if (p.mode === 'silhouette') {
     const cols = p.silColors, byG = [[], [], []]; for (const r of all) byG[groups[r]].push(r);
     const fill = (g) => {

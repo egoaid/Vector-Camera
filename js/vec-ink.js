@@ -62,7 +62,7 @@ export function vectorLayer(L, geom, info) {
  * tracer(labels,w,h,R) -> Promise<geom>; onProgress(done,total).
  */
 export async function vectorizeScene(scene, tracer, { speck = 2, onProgress = () => {} } = {}) {
-  const jobs = []; const walk = (layers) => { for (const L of layers) { if (L.kind === 'ink') jobs.push(L); if (L.layers) walk(L.layers); } }; walk(scene.layers);
+  const jobs = []; const walk = (layers) => { for (const L of layers) { if (L.kind === 'ink' && !(L.spec && L.spec.mode === 'raw')) jobs.push(L); if (L.layers) walk(L.layers); } }; walk(scene.layers);
   let done = 0; onProgress(0, jobs.length);
   const repl = new Map();
   for (const L of jobs) {

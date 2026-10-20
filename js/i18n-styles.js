@@ -11,7 +11,7 @@ export const STYLES_JA = {
   'st.saved': '「{name}」を保存しました', 'st.over': '「{name}」を上書きしました', 'st.deleted': '「{name}」を削除しました', 'st.applied': 'スタイル「{name}」を適用しました', 'st.imported': '{n}件のスタイルを読み込みました', 'st.bad': 'スタイルのファイルとして読み込めませんでした', 'st.full': '保存できる数の上限です。不要なスタイルを削除してください', 'st.nostore': 'この端末では保存できませんでした',
   'st.selected': '選択中のマイスタイル', 'st.active': '適用中',
   'rnd.tend': '画風の傾向', 'rnd.tend.note': '傾向を選ぶと、その画風として成立しやすい配色・質感・背景・線を選びます（ハイブリッドで生成）。オフは完全ランダムです。',
-  'rnd.tend.off': 'オフ（完全ランダム）', 'rnd.tend.etching': 'エッチング（銅版画）', 'rnd.tend.silver': '銀塩写真', 'rnd.tend.silkscreen': 'シルクスクリーン', 'rnd.tend.popart': 'ポップアート',
+  'rnd.tend.watercolor': '水彩画', 'rnd.tend.off': 'オフ（完全ランダム）', 'rnd.tend.etching': 'エッチング（銅版画）', 'rnd.tend.silver': '銀塩写真', 'rnd.tend.silkscreen': 'シルクスクリーン', 'rnd.tend.popart': 'ポップアート',
 };
 export const STYLES_EN = {
   'preset.label': 'Palette', 'preset.etching': 'Etching (ink)', 'preset.etchblue': 'Etching (indigo)', 'preset.sanguine': 'Sanguine (red-brown)', 'preset.silver': 'Silver-gelatin B&W', 'preset.sepia': 'Sepia', 'preset.selenium': 'Selenium toned',
@@ -25,5 +25,5 @@ export const STYLES_EN = {
   'st.saved': 'Saved "{name}"', 'st.over': 'Overwrote "{name}"', 'st.deleted': 'Deleted "{name}"', 'st.applied': 'Applied style "{name}"', 'st.imported': 'Imported {n} style(s)', 'st.bad': 'This file is not a valid style file', 'st.full': 'Style limit reached. Delete some styles first', 'st.nostore': 'Could not save on this device',
   'st.selected': 'Selected style', 'st.active': 'In use',
   'rnd.tend': 'Style tendency', 'rnd.tend.note': 'Pick a look and the random result stays inside it (palette, texture, background, lines; built in hybrid mode). Off = fully random.',
-  'rnd.tend.off': 'Off (fully random)', 'rnd.tend.etching': 'Etching (copperplate)', 'rnd.tend.silver': 'Silver-gelatin photo', 'rnd.tend.silkscreen': 'Silkscreen', 'rnd.tend.popart': 'Pop art',
+  'rnd.tend.watercolor': 'Watercolour', 'rnd.tend.off': 'Off (fully random)', 'rnd.tend.etching': 'Etching (copperplate)', 'rnd.tend.silver': 'Silver-gelatin photo', 'rnd.tend.silkscreen': 'Silkscreen', 'rnd.tend.popart': 'Pop art',
 };
