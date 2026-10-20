@@ -11,7 +11,7 @@ const ALL = MODES;
 const MAIN = [
   { k: 'detail', modes: ALL, g: 'shape' }, { k: 'simplify', modes: ALL, g: 'shape' }, { k: 'angularity', modes: ALL, g: 'shape' }, { k: 'curveFit', modes: ALL, g: 'shape' }, { k: 'regionSmooth', modes: ALL, g: 'shape' },
   { k: 'paletteK', modes: ['regions'], min: 2, max: 24, g: 'shape' }, { k: 'subjectSize', modes: ['silhouette', 'hybrid'], min: 5, max: 70, g: 'subject' },
-  ...['wcBleed', 'wcEdge', 'wcGran', 'wcLight', 'wcHl', 'wcBloom'].map((k) => ({ k, modes: ['watercolor'], g: 'wc' })),
+  ...['wcBrush', 'wcLayer', 'wcBleed', 'wcEdge', 'wcGran', 'wcLight', 'wcHl', 'wcBloom'].map((k) => ({ k, modes: ['watercolor'], g: 'wc' })),
   { k: 'separation', modes: INK_MODES, min: 2, max: 6, g: 'tone', when: needsInk }, { k: 'retention', modes: INK_MODES, g: 'tone', when: needsInk }, { k: 'grain', modes: INK_MODES, g: 'tone', when: needsInk }, { k: 'misreg', modes: ['hybrid'], g: 'tone' },
 ];
 const GROUP_ORDER = ['shape', 'subject', 'wc', 'tone'], openGroups = new Set(['shape']);
@@ -61,7 +61,7 @@ export function buildControls(onChange, onMode) {
   // controls
   const main = $('controls'), adv = $('controls-adv'); main.replaceChildren(); adv.replaceChildren();
   if (mode === 'silhouette') main.append(check('silSample', 'sil.sample', onChange));
-  for (const g of GROUP_ORDER) { const items = MAIN.filter((d) => d.g === g && d.modes.includes(mode) && (!d.when || d.when(p))).map((d) => slider(d, onChange)); if (g === 'wc' && mode === 'watercolor') items.unshift(select('wcPaper', [['hot', 'wc.paper.hot'], ['cold', 'wc.paper.cold'], ['rough', 'wc.paper.rough'], ['washi', 'wc.paper.washi'], ['tinted', 'wc.paper.tinted']], onChange, 'p.wcPaper'));
+  for (const g of GROUP_ORDER) { const items = MAIN.filter((d) => d.g === g && d.modes.includes(mode) && (!d.when || d.when(p))).map((d) => slider(d, onChange)); if (g === 'wc' && mode === 'watercolor') items.unshift(select('wcPaper', [['hot', 'wc.paper.hot'], ['cold', 'wc.paper.cold'], ['tinted', 'wc.paper.tinted']], onChange, 'p.wcPaper'));
     if (g === 'tone' && mode === 'hybrid') items.unshift(select('bgTreatment', [['flat', 'bg.flat'], ['photo', 'bg.photo'], ['paper', 'bg.paper']], onChange, 'p.bg')); if (items.length) main.append(group(g, items)); }
   buildTone(onChange, mode); buildHalftone(onChange, mode);
   if (mode === 'regions') main.append(select('paletteMap', [['luma', 'map.luma'], ['nearest', 'map.nearest']], onChange, 'p.map'));

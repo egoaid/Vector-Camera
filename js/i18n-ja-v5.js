@@ -9,7 +9,7 @@ export const JA5 = {
   'fr.auto': '配色の紙色に戻す', 'fr.auto.on': '配色に合わせる', 'fr.reseed': '縁のパターンを変える',
   'p.lightDir': '光の向き（影・ズレの方向）', 'p.hueShift': '色相ずらし',
   'grp.inkfx': 'インク効果', 'ix.note': '画像全体に、色の境目からにじむインクの染みと、飛び散るインクのはねを加えます（どのモードでも使えます）。', 'p.inkStain': 'インクの滲み・汚れ', 'p.inkSplat': 'インクのはね', 'ix.reseed': 'パターンを変える',
-  'mode.watercolor': '水彩画', 'mode.watercolor.desc': '写真を、水彩絵の具で紙に描いたように。にじみ・たまり・紙の粒状感を再現', 'grp.wc': '水彩のようす',
-  'p.wcPaper': '用紙', 'wc.paper.hot': '平滑（ホットプレス）', 'wc.paper.cold': '中目（コールドプレス）', 'wc.paper.rough': '荒目（ラフ）', 'wc.paper.washi': '和紙', 'wc.paper.tinted': 'ベージュの紙',
-  'p.wcBleed': '色のにじみ（濡れた紙）', 'p.wcEdge': '縁の絵の具だまり', 'p.wcGran': '絵の具の粒状感', 'p.wcLight': '淡さ（透明感）', 'p.wcHl': '白抜き（ハイライト）', 'p.wcBloom': 'ムラ・にじみ花',
+  'mode.watercolor': '水彩画', 'mode.watercolor.desc': '写真を、筆で水彩絵の具を重ね塗りしたように。筆の跡・塗り残しの白・にじみ・紙の粒状感を再現', 'grp.wc': '水彩のようす',
+  'p.wcPaper': '用紙', 'wc.paper.hot': '平滑（ホットプレス）', 'wc.paper.cold': '中目（コールドプレス）', 'wc.paper.tinted': 'ベージュの紙',
+  'p.wcBleed': '色のにじみ（濡れた紙）', 'p.wcEdge': '縁の絵の具だまり', 'p.wcGran': '絵の具の粒状感', 'p.wcLight': '淡さ（透明感）', 'p.wcHl': '白抜き（ハイライト）', 'p.wcBloom': 'ムラ・にじみ花', 'p.wcBrush': '筆の大きさ', 'p.wcLayer': '重ね塗り',
 };

@@ -84,11 +84,11 @@ export const SPACE = [
   C('lightDir', 'texture', (r, n, x) => ({ lightDir: x.rf() < 0.45 ? 45 : Math.round(x.rf() * 359) })), // direction of shadows and plate offsets (own RNG stream)
   C('hueShift', 'palette', (r, n, x) => ({ hueShift: x.rf() < 0.7 ? 0 : Math.round((x.rf() * 2 - 1) * 70) })), // rotates the whole palette's hue a little
   C('inkfx', 'texture', (r, n, x) => { const q = x.rf, wc = n.mode === 'watercolor', on = q() < (x.bias.inkfx ?? (wc ? 0.8 : 0.22)), mk = () => (q() < 0.7 ? range(q, 10, wc ? 60 : 70) : 0); return on ? { inkStain: mk(), inkSplat: mk(), inkSeed: range(q, 1, 99999) } : { inkStain: 0, inkSplat: 0 }; }), // ink stains / spatter over the whole picture (own RNG stream)
-  C('wc', 'texture', (r, n, x) => { const q = x.rf, j = (a, b) => range(q, a, b); return { wcPaper: pick(q, ['hot', 'cold', 'cold', 'rough', 'washi', 'tinted']), wcBleed: j(15, 80), wcEdge: j(20, 80), wcGran: j(20, 80), wcLight: j(10, 55), wcHl: j(10, 70), wcBloom: j(10, 70), wcSeed: range(q, 1, 99999) }; }, { when: (n) => n.mode === 'watercolor' }),
+  C('wc', 'texture', (r, n, x) => { const q = x.rf, j = (a, b) => range(q, a, b); return { wcPaper: pick(q, ['hot', 'cold', 'cold', 'tinted']), wcBleed: j(15, 80), wcEdge: j(20, 80), wcGran: j(20, 80), wcLight: j(10, 55), wcHl: j(10, 70), wcBloom: j(10, 70), wcBrush: j(25, 75), wcLayer: j(25, 80), wcSeed: range(q, 1, 99999) }; }, { when: (n) => n.mode === 'watercolor' }),
   C('outline', 'lines', (r, n, x) => (n.mode === 'hybrid' ? {} : outlinePatch(r, n, x)), { when: (n) => n.mode !== 'hybrid' }),   // also outlineColor
 ];
 /** Keys the generator fills as a side effect of a custom entry (so the coverage test knows them). */
-export const SIDE_KEYS = ['inkStain', 'inkSplat', 'inkSeed', 'wcPaper', 'wcBleed', 'wcEdge', 'wcGran', 'wcLight', 'wcHl', 'wcBloom', 'wcSeed', 'framePlate', 'framePlateN', 'frameRub', 'frameSplat', 'frameStain', 'frameShift', 'frameSeed', 'frameColor', 'customPreset', 'silColors', 'silSample', 'halftoneType', 'lineScope', 'lineOffset', 'lineColor', 'lineColor2', 'outlineColor'];
+export const SIDE_KEYS = ['inkStain', 'inkSplat', 'inkSeed', 'wcPaper', 'wcBleed', 'wcEdge', 'wcGran', 'wcLight', 'wcHl', 'wcBloom', 'wcBrush', 'wcLayer', 'wcSeed', 'framePlate', 'framePlateN', 'frameRub', 'frameSplat', 'frameStain', 'frameShift', 'frameSeed', 'frameColor', 'customPreset', 'silColors', 'silSample', 'halftoneType', 'lineScope', 'lineOffset', 'lineColor', 'lineColor2', 'outlineColor'];
 /** Look parameters random generation deliberately never draws, with the reason. */
 export const EXCLUDED = { background: 'reserved (always "auto")', semStrength: 'only meaningful with the AI engine, which is a device capability', htLayers_etching: 'fixed by the etching renderer' };
 
