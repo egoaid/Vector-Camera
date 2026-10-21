@@ -1,7 +1,7 @@
 // render-watercolor.js - the "watercolour" mode: the photo painted with a brush, translucent patches layered on real paper.
 // Steps (all typed-array code, no DOM; paint is kept as optical density, see wc-strokes.js):
 //  1 pigment     photo colours as density, with more chroma (watercolour pigments are cleaner than the real world) but not more density
-//  2 need        where paint is needed at all: colourful / dark / detailed faces near the middle; the rest stays bare paper (wc-field.js)
+//  2 unpainted   (塗り残し) the broad wash is laid sparsely over the whole sheet; the gaps between its patches stay bare paper (wc-strokes.js)
 //  3 strokes     brush patches, broad wash to small, layered, each in one of two pigments that mix to the photo colour (wc-strokes.js)
 //  4 lightness   transparency: the whole painting is lifted toward the paper
 //  5 wet bleed   in a few wet places colours run into each other
@@ -9,7 +9,7 @@
 // The result is multiplied by the paper colour. Returns RGBA bytes (opaque).
 import { boxBlur, hash, vnoise } from './tone-photo.js';
 import { hexToRgb, mulberry32, hueMatrix } from './color-utils.js';
-import { orientationField, boundaryDistance, paintNeed, refineLabels, modeFilter } from './wc-field.js';
+import { orientationField, boundaryDistance, refineLabels, modeFilter } from './wc-field.js';
 import { paintStrokes, noiseTile } from './wc-strokes.js';
 import { strokeCollector, vectorItems } from './wc-vector.js';
 
@@ -42,26 +42,20 @@ function core(img, lab0, stats, spec, onStroke) {
   // 1 pigment density of the photo (chroma stretched, darkness kept)
   const Dp = mk(), sat = (a, b, c, o, i) => { const m = (a + b + c) / 3; o[0][i] = Math.max(0, m + (a - m) * SAT); o[1][i] = Math.max(0, m + (b - m) * SAT); o[2][i] = Math.max(0, m + (c - m) * SAT); };
   for (let i = 0; i < N; i++) sat(dens(ps[0][i]), dens(ps[1][i]), dens(ps[2][i]), Dp, i);
-  // 2 unpainted paper
-  const tile = noiseTile(seed + 50), hand = -0.95 + (rnd() - 0.5) * 0.6, open = hl > 0 ? paintNeed(lab, ps, field, tw, th, 0.65 * hl, seed + 30, rnd, nL) : null;
+  // 2 unpainted paper: territory T of the wash (filled by paintStrokes)
+  const tile = noiseTile(seed + 50), hand = -0.95 + (rnd() - 0.5) * 0.6, T = hl > 0 ? new Float32Array(N) : null;
   // 3 strokes
-  const D = mk(), count = paintStrokes({ tw, th, long, k, lab, ps, Dp, field, open, D, rnd, tile, seed: seed + 60, hand }, { brush, layer, edge, bleed, hl, mix, onStroke });
+  const D = mk(), count = paintStrokes({ tw, th, long, k, lab, ps, Dp, field, T, D, rnd, tile, seed: seed + 60, hand }, { brush, layer, edge, bleed, bare: 0.55 * hl, mix, onStroke });
   // keep the overall density where the photo has it (more overlap must not mean a darker picture), then 4 lightness
-  let sd = 0, sp = 0; for (let i = 0; i < N; i++) { if (open && open[i] < 0.99) continue; sd += D[0][i] + D[1][i] + D[2][i]; sp += Dp[0][i] + Dp[1][i] + Dp[2][i]; }
+  let sd = 0, sp = 0; for (let i = 0; i < N; i++) { if (T && T[i] < 0.99) continue; sd += D[0][i] + D[1][i] + D[2][i]; sp += Dp[0][i] + Dp[1][i] + Dp[2][i]; }
   const gain = Math.max(0.55, Math.min(1.7, sp / (sd || 1))) * (1 - 0.55 * light) * 0.9;
-  return { tw, th, N, long, k, seed, rnd, bleed, edge, gran, bloom, pid, paper, D, open, gain, count, blur };
+  return { tw, th, N, long, k, seed, rnd, bleed, edge, gran, bloom, pid, paper, D, gain, count, blur };
 }
 
 /** img {w,h,data RGBA}, lab Int32Array(w*h) region ids, stats {rgb} (0..255 per region), spec {bleed,edge,gran,light,hl,bloom,brush,layer,mix 0..100, paper id, seed}. */
 export function watercolorBitmap(img, lab0, stats, spec) {
-  const C = core(img, lab0, stats, spec), { tw, th, N, long, k, seed, rnd, bleed, edge, gran, bloom, pid, paper, D, open, gain, blur } = C, pc = hexToRgb(paper.color);
+  const C = core(img, lab0, stats, spec), { tw, th, N, long, k, seed, rnd, bleed, edge, gran, bloom, pid, paper, D, gain, blur } = C, pc = hexToRgb(paper.color);
   for (let c = 0; c < 3; c++) for (let i = 0; i < N; i++) D[c][i] *= gain;
-  // pigment pools around the bare paper (the edge of a wash that stopped)
-  if (open && edge > 0) {
-    const R = new Float32Array(N); for (let i = 0; i < N; i++) R[i] = 1 - open[i];
-    const rb = Math.max(1, Math.round(0.0035 * long)), Rb = blur(blur(R, rb), rb);
-    for (let i = 0; i < N; i++) { const ring = Math.max(0, Math.min(1, (Rb[i] - R[i]) * 3.2)); if (ring > 0.01) { const f = 1 + 1.6 * edge * ring; D[0][i] *= f; D[1][i] *= f; D[2][i] *= f; } }
-  }
   // 5 wet bleed in a few places
   if (bleed > 0) {
     const rb = Math.max(1, Math.round((0.0015 + 0.01 * bleed) * long)), bl = D.map((A) => blur(blur(A, rb), rb));

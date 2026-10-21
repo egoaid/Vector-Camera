@@ -108,6 +108,10 @@ export function buildBase(res, groups, p, inkFactory) {
     if (bmp && bmp.vector) { const k = bmp.gw / bmp.w; for (const it of bmp.items) { for (const r of it.rings) for (let i = 0; i < r.length; i += 2) { r[i] = r[i] * k + bmp.gx; r[i + 1] = r[i + 1] * k + bmp.gy; } if (it.rimW) it.rimW *= k; } scene.layers.push({ kind: 'polys', name: 'watercolor', items: bmp.items, blend: 'multiply' }); }
     else if (bmp) scene.layers.push({ kind: 'ink', name: 'watercolor', noClip: true, regions: [], bitmap: bmp, blend: 'normal', spec: { mode: 'raw' } });
     else { const map = new Map(); for (const r of all) map.set(r, hueRotateHex(hexOf(st, r), hs)); scene.layers.push({ kind: 'fills', name: 'regions', offset: [0, 0], items: groupBy(map), seal, stroke }); }
+    if (inkFactory && p.wcLine && p.wcLine !== 'none' && p.wcLineAmt > 0) { // etching / pen / coloured-pencil lines over the painting
+      const lb = inkFactory({ mode: 'wcline', regions: all, style: p.wcLine, amt: p.wcLineAmt, seed: p.wcSeed });
+      if (lb) scene.layers.push({ kind: 'ink', name: 'wc-lines', noClip: true, regions: [], bitmap: lb, blend: 'multiply', spec: { mode: 'raw' } });
+    }
     return scene;
   }
   if (p.mode === 'silhouette') {

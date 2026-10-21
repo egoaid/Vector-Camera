@@ -27,7 +27,7 @@ export const clearFrameEdgeCache = () => cache.clear();
 
 function build(o) {
   const long = o.longUnits, rw = Math.max(0, o.rub || 0) / 100, sp = Math.max(0, o.splat || 0) / 100, sn = Math.max(0, o.stain || 0) / 100, seed = (o.seed | 0) + 101, plates = o.plates || [];
-  const Rw = (0.003 + 0.013 * rw) * long, reach = (0.01 + 0.05 * Math.max(sp, sn)) * long;
+  const Rw = (0.004 + 0.02 * rw) * long, reach = (0.01 + 0.05 * Math.max(sp, sn)) * long;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const poly of [o.poly, ...plates.map((q) => q.poly)]) for (let i = 0; i < poly.length; i += 2) { x0 = Math.min(x0, poly[i]); x1 = Math.max(x1, poly[i]); y0 = Math.min(y0, poly[i + 1]); y1 = Math.max(y1, poly[i + 1]); }
   const pad = Math.max(Rw, (sp > 0 || sn > 0) ? reach : 0) + 3 / o.scale; x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
@@ -42,7 +42,7 @@ function build(o) {
     const B = blur2(M, Math.round(Rw * s * 0.5)), bmp = mkBmp(); let any = false;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x; if (M[i] <= 0.5) continue; const z = Math.min(1, Math.max(0, (1 - B[i]) / 0.5)); if (z < 0.02) continue;
-      const n = vnoise(x, y, 2.4 * k, seed + 1) * 0.5 + vnoise(x, y, 8 * k, seed + 2) * 0.3 + hash(x, y, seed + 3) * 0.2, thr = rw * 1.15 * Math.pow(z, 1.35);
+      const n = vnoise(x, y, 5 * k, seed + 1) * 0.35 + vnoise(x, y, 18 * k, seed + 2) * 0.45 + vnoise(x, y, 1.6 * k, seed + 4) * 0.12 + hash(x, y, seed + 3) * 0.08, thr = rw * 1.15 * Math.pow(z, 1.35);
       const a = (1 - smooth(thr - 0.06, thr + 0.06, n)) * 0.97; if (a < 0.02) continue;
       let r = pc[0], g = pc[1], b = pc[2]; for (let q = 0; q < pm.length; q++) if (pm[q][i] > 0.5) { r = r * pcol[q][0] / 255; g = g * pcol[q][1] / 255; b = b * pcol[q][2] / 255; }
       const j = i * 4; bmp.rgba[j] = r; bmp.rgba[j + 1] = g; bmp.rgba[j + 2] = b; bmp.rgba[j + 3] = Math.round(a * 255); any = true;

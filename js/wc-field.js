@@ -2,7 +2,6 @@
 //  orientationField  which way a brush would travel (follows edges where the photo has them) + how much detail there is
 //  boundaryDistance  distance of every pixel to the nearest boundary between two colour faces
 //  regionContrast    how different each colour face is from its neighbours
-//  paintNeed         where paint is needed at all; the rest stays bare paper (large coherent areas, set by a share)
 import { boxBlur, vnoise } from './tone-photo.js';
 
 const smooth = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0 || 1e-6))); return t * t * (3 - 2 * t); };
@@ -79,28 +78,4 @@ export function regionContrast(lab, tw, th, rgb) {
   const pair = (a, b) => { if (a === b) return; const df = Math.hypot(rgb[a * 3] - rgb[b * 3], rgb[a * 3 + 1] - rgb[b * 3 + 1], rgb[a * 3 + 2] - rgb[b * 3 + 2]); sum[a] += df; sum[b] += df; cnt[a]++; cnt[b]++; };
   for (let y = 0; y < th - 1; y++) for (let x = 0; x < tw - 1; x++) { const i = y * tw + x; pair(lab[i], lab[i + 1]); pair(lab[i], lab[i + tw]); }
   const out = new Float32Array(R); for (let r = 0; r < R; r++) out[r] = cnt[r] ? sum[r] / cnt[r] : 0; return out;
-}
-
-/**
- * "Don't paint everything": where paint is needed. A watercolourist paints only the places that need colour and leaves the paper bare elsewhere
- * (Cezanne leaves about half of the sheet). The bare paper is therefore large and coherent, and follows the picture, not a random pattern:
- * a colour FACE is more likely to be painted when it is colourful, dark or full of detail, and near the middle of the picture; every face also has
- * some luck of its own (so a pale or dull face is sometimes painted, and a strong one sometimes left), plus slow variation inside a face.
- * Brightness alone does not decide. bare 0..0.65 = the share of the picture left unpainted.
- * Returns open: 1 = paint, 0 = bare paper (smooth, ragged edge).
- */
-export function paintNeed(lab, ps, field, tw, th, bare, seed, rnd, nL) {
-  if (bare <= 0) return null;
-  const N = tw * th, long = Math.max(tw, th), cn = new Float64Array(nL), ch = new Float64Array(nL), dk = new Float64Array(nL), dt = new Float64Array(nL), rr = new Float32Array(nL);
-  for (let r = 0; r < nL; r++) rr[r] = rnd();
-  for (let i = 0; i < N; i++) { const l = lab[i], R = ps[0][i], G = ps[1][i], B = ps[2][i]; cn[l]++; ch[l] += (Math.max(R, G, B) - Math.min(R, G, B)) / 255; dk[l] += 1 - (0.299 * R + 0.587 * G + 0.114 * B) / 255; dt[l] += field.det[i]; }
-  const sf = new Float32Array(nL); for (let r = 0; r < nL; r++) { const n = cn[r] || 1; sf[r] = 0.35 * Math.min(1, (ch[r] / n) * 3) + 0.3 * (dk[r] / n) + 0.35 * Math.min(1, (dt[r] / n) * 1.4) + 0.5 * (rr[r] - 0.5); }
-  const score = new Float32Array(N);
-  for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
-    const i = y * tw + x, L = (0.299 * ps[0][i] + 0.587 * ps[1][i] + 0.114 * ps[2][i]) / 255, mid = Math.max(0, 1 - Math.hypot(x / tw - 0.5, y / th - 0.5) / 0.7);
-    score[i] = sf[lab[i]] + 0.3 * field.det[i] + 0.15 * (1 - L) + 0.25 * mid + 0.35 * (vnoise(x, y, 0.09 * long, seed) - 0.5) + 0.06 * (vnoise(x, y, Math.max(2, 0.006 * long), seed + 1) - 0.5);
-  }
-  const rb = Math.max(2, Math.round(0.008 * long)), Nb = boxBlur(boxBlur(score, tw, th, rb), tw, th, rb), thr = pct(Nb, bare), open = new Float32Array(N), w = 0.025;
-  for (let i = 0; i < N; i++) open[i] = smooth(thr - w, thr + w, Nb[i]);
-  return open;
 }

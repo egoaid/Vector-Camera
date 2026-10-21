@@ -49,7 +49,7 @@ function build(res, colors, ink, sn, sp, seed0, workLong) {
       for (let d = 0; d < per; d++) {
         const ang = rnd() * Math.PI * 2, dist = reach * (-Math.log(1 - rnd() * 0.97)) * (0.25 + 0.5 * rnd()), x = cx + Math.cos(ang) * dist, y = cy + Math.sin(ang) * dist;
         if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
-        const near = 1 - Math.min(1, dist / (reach * 1.6)), r = unit * (0.0005 + 0.0052 * Math.pow(rnd(), 3.8)) * (0.7 + 0.8 * sp) * (0.6 + 0.8 * near), rr = Math.max(0.9, r), streak = rnd() < 0.35 ? 1.6 + 3 * rnd() * (1 - near * 0.5) : 1;
+        const near = 1 - Math.min(1, dist / (reach * 1.6)), r = unit * (0.0004 + 0.0021 * Math.pow(rnd(), 3.8)) * (0.7 + 0.6 * sp) * (0.6 + 0.8 * near), rr = Math.max(0.8, r), streak = rnd() < 0.3 ? 1.4 + 1.6 * rnd() * (1 - near * 0.5) : 1; // small drops (a third of the earlier size), short tails
         const a0 = Math.atan2(y - cy, x - cx) + (rnd() - 0.5) * 0.3, ca = Math.cos(a0), sa = Math.sin(a0), ex = rr * streak, ext = Math.ceil(Math.max(ex, rr)) + 2, al = 0.6 + 0.35 * rnd(), cc = rnd() < 0.8 ? col : pal[Math.floor(rnd() * pal.length)];
         for (let yy = Math.max(0, Math.floor(y - ext)); yy < Math.min(H, Math.ceil(y + ext)); yy++) for (let xx = Math.max(0, Math.floor(x - ext)); xx < Math.min(W, Math.ceil(x + ext)); xx++) {
           const dx = xx + 0.5 - x, dy = yy + 0.5 - y, u = (dx * ca + dy * sa) / ex, v = (-dx * sa + dy * ca) / rr, q = Math.sqrt(u * u + v * v); if (q > 1.15) continue;
