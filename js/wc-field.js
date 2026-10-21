@@ -2,7 +2,7 @@
 //  orientationField  which way a brush would travel (follows edges where the photo has them) + how much detail there is
 //  boundaryDistance  distance of every pixel to the nearest boundary between two colour faces
 //  regionContrast    how different each colour face is from its neighbours
-//  gapField          where bare paper is left unpainted: a thin gap just inside the boundary of a colour face, only in places
+//  paintNeed         where paint is needed at all; the rest stays bare paper (large coherent areas, set by a share)
 import { boxBlur, vnoise } from './tone-photo.js';
 
 const smooth = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0 || 1e-6))); return t * t * (3 - 2 * t); };
@@ -81,46 +81,26 @@ export function regionContrast(lab, tw, th, rgb) {
   const out = new Float32Array(R); for (let r = 0; r < R; r++) out[r] = cnt[r] ? sum[r] / cnt[r] : 0; return out;
 }
 
-/** Direction (cos, sin) a brush would take at pixel i: along the photo's edges where there are some, otherwise the painter's hand. */
-export function brushDir(field, i, hand, drift) {
-  const nrm = Math.hypot(field.vx[i], field.vy[i]) || 1, we = Math.min(1, field.coh[i] * 1.2), base = hand + drift;
-  const ax = we * (-field.vx[i] / nrm) + (1 - we) * Math.cos(2 * base), ay = we * (-field.vy[i] / nrm) + (1 - we) * Math.sin(2 * base), t = 0.5 * Math.atan2(ay, ax);
-  return [Math.cos(t), Math.sin(t)];
-}
-
 /**
- * Unpainted paper ("reserve"): 1 = paint, 0 = bare paper. The reserve is built from irregular brush-shaped patches (the gaps a hurried brush leaves
- * between its marks, not lines) dropped at random. They are NOT tied to brightness: they land anywhere, in dark places as well as light ones; they are
- * somewhat more likely next to boundaries between faces (where a painter leaves a gap to keep two colours apart), lying along the boundary, and a
- * little more likely in light places. amount 0..1 = how much of the picture is left bare (about 2% .. 22%); brush 0..1 sets the size of the patches.
+ * "Don't paint everything": where paint is needed. A watercolourist paints only the places that need colour and leaves the paper bare elsewhere
+ * (Cezanne leaves about half of the sheet). The bare paper is therefore large and coherent, and follows the picture, not a random pattern:
+ * a colour FACE is more likely to be painted when it is colourful, dark or full of detail, and near the middle of the picture; every face also has
+ * some luck of its own (so a pale or dull face is sometimes painted, and a strong one sometimes left), plus slow variation inside a face.
+ * Brightness alone does not decide. bare 0..0.65 = the share of the picture left unpainted.
+ * Returns open: 1 = paint, 0 = bare paper (smooth, ragged edge).
  */
-export function reserveField(lab, ps, dist, contrast, field, tw, th, k, amount, brush, seed, hand, rnd, tile) {
-  const N = tw * th, long = Math.max(tw, th); if (amount <= 0) return null;
-  const target = (0.02 + 0.2 * amount) * N, nL = contrast.length, rr = new Float32Array(nL), M = 511, open = new Float32Array(N).fill(1), bd = 0.02 * long, base = (0.004 + 0.009 * brush) * long;
+export function paintNeed(lab, ps, field, tw, th, bare, seed, rnd, nL) {
+  if (bare <= 0) return null;
+  const N = tw * th, long = Math.max(tw, th), cn = new Float64Array(nL), ch = new Float64Array(nL), dk = new Float64Array(nL), dt = new Float64Array(nL), rr = new Float32Array(nL);
   for (let r = 0; r < nL; r++) rr[r] = rnd();
-  let covered = 0;
-  const stamp = (cx, cy, hw, hl, c, sn, amp) => {
-    const taper = 0.1 + 0.5 * rnd(), flip = rnd() < 0.5 ? -1 : 1, bend = (rnd() - 0.5) * 0.8, ox = (rnd() * 997) | 0, oy = (rnd() * 991) | 0, oc = (rnd() * 983) | 0;
-    const ex = (Math.abs(c) * hl + Math.abs(sn) * hw) * 1.35, ey = (Math.abs(sn) * hl + Math.abs(c) * hw) * 1.35;
-    const x0 = Math.max(0, Math.floor(cx - ex)), x1 = Math.min(tw - 1, Math.ceil(cx + ex)), y0 = Math.max(0, Math.floor(cy - ey)), y1 = Math.min(th - 1, Math.ceil(cy + ey));
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-      const dx = x - cx, dy = y - cy, u = (dx * c + dy * sn) / hl; if (u > 1.3 || u < -1.3) continue;
-      const wf = Math.max(0.3, 1 - taper * smooth(-0.3, 1, u * flip)), v = ((-dx * sn + dy * c) / hw - bend * u * u) / wf, au = Math.abs(u), av = Math.abs(v); if (av > 1.3) continue;
-      const m = Math.pow(au * au * au + av * av * av, 1 / 3) + (tile[((y + oy) & M) * 512 + ((x + ox) & M)] - 0.5) * 0.16 + (tile[((((y >> 3) + oy) & M) * 512) + (((x >> 3) + ox) & M)] - 0.5) * 0.34;
-      if (m >= 1) continue;
-      // the margin breaks up into streaks along the brush (a dry brush skipping the paper), the middle is bare
-      const streak = tile[((((Math.floor(v * hw / 1.3)) + oc) & M) * 512) + (((Math.floor(u * hl / 9)) + oy) & M)], q = amp * Math.max(0, Math.min(1, (1 - smooth(0.45, 1, m) - (1 - streak) * 0.55 * smooth(0.3, 0.9, m)) / 0.45)), i = y * tw + x, prev = 1 - open[i];
-      if (q > prev) { covered += q - prev; open[i] = 1 - q; }
-    }
-  };
-  for (let tries = 0; covered < target && tries < 80000; tries++) {
-    const cx = rnd() * tw, cy = rnd() * th, ci = (cy | 0) * tw + (cx | 0), l = lab[ci], bnd = Math.exp(-dist[ci] / bd) * (0.4 + 0.6 * smooth(6, 40, contrast[l])), br = (0.299 * ps[0][ci] + 0.587 * ps[1][ci] + 0.114 * ps[2][ci]) / 255;
-    if (rnd() > 0.12 + 0.6 * bnd + 0.1 * br + 0.18 * rr[l]) continue;
-    const n = 1 + (rnd() < 0.5 ? 1 : 0) + (rnd() < 0.25 ? 1 : 0), amp = rnd() < 0.6 ? 1 : 0.5 + 0.4 * rnd(); // some patches are only thinly painted, not bare
-    for (let j = 0; j < n; j++) {
-      const hw = Math.max(1.6 * k, base * Math.exp((rnd() - 0.5) * 1.5)), hl = hw * (2 + 3 * rnd()), [c, sn] = brushDir(field, ci, hand, (rnd() - 0.5) * 1.3), ox = (rnd() - 0.5) * hl * 0.9, oy = (rnd() - 0.5) * hl * 0.9;
-      stamp(cx + (j ? ox * c - oy * sn : 0), cy + (j ? ox * sn + oy * c : 0), hw, hl, c, sn, amp);
-    }
+  for (let i = 0; i < N; i++) { const l = lab[i], R = ps[0][i], G = ps[1][i], B = ps[2][i]; cn[l]++; ch[l] += (Math.max(R, G, B) - Math.min(R, G, B)) / 255; dk[l] += 1 - (0.299 * R + 0.587 * G + 0.114 * B) / 255; dt[l] += field.det[i]; }
+  const sf = new Float32Array(nL); for (let r = 0; r < nL; r++) { const n = cn[r] || 1; sf[r] = 0.35 * Math.min(1, (ch[r] / n) * 3) + 0.3 * (dk[r] / n) + 0.35 * Math.min(1, (dt[r] / n) * 1.4) + 0.5 * (rr[r] - 0.5); }
+  const score = new Float32Array(N);
+  for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+    const i = y * tw + x, L = (0.299 * ps[0][i] + 0.587 * ps[1][i] + 0.114 * ps[2][i]) / 255, mid = Math.max(0, 1 - Math.hypot(x / tw - 0.5, y / th - 0.5) / 0.7);
+    score[i] = sf[lab[i]] + 0.3 * field.det[i] + 0.15 * (1 - L) + 0.25 * mid + 0.35 * (vnoise(x, y, 0.09 * long, seed) - 0.5) + 0.06 * (vnoise(x, y, Math.max(2, 0.006 * long), seed + 1) - 0.5);
   }
+  const rb = Math.max(2, Math.round(0.008 * long)), Nb = boxBlur(boxBlur(score, tw, th, rb), tw, th, rb), thr = pct(Nb, bare), open = new Float32Array(N), w = 0.025;
+  for (let i = 0; i < N; i++) open[i] = smooth(thr - w, thr + w, Nb[i]);
   return open;
 }

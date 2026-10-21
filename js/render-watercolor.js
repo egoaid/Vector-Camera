@@ -1,7 +1,7 @@
 // render-watercolor.js - the "watercolour" mode: the photo painted with a brush, translucent patches layered on real paper.
 // Steps (all typed-array code, no DOM; paint is kept as optical density, see wc-strokes.js):
 //  1 pigment     photo colours as density, with more chroma (watercolour pigments are cleaner than the real world) but not more density
-//  2 reserve     unpainted paper: irregular patches between brush marks, anywhere (not tied to brightness), more next to boundaries (wc-field.js)
+//  2 need        where paint is needed at all: colourful / dark / detailed faces near the middle; the rest stays bare paper (wc-field.js)
 //  3 strokes     brush patches, broad wash to small, layered, each in one of two pigments that mix to the photo colour (wc-strokes.js)
 //  4 lightness   transparency: the whole painting is lifted toward the paper
 //  5 wet bleed   in a few wet places colours run into each other
@@ -9,7 +9,7 @@
 // The result is multiplied by the paper colour. Returns RGBA bytes (opaque).
 import { boxBlur, hash, vnoise } from './tone-photo.js';
 import { hexToRgb, mulberry32, hueMatrix } from './color-utils.js';
-import { orientationField, boundaryDistance, regionContrast, reserveField, refineLabels, modeFilter } from './wc-field.js';
+import { orientationField, boundaryDistance, paintNeed, refineLabels, modeFilter } from './wc-field.js';
 import { paintStrokes, noiseTile } from './wc-strokes.js';
 import { strokeCollector, vectorItems } from './wc-vector.js';
 
@@ -43,7 +43,7 @@ function core(img, lab0, stats, spec, onStroke) {
   const Dp = mk(), sat = (a, b, c, o, i) => { const m = (a + b + c) / 3; o[0][i] = Math.max(0, m + (a - m) * SAT); o[1][i] = Math.max(0, m + (b - m) * SAT); o[2][i] = Math.max(0, m + (c - m) * SAT); };
   for (let i = 0; i < N; i++) sat(dens(ps[0][i]), dens(ps[1][i]), dens(ps[2][i]), Dp, i);
   // 2 unpainted paper
-  const tile = noiseTile(seed + 50), hand = -0.95 + (rnd() - 0.5) * 0.6, dist = boundaryDistance(lab, tw, th, 0.08 * long), open = hl > 0 ? reserveField(lab, ps, dist, regionContrast(lab, tw, th, rgb), field, tw, th, k, hl, brush, seed + 30, hand, rnd, tile) : null;
+  const tile = noiseTile(seed + 50), hand = -0.95 + (rnd() - 0.5) * 0.6, open = hl > 0 ? paintNeed(lab, ps, field, tw, th, 0.65 * hl, seed + 30, rnd, nL) : null;
   // 3 strokes
   const D = mk(), count = paintStrokes({ tw, th, long, k, lab, ps, Dp, field, open, D, rnd, tile, seed: seed + 60, hand }, { brush, layer, edge, bleed, hl, mix, onStroke });
   // keep the overall density where the photo has it (more overlap must not mean a darker picture), then 4 lightness

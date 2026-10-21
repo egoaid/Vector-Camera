@@ -11,5 +11,5 @@ export const EN5 = {
   'grp.inkfx': 'Ink effects', 'ix.note': 'Adds ink stains that bleed from the boundaries between colour areas, and spattered ink drops, over the whole picture (works in every mode).', 'p.inkStain': 'Ink stains / bleed', 'p.inkSplat': 'Ink spatter', 'ix.reseed': 'New pattern',
   'mode.watercolor': 'Watercolour', 'mode.watercolor.desc': 'The photo painted with a brush in layered watercolour: brush marks, bare-paper gaps, bleeding colour, paper grain', 'grp.wc': 'Watercolour',
   'p.wcPaper': 'Paper', 'wc.paper.hot': 'Smooth (hot-pressed)', 'wc.paper.cold': 'Medium (cold-pressed)', 'wc.paper.tinted': 'Buff paper',
-  'p.wcBleed': 'Colour bleed (wet paper)', 'p.wcEdge': 'Pigment pooling at edges', 'p.wcGran': 'Pigment granulation', 'p.wcLight': 'Lightness (transparency)', 'p.wcHl': 'Unpainted paper', 'p.wcBloom': 'Mottling / blooms', 'p.wcBrush': 'Brush size', 'p.wcMix': 'Pigment mixing (overlaps)', 'p.wcLayer': 'Layering',
+  'p.wcBleed': 'Colour bleed (wet paper)', 'p.wcEdge': 'Pigment pooling at edges', 'p.wcGran': 'Pigment granulation', 'p.wcLight': 'Lightness (transparency)', 'p.wcHl': 'Unpainted paper (area left bare)', 'p.wcBloom': 'Mottling / blooms', 'p.wcBrush': 'Brush size', 'p.wcMix': 'Pigment mixing (overlaps)', 'p.wcLayer': 'Layering',
 };
