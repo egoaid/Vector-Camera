@@ -35,7 +35,7 @@ export function makeInkFactory(src, res, targetLong, opts = {}) {
   const lab = new Int32Array(tw * th);
   for (let y = 0; y < th; y++) { const sy = Math.min(gh0 - 1, Math.floor((y * gh0) / th)) * gw0; for (let x = 0; x < tw; x++) lab[y * tw + x] = labels[sy + Math.min(gw0 - 1, Math.floor((x * gw0) / tw))]; }
   const build = (spec) => {
-    if (spec.mode === 'wcline') { const b = wcLineBitmap(img, spec); return b ? { w: tw, h: th, rgba: b.rgba, gx: 0, gy: 0, gw: tw * (gw0 / tw), gh: th * (gh0 / th) } : null; } // line work over the watercolour (wc-lines.js)
+    if (spec.mode === 'wcline') { const b = wcLineBitmap(img, spec, lab, res.stats && res.stats.rgb); return b ? { w: tw, h: th, rgba: b.rgba, gx: 0, gy: 0, gw: tw * (gw0 / tw), gh: th * (gh0 / th) } : null; } // line work over the watercolour (wc-lines.js)
     if (spec.mode === 'wc' && spec.vector) { const v = watercolorVector(img, lab, res.stats, spec); return { w: tw, h: th, vector: true, items: v.items, strokes: v.strokes, gx: 0, gy: 0, gw: tw * (gw0 / tw), gh: th * (gh0 / th) }; } // watercolour as vector shapes (SVG / PDF)
     if (spec.mode === 'wc') return { w: tw, h: th, rgba: watercolorBitmap(img, lab, res.stats, spec), gx: 0, gy: 0, gw: tw * (gw0 / tw), gh: th * (gh0 / th), opaque: true }; // watercolour mode: the whole picture, opaque
     const elig = new Uint8Array(res.R); for (const r of spec.regions) elig[r] = 1;

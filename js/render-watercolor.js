@@ -20,7 +20,7 @@ export const PAPERS = {
 };
 export const PAPER_IDS = Object.keys(PAPERS);
 const smooth = (e0, e1, x) => { const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0 || 1e-6))); return t * t * (3 - 2 * t); };
-const SAT = 1.3; // chroma of the pigment: the spread of the channel densities is stretched by this, their mean (how dark it is) is not
+// chroma of the pigment: the spread of the channel densities is stretched by SAT (0.5 .. 2.1, 1.3 at the default 50), their mean (how dark it is) is not
 
 /** Height of the paper surface in [0,1] (valleys low), a FINE tooth: the cells are only a pixel or two wide. */
 function paperHeight(id, x, y, k, seed) {
@@ -32,7 +32,7 @@ const dens = (v) => -Math.log(Math.max(10, Math.min(255, v)) / 255);
 /** Everything up to the finished density map (shared by the raster picture and the vector export). */
 function core(img, lab0, stats, spec, onStroke) {
   const tw = img.w, th = img.h, N = tw * th, data = img.data, long = Math.max(tw, th), k = Math.max(1, long / 1000), seed = (spec.seed | 0) + 13;
-  const f01 = (v, d) => Math.max(0, Math.min(100, v ?? d)) / 100, bleed = f01(spec.bleed, 45), edge = f01(spec.edge, 50), gran = f01(spec.gran, 50), light = f01(spec.light, 30), hl = f01(spec.hl, 40), bloom = f01(spec.bloom, 35), brush = f01(spec.brush, 50), layer = f01(spec.layer, 50), mix = f01(spec.mix, 35);
+  const f01 = (v, d) => Math.max(0, Math.min(100, v ?? d)) / 100, bleed = f01(spec.bleed, 45), edge = f01(spec.edge, 50), gran = f01(spec.gran, 50), light = f01(spec.light, 30), hl = f01(spec.hl, 40), bloom = f01(spec.bloom, 35), brush = f01(spec.brush, 50), layer = f01(spec.layer, 50), mix = f01(spec.mix, 35), SAT = 0.5 + 1.6 * f01(spec.sat, 50);
   const pid = PAPERS[spec.paper] ? spec.paper : 'cold', paper = PAPERS[pid], rgb = stats.rgb, rnd = mulberry32((seed * 2654435761) >>> 0);
   const blur = (A, r) => boxBlur(A, tw, th, Math.max(1, r)), mk = () => [new Float32Array(N), new Float32Array(N), new Float32Array(N)];
   const pr = mk(); for (let i = 0, j = 0; i < N; i++, j += 4) { pr[0][i] = data[j]; pr[1][i] = data[j + 1]; pr[2][i] = data[j + 2]; }
