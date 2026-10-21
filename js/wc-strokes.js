@@ -63,10 +63,10 @@ export function paintStrokes(c, o) {
   for (const P of PASSES) {
     pi++; const wgt = P.min === 0 ? 1 : Math.max(0, Math.min(1, (o.layer - P.min) / 0.2)); if (wgt <= 0) continue;
     const cs = P.cs || cs0, hw0 = Math.max(2 * k, hw1 * P.s), cell = hw0 * cs, ovl = (Math.PI * P.asp * 0.9) / (cs * cs), wash = !!P.wash, keep = wash && T ? Math.min(1, (-Math.log(Math.max(0.02, o.bare)) * 1.0) / ovl) : 1, fP = (P.f * wgt) / ovl / (wash && T ? Math.max(0.35, keep) : 1);
-    for (let gy = 0; gy * cell < th; gy++) for (let gx = 0; gx * cell < tw; gx++) {
+    for (let gy = -1; gy * cell < th; gy++) for (let gx = -1; gx * cell < tw; gx++) { // starts one cell outside the sheet: strokes centred just beyond the border cover it, so the edges are not left bare
       const r = new Float32Array(20); for (let q = 0; q < 20; q++) r[q] = rnd();
-      const cx = (gx + r[0]) * cell, cy = (gy + r[1]) * cell; if (cx >= tw || cy >= th) continue;
-      const ci = (cy | 0) * tw + (cx | 0), home = lab[ci], det = field.det[ci];
+      const cx = (gx + r[0]) * cell, cy = (gy + r[1]) * cell; if (cx >= tw + 0.4 * cell || cy >= th + 0.4 * cell || cx < -0.6 * cell || cy < -0.6 * cell) continue;
+      const ci = Math.min(th - 1, Math.max(0, cy | 0)) * tw + Math.min(tw - 1, Math.max(0, cx | 0)), home = lab[ci], det = field.det[ci];
       if (T && !wash && T[ci] < 0.3) continue; // no paint on the paper the wash left bare
       if (T && wash && r[17] > Math.min(1, keep * (0.5 + 1.3 * det))) continue; // a wash stroke that is not painted: this is where the paper stays bare
       if (P.sel === 'detail' && r[2] > 0.1 + 0.9 * smooth(0.15, 0.6, det)) continue;
