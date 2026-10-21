@@ -1,6 +1,6 @@
 /* service-worker.js - app-shell cache (same-origin only). */
-const VERSION = '0.14.0-beta.6';
-const BUILD = '20261021.4';
+const VERSION = '0.14.0-beta.7';
+const BUILD = '20261021.5';
 const CACHE = `vector-camera-${VERSION}-${BUILD}`;
 const SHELL = [
   './', 'index.html', 'manifest.json',

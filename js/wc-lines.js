@@ -50,40 +50,43 @@ export function pencilColor(r, g, b, sat, bright, primary) {
   return [grey[0] + (col[0] - grey[0]) * chroma, grey[1] + (col[1] - grey[1]) * chroma, grey[2] + (col[2] - grey[2]) * chroma];
 }
 
-/** Coloured pencil: strokes are laid on a jittered grid, more where the picture is dark or colourful, a second and third crossing layer only in the darker places. */
+/**
+ * Coloured pencil, drawn the way it is used over a wash: a little hatching in the shadows (`shade`) and lines that follow the outlines (`contour`),
+ * never a dense fill. Long strokes in broad colour parts, short ones that fit the shape of small parts (`adapt`), with some variation (`vary`).
+ */
 function pencil(img, spec, amt, c) {
-  const { W, H, N, k, seed, R, G, B, lum, D, lab, faceRgb } = c, q = spec.pc || {}, f = (v, d) => Math.max(0, Math.min(100, v ?? d)) / 100;
-  const wid = (0.7 + 2.6 * f(q.width, 40)) * k, len = (7 + 26 * f(q.len, 50)) * k, ang = ((q.angle ?? 40) * Math.PI) / 180, follow = f(q.follow, 50), parts = f(q.parts, 40), sat = f(q.sat, 85), bright = f(q.bright, 80), prim = f(q.primary, 60);
-  const rb = Math.max(2, Math.round(3 * k)), Rb = boxBlurF(R, W, H, rb), Gb = boxBlurF(G, W, H, rb), Bb = boxBlurF(B, W, H, rb);
-  const field = orientationField([R, G, B], W, H), rnd = mulberry32((seed * 2654435761) >>> 0), A = new Float32Array(N), C = new Uint8Array(N * 3), Ls = new Int32Array(N);
+  const { W, H, N, k, seed, R, G, B, D, lab, faceRgb } = c, q = spec.pc || {}, f = (v, d) => Math.max(0, Math.min(100, v ?? d)) / 100;
+  const wid0 = (0.3 + 2.7 * f(q.width, 20)) * k, len0 = (12 + 44 * f(q.len, 45)) * k, ang = ((q.angle ?? 40) * Math.PI) / 180, follow = f(q.follow, 50), parts = f(q.parts, 40), sat = f(q.sat, 85), bright = f(q.bright, 80), prim = f(q.primary, 60);
+  const adapt = f(q.adapt, 60), vary = f(q.vary, 40), shade = f(q.shade, 55), contour = f(q.contour, 45);
+  const rb = Math.max(2, Math.round(3 * k)), Rb = boxBlurF(R, W, H, rb), Gb = boxBlurF(G, W, H, rb), Bb = boxBlurF(B, W, H, rb), Db = boxBlurF(D, W, H, Math.max(2, Math.round(2 * k)));
+  const field = orientationField([R, G, B], W, H), rnd = mulberry32((seed * 2654435761) >>> 0), A = new Float32Array(N), C = new Uint8ClampedArray(N * 3);
   const faceAng = (l) => (hash(l, 7, seed) - 0.5) * Math.PI * 0.9;
-  const cs = Math.max(3.2 * k, wid * 4.2) * (1.9 - 0.9 * amt), layers = 1 + (amt > 0.35 ? 1 : 0) + (amt > 0.75 ? 1 : 0);
+  let size = null; if (lab) { let nL = 0; for (let i = 0; i < N; i++) if (lab[i] >= nL) nL = lab[i] + 1; const cnt = new Float64Array(nL); for (let i = 0; i < N; i++) cnt[lab[i]]++; size = Float32Array.from(cnt, (n) => Math.max(0.45, Math.min(2.2, Math.sqrt(n / N) / 0.28))); } // 1 = a part about a quarter of the picture wide
+  const cs = 5.2 * k * (1.9 - 0.5 * amt), layers = 1 + (amt > 0.6 ? 1 : 0), dens = 0.2 + 0.5 * amt;
   for (let ly = 0; ly < layers; ly++) {
-    const rot = ly === 0 ? 0 : ly === 1 ? 0.95 : -0.8, thr = [0.04, 0.3, 0.55][ly];
+    const rot = ly === 0 ? 0 : ly === 1 ? 0.95 : -0.8, thr = [0.22, 0.5, 0.7][ly];
     for (let gy = 0; gy * cs < H; gy++) for (let gx = 0; gx * cs < W; gx++) {
-      const cx = (gx + rnd()) * cs, cy = (gy + rnd()) * cs, r1 = rnd(), r2 = rnd(), r3 = rnd(); if (cx >= W || cy >= H) continue;
-      const ci = (cy | 0) * W + (cx | 0), l = lab ? lab[ci] : 0, chroma = (Math.max(Rb[ci], Gb[ci], Bb[ci]) - Math.min(Rb[ci], Gb[ci], Bb[ci])) / 255;
-      const need = Math.min(1, D[ci] * 0.85 + chroma * 0.3) * (0.45 + 0.9 * amt); if (r1 > smooth(thr + 0.08, thr + 0.5, need) * (0.55 + 0.45 * amt)) continue;
-      // direction: the painter's hand (global angle, a different one for every part when `parts`), pulled toward the edges of the picture by `follow`
-      const nrm = Math.hypot(field.vx[ci], field.vy[ci]) || 1, we = Math.min(1, field.coh[ci] * follow * 1.6), base = ang + (lab ? faceAng(l) * parts : 0) + rot + (r2 - 0.5) * 0.35;
+      const cx = (gx + rnd()) * cs, cy = (gy + rnd()) * cs, r1 = rnd(), r2 = rnd(), r3 = rnd(), r4 = rnd(); if (cx >= W || cy >= H) continue;
+      const ci = (cy | 0) * W + (cx | 0), l = lab ? lab[ci] : 0, edge = field.coh[ci] * (0.4 + 0.6 * field.det[ci]);
+      const sp = shade * smooth(thr, thr + 0.4, Db[ci]) * dens, cp = ly === 0 ? contour * smooth(0.12, 0.55, edge) * dens : 0, pt = 1 - (1 - sp) * (1 - cp); if (r1 > pt) continue;
+      const isC = r4 < cp / (sp + cp + 1e-9), nrm = Math.hypot(field.vx[ci], field.vy[ci]) || 1, we = isC ? Math.max(0.85, follow) * Math.min(1, field.coh[ci] * 2) : Math.min(1, field.coh[ci] * follow * 1.6), base = ang + (lab ? faceAng(l) * parts : 0) + rot + (r2 - 0.5) * 0.35;
       const ax = we * (-field.vx[ci] / nrm) + (1 - we) * Math.cos(2 * base), ay = we * (-field.vy[ci] / nrm) + (1 - we) * Math.sin(2 * base), th = 0.5 * Math.atan2(ay, ax), cT = Math.cos(th), sT = Math.sin(th);
-      const half = len * (0.6 + 0.8 * r3) * 0.5, bow = (r2 - 0.5) * 0.18, w = wid * (0.8 + 0.4 * r3);
-      // colour: the photo colour here, or the mean colour of the part (more and more with `parts`)
+      const sc = size ? 1 + (size[l] - 1) * adapt : 1, vr = 1 + (r3 - 0.5) * 1.4 * vary, half = len0 * sc * vr * 0.5 * (isC ? 0.8 : 1), bow = (r2 - 0.5) * 0.18, w = wid0 * Math.pow(sc, 0.5) * (1 + (r2 - 0.5) * 0.8 * vary);
       let pr = Rb[ci], pg = Gb[ci], pb = Bb[ci]; if (faceRgb && lab) { pr += (faceRgb[l * 3] - pr) * parts * 0.8; pg += (faceRgb[l * 3 + 1] - pg) * parts * 0.8; pb += (faceRgb[l * 3 + 2] - pb) * parts * 0.8; }
-      const pc = pencilColor(pr, pg, pb, sat, bright, prim), lj = 0.93 + 0.14 * rnd();
-      const ex = Math.abs(cT) * half + w + 2, ey = Math.abs(sT) * half + w + 2, x0 = Math.max(0, Math.floor(cx - ex)), x1 = Math.min(W - 1, Math.ceil(cx + ex)), y0 = Math.max(0, Math.floor(cy - ey)), y1 = Math.min(H - 1, Math.ceil(cy + ey)), pw = 0.6 + 0.4 * rnd();
+      const pc = pencilColor(pr, pg, pb, sat, bright, prim), lj = 0.94 + 0.12 * rnd();
+      const ex = Math.abs(cT) * half + w + 2, ey = Math.abs(sT) * half + w + 2, x0 = Math.max(0, Math.floor(cx - ex)), x1 = Math.min(W - 1, Math.ceil(cx + ex)), y0 = Math.max(0, Math.floor(cy - ey)), y1 = Math.min(H - 1, Math.ceil(cy + ey)), pw = 0.65 + 0.35 * rnd();
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-        const dx = x - cx, dy = y - cy, u = dx * cT + dy * sT, v0 = -dx * sT + dy * cT, v = v0 - bow * u * u / Math.max(1, half) * 2; if (Math.abs(u) > half) continue;
+        const dx = x - cx, dy = y - cy, u = dx * cT + dy * sT, v = -dx * sT + dy * cT - bow * u * u / Math.max(1, half) * 2; if (Math.abs(u) > half) continue;
         const i = y * W + x; if (lab && parts > 0.05 && lab[i] !== l && rnd() < parts) continue; // each part is hatched on its own
-        const tp = 1 - smooth(0.55, 1, Math.abs(u) / half) * 0.8, e = smooth(w * 0.5 + 0.8, w * 0.5 - 0.2, Math.abs(v)) * tp * pw; if (e <= 0.02) continue;
-        if (e > A[i]) { A[i] = e; C[i * 3] = pc[0] * lj; C[i * 3 + 1] = pc[1] * lj; C[i * 3 + 2] = pc[2] * lj; }
+        const tp = 1 - smooth(0.5, 1, Math.abs(u) / half) * 0.85, e = smooth(w * 0.5 + 0.7, w * 0.5 - 0.15, Math.abs(v)) * tp * pw; if (e <= 0.02) continue;
+        if (e > A[i]) { A[i] = e; C[i * 3] = pc[0] * lj; C[i * 3 + 1] = pc[1] * lj; C[i * 3 + 2] = pc[2] * lj; } // (clamped array: 1.06 x 255 must not wrap around)
       }
     }
   }
   const rgba = new Uint8ClampedArray(N * 4); let any = false;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x; let a = A[i]; if (a < 0.03) continue;
-    const tooth = hash(x, y, seed + 3) * 0.55 + vnoise(x, y, 1.6 * k, seed + 4) * 0.45; a *= 0.95 * smooth(0.12, 0.42, tooth); if (a < 0.03) continue; // the pencil only catches the peaks of the paper
+    const tooth = hash(x, y, seed + 3) * 0.55 + vnoise(x, y, 1.6 * k, seed + 4) * 0.45; a *= 0.95 * smooth(0.12, 0.42, tooth); if (a < 0.03) continue;
     const j = i * 4; rgba[j] = C[i * 3]; rgba[j + 1] = C[i * 3 + 1]; rgba[j + 2] = C[i * 3 + 2]; rgba[j + 3] = Math.round(Math.min(1, a) * 255); any = true;
   }
   return any ? { w: W, h: H, rgba } : null;

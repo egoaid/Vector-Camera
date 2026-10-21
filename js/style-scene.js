@@ -109,7 +109,7 @@ export function buildBase(res, groups, p, inkFactory) {
     else if (bmp) scene.layers.push({ kind: 'ink', name: 'watercolor', noClip: true, regions: [], bitmap: bmp, blend: 'normal', spec: { mode: 'raw' } });
     else { const map = new Map(); for (const r of all) map.set(r, hueRotateHex(hexOf(st, r), hs)); scene.layers.push({ kind: 'fills', name: 'regions', offset: [0, 0], items: groupBy(map), seal, stroke }); }
     if (inkFactory && p.wcLine && p.wcLine !== 'none' && p.wcLineAmt > 0) { // etching / pen / coloured-pencil lines over the painting
-      const lb = inkFactory({ mode: 'wcline', regions: all, style: p.wcLine, amt: p.wcLineAmt, seed: p.wcSeed, pc: { width: p.wcPcWidth, len: p.wcPcLen, angle: p.wcPcAngle, follow: p.wcPcFollow, parts: p.wcPcParts, sat: p.wcPcSat, bright: p.wcPcBright, primary: p.wcPcPrimary } });
+      const lb = inkFactory({ mode: 'wcline', regions: all, style: p.wcLine, amt: p.wcLineAmt, seed: p.wcSeed, pc: { width: p.wcPcWidth, len: p.wcPcLen, adapt: p.wcPcAdapt, vary: p.wcPcVary, shade: p.wcPcShade, contour: p.wcPcContour, angle: p.wcPcAngle, follow: p.wcPcFollow, parts: p.wcPcParts, sat: p.wcPcSat, bright: p.wcPcBright, primary: p.wcPcPrimary } });
       if (lb) scene.layers.push({ kind: 'ink', name: 'wc-lines', noClip: true, regions: [], bitmap: lb, blend: 'multiply', spec: { mode: 'raw' } });
     }
     return scene;

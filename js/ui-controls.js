@@ -20,7 +20,7 @@ function group(id, content) {
   d.addEventListener('toggle', () => { d.open ? openGroups.add(id) : openGroups.delete(id); }); d.append(sm, ...content); return d;
 }
 // line work over the watercolour (wc-lines.js): amount for every style, then the coloured-pencil controls
-const WCLINE = [{ k: 'wcLineAmt' }, { k: 'wcPcWidth' }, { k: 'wcPcLen' }, { k: 'wcPcAngle', min: 0, max: 180 }, { k: 'wcPcFollow' }, { k: 'wcPcParts' }, { k: 'wcPcSat' }, { k: 'wcPcBright' }, { k: 'wcPcPrimary' }];
+const WCLINE = [{ k: 'wcLineAmt' }, { k: 'wcPcShade' }, { k: 'wcPcContour' }, { k: 'wcPcWidth' }, { k: 'wcPcLen' }, { k: 'wcPcAdapt' }, { k: 'wcPcVary' }, { k: 'wcPcAngle', min: 0, max: 180 }, { k: 'wcPcFollow' }, { k: 'wcPcParts' }, { k: 'wcPcSat' }, { k: 'wcPcBright' }, { k: 'wcPcPrimary' }];
 const ADV = [
   { k: 'roughness', modes: INK_MODES, when: needsInk }, { k: 'lightDir', modes: ALL, min: 0, max: 359 }, { k: 'hueShift', modes: ALL, min: -180, max: 180 }, { k: 'paper', modes: ['hybrid'] },
   { k: 'boundary', modes: ALL }, { k: 'minRegion', modes: ALL }, { k: 'outline', modes: ['vector', 'regions', 'silhouette'] },
