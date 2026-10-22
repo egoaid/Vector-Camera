@@ -1,7 +1,7 @@
 // version.js - single source of truth for app / module versions (shown in the About dialog).
 export const APP_NAME = 'Vector Camera';
-export const APP_VERSION = '0.14.0-beta.9';
-export const BUILD_ID = '20261022.2';
+export const APP_VERSION = '0.14.0-beta.10';
+export const BUILD_ID = '20261022.3';
 export const BUILD_DATE = '2026-10-20';
 export const SETTINGS_SCHEMA = 5;
 export const PIPELINE_REV = '1.2.0';

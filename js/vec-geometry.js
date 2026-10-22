@@ -9,7 +9,8 @@ export function buildGeometry(labels, w, h, R, prm) {
   const { chains: raw } = traceBoundaries(labels, w, h);
   const chains = raw.map((c) => {
     const path = fitChain(c.xy, c.closed, prm), n = c.xy.length;
-    pinEnds(path, c.xy[0], c.xy[1], c.xy[n - 2], c.xy[n - 1]);
+    if (c.closed) { const q = path.pts, L = q.length; q[L - 2] = q[0]; q[L - 1] = q[1]; } // a closed ring may start at a corner other than xy[0]: just seal it where it starts
+    else pinEnds(path, c.xy[0], c.xy[1], c.xy[n - 2], c.xy[n - 1]);
     return { path, left: c.left, right: c.right, sv: c.sv, ev: c.ev };
   });
   const out = Array.from({ length: R }, () => new Map());
