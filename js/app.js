@@ -219,7 +219,7 @@ async function applyWholeStyle(np, name, opts = {}) {
   if (!state.result) return;
   // a built-in style recolours every collage piece, so per-piece varied palettes are switched off; a saved My Style is restored exactly as saved
   trackDiscrete(); state.params = np; if (!opts.exact && state.collage && state.params.collageVary) state.params.collageVary = false;
-  await ensureFonts(state.params); saveSettings(); buildUI(); await refresh();
+  await withBusy(async () => { await ensureFonts(state.params); saveSettings(); buildUI(); await refresh(); });
 }
 async function refresh() {
   const mySeq = ++state.seq; $('stage').style.opacity = '.85';
@@ -301,7 +301,7 @@ function syncUndo() { $('sheet-undo').disabled = !undoH.size; $('sheet-redo').di
 async function stepHistory(from, to) {
   const snap = from.pop(); if (!snap) return;
   to.push(snapshot()); state.params = snap.params; state.overrides = snap.overrides; lastT = 0;
-  await ensureFonts(state.params); saveSettings(); buildUI(); await refresh();
+  await withBusy(async () => { await ensureFonts(state.params); saveSettings(); buildUI(); await refresh(); });
 }
 const undo = () => stepHistory(undoH, redoH), redo = () => stepHistory(redoH, undoH);
 
