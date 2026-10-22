@@ -40,6 +40,7 @@
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/busy.css">
 <link rel="stylesheet" href="css/camera.css">
 <link rel="stylesheet" href="css/result.css">
 <link rel="stylesheet" href="css/compare.css">
@@ -299,12 +300,16 @@
 <!-- PROCESSING -->
 <div id="processing" class="overlay" role="alertdialog" aria-modal="true" aria-labelledby="proc-title" hidden>
   <div class="overlay-card">
+    <div class="vc-press vc-press-l"></div>
     <h2 id="proc-title" data-i18n="proc.title">変換中…</h2>
     <p id="proc-stage" role="status"></p>
     <div class="progress" aria-hidden="true"><div class="progress-bar" id="proc-bar"></div></div>
     <button type="button" class="btn btn-secondary" id="btn-proc-cancel" data-i18n="proc.cancel">キャンセル</button>
   </div>
 </div>
+
+<!-- small "generating" badge (first render / randomise) -->
+<div id="busy" class="vc-busy" role="status" hidden><div class="vc-press"></div><span data-i18n="busy.working">生成中…</span></div>
 
 <!-- model download confirm -->
 <!-- ABOUT -->

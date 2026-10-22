@@ -1,10 +1,10 @@
 /* service-worker.js - app-shell cache (same-origin only). */
-const VERSION = '0.14.0-beta.10';
-const BUILD = '20261022.3';
+const VERSION = '0.14.0-beta.11';
+const BUILD = '20261022.4';
 const CACHE = `vector-camera-${VERSION}-${BUILD}`;
 const SHELL = [
   './', 'index.html', 'manifest.json',
-  'css/tokens.css', 'css/base.css', 'css/layout.css', 'css/components.css', 'css/camera.css', 'css/result.css', 'css/compare.css', 'css/zoom.css', 'css/sheet.css', 'css/text-panel.css', 'css/style-lib.css', 'css/hub.css', 'css/phone.css',
+  'css/tokens.css', 'css/base.css', 'css/layout.css', 'css/components.css', 'css/camera.css', 'css/result.css', 'css/compare.css', 'css/zoom.css', 'css/sheet.css', 'css/text-panel.css', 'css/style-lib.css', 'css/hub.css', 'css/phone.css', 'css/busy.css',
   'icons/favicon-16.png', 'icons/favicon-32.png', 'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/app.js', 'js/version.js', 'js/config.js', 'js/state.js', 'js/i18n.js', 'js/i18n-ja.js', 'js/i18n-en.js',
   'js/wake-lock.js', 'js/camera.js', 'js/image-input.js', 'js/pwa.js',
@@ -13,7 +13,7 @@ const SHELL = [
   'js/vec-chains.js', 'js/vec-smooth.js', 'js/vec-curves.js', 'js/vec-geometry.js', 'js/style-palette.js', 'js/style-scene.js',
   'js/render-svg.js', 'js/render-canvas.js', 'js/render-ink.js', 'js/wc-field.js', 'js/wc-strokes.js', 'js/wc-lines.js', 'js/wc-vector.js', 'js/render-pdf.js', 'js/render-png.js', 'js/util-deflate.js', 'js/export-files.js',
   'js/pipeline-core.js', 'js/pipeline-worker.js', 'js/pipeline-client.js',
-  'js/i18n-ja-v2.js', 'js/i18n-en-v2.js', 'js/tone-photo.js', 'js/style-space.js', 'js/style-colors.js', 'js/face-engines.js', 'js/face-engine-modern.js', 'js/face-frame-modern.js', 'engine/modern-frame.html', 'js/ui-faces.js', 'css/faces.css', 'js/ui-tone.js', 'js/i18n-ja-v4.js', 'js/i18n-en-v4.js', 'js/font-ttf.js', 'js/style-text.js', 'js/style-collage.js', 'js/style-random.js', 'js/ui-extras.js', 'js/vec-ink.js', 'js/render-strips.js', 'js/text-fx.js', 'js/ui-camera.js', 'js/i18n-styles.js', 'js/style-presets.js', 'js/style-tendency.js', 'js/ui-styles.js', 'js/face-landmarks.js', 'js/scene-kinds.js', 'js/ui-zoom.js', 'js/ui-stage.js', 'js/ui-sheet.js', 'js/ui-layout.js', 'js/etching.js', 'js/i18n-manual-ja.js', 'js/i18n-manual-en.js', 'js/ui-textbox.js', 'js/halftone-types.js', 'js/ui-hub.js', 'js/i18n-ja-v3.js', 'js/i18n-en-v3.js', 'js/i18n-ja-v5.js', 'js/i18n-en-v5.js', 'js/render-watercolor.js', 'js/ui-inkfx.js', 'js/ink-dirt.js', 'js/style-frame.js', 'js/style-macro.js', 'js/frame-edge.js', 'js/ui-frame.js',
+  'js/i18n-ja-v2.js', 'js/i18n-en-v2.js', 'js/tone-photo.js', 'js/style-space.js', 'js/style-colors.js', 'js/face-engines.js', 'js/face-engine-modern.js', 'js/face-frame-modern.js', 'engine/modern-frame.html', 'js/ui-faces.js', 'css/faces.css', 'js/ui-tone.js', 'js/i18n-ja-v4.js', 'js/i18n-en-v4.js', 'js/font-ttf.js', 'js/style-text.js', 'js/style-collage.js', 'js/style-random.js', 'js/ui-extras.js', 'js/vec-ink.js', 'js/render-strips.js', 'js/text-fx.js', 'js/ui-camera.js', 'js/i18n-styles.js', 'js/style-presets.js', 'js/style-tendency.js', 'js/ui-styles.js', 'js/face-landmarks.js', 'js/scene-kinds.js', 'js/ui-zoom.js', 'js/ui-stage.js', 'js/ui-sheet.js', 'js/ui-layout.js', 'js/etching.js', 'js/i18n-manual-ja.js', 'js/i18n-manual-en.js', 'js/ui-textbox.js', 'js/halftone-types.js', 'js/ui-hub.js', 'js/i18n-ja-v3.js', 'js/i18n-en-v3.js', 'js/i18n-ja-v5.js', 'js/i18n-en-v5.js', 'js/render-watercolor.js', 'js/ui-inkfx.js', 'js/ink-dirt.js', 'js/style-frame.js', 'js/style-macro.js', 'js/frame-edge.js', 'js/ui-frame.js', 'js/ui-busy.js',
 ];  // fonts/*.ttf are fetched on demand and cached at runtime
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('vector-camera-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

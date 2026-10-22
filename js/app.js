@@ -19,6 +19,7 @@ import { ensureFonts, missingFonts, failedFonts } from './style-text.js';
 import { makeInkFactory } from './render-ink.js';
 import { drawScene, releaseScene } from './render-canvas.js';
 import { showScreen, showProcessing, hideProcessing, showError } from './ui-views.js';
+import { initBusy, withBusy } from './ui-busy.js';
 import { buildControls, presetDefaults } from './ui-controls.js';
 import { initCompare } from './ui-compare.js';
 import { initZoom } from './ui-zoom.js';
@@ -87,7 +88,8 @@ async function analyze() {
   showProcessing('proc.segment', 0.4);
   try { await runPipeline(true); } catch (e) { if (cancelled) return; console.error(e); rollbackReplace(); hideProcessing(); toast(t('err.generic')); if (state.result) resumeEdit(); else showHub(); return; }
   if (cancelled) return;
-  commitReplace(); hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); drawOriginal();
+  commitReplace(); hideProcessing(); showScreen('result'); zoom.reset();
+  await withBusy(async () => { buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); drawOriginal(); }); // the first render can take a while: show the printing animation
 }
 async function runPipeline(force = false) {
   await ensurePipeline();
@@ -117,7 +119,8 @@ async function addCollageFiles(files, append = true) {
     }
   } catch (e) { console.error(e); rollbackReplace(); hideProcessing(); toast(t('err.load')); if (state.result) resumeEdit(); else showHub(); return; }
   state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false; resetHistory(); commitReplace();
-  hideProcessing(); showScreen('result'); zoom.reset(); buildUI(); await ensureFonts(state.params); await yieldUI(); redraw();
+  hideProcessing(); showScreen('result'); zoom.reset();
+  await withBusy(async () => { buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); });
 }
 async function reprocessCollage(mySeq) {
   for (let i = 0; i < state.collage.cells.length; i++) {
@@ -283,8 +286,7 @@ async function doRandom() {
   const out = randomize(seed, { ...o, tendency: state.params.rndStyle }, state.params, solo ? state.result : null, solo ? state.groups : null, { collage: !!state.collage });
   Object.assign(state.params, out.params);
   if (out.overrides && solo) state.overrides = out.overrides;
-  await ensureFonts({ ...state.params, ...out.params });
-  saveSettings(); buildUI(); await refresh();
+  await withBusy(async () => { await ensureFonts({ ...state.params, ...out.params }); saveSettings(); buildUI(); await refresh(); });
 }
 /* ---------- undo / redo (edit sheet header) ----------
    `base` is the state before the current edit gesture; a pause of 600 ms starts a new undo step, so a slider drag is one step. */
@@ -305,7 +307,7 @@ const undo = () => stepHistory(undoH, redoH), redo = () => stepHistory(redoH, un
 
 /* ---------- init ---------- */
 function init() {
-  loadSettings(); initLang(); $('sel-quality').value = state.params.quality;
+  loadSettings(); initLang(); initBusy(); $('sel-quality').value = state.params.quality;
   document.addEventListener('vc:lang', () => { updateWakeUI(); if (state.result) { buildUI(); updateBadges(); updateExportNote(state.scene); } $('btn-lang').textContent = t('lang.toggle'); });
   $('btn-lang').addEventListener('click', () => setLang(getLang() === 'ja' ? 'en' : 'ja'));
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });

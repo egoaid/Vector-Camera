@@ -12,4 +12,5 @@ export const JA5 = {
   'mode.watercolor': '水彩画', 'mode.watercolor.desc': '写真を、筆で水彩絵の具を重ね塗りしたように。筆の跡・塗り残しの白・にじみ・紙の粒状感を再現', 'grp.wc': '水彩のようす',
   'p.wcPaper': '用紙', 'p.wcLine': '重ねる線', 'wc.line.none': 'なし', 'wc.line.etching': 'エッチング', 'wc.line.pen': 'ペン画', 'wc.line.pencil': '色鉛筆', 'p.wcLineAmt': '線の量', 'grp.wcline': '水彩に重ねる線', 'p.wcSat': '彩度（顔料の鮮やかさ）', 'p.wcPcWidth': '色鉛筆: 線の太さ', 'p.wcPcAdapt': '色鉛筆: 面の大きさに長さを合わせる', 'p.wcPcVary': '色鉛筆: 太さ・長さのばらつき', 'p.wcPcShade': '色鉛筆: 陰影に重ねる線', 'p.wcPcContour': '色鉛筆: 輪郭に沿う線', 'p.wcPcLen': '色鉛筆: 線の長さ', 'p.wcPcAngle': '色鉛筆: 線の向き（度）', 'p.wcPcFollow': '色鉛筆: 輪郭・形に沿う度合い', 'p.wcPcParts': '色鉛筆: パーツごとに塗り分け', 'p.wcPcSat': '色鉛筆: 彩度', 'p.wcPcBright': '色鉛筆: 明るさ', 'p.wcPcPrimary': '色鉛筆: 原色への寄せ', 'wc.paper.hot': '平滑（ホットプレス）', 'wc.paper.cold': '中目（コールドプレス）', 'wc.paper.tinted': 'ベージュの紙',
   'p.wcBleed': '色のにじみ（濡れた紙）', 'p.wcEdge': '縁の絵の具だまり', 'p.wcGran': '絵の具の粒状感', 'p.wcLight': '淡さ（透明感）', 'p.wcHl': '塗り残し（筆の隙間・紙の白の量）', 'p.wcBloom': 'ムラ・にじみ花', 'p.wcBrush': '筆の大きさ', 'p.wcMix': '色の重なり（顔料の混色）', 'p.wcLayer': '重ね塗り',
+  'busy.working': '生成中…',
 };
