@@ -1,6 +1,6 @@
 // i18n-ja.js - Japanese strings (default).
 export const JA = {
-  'app.tagline': '写真を、ベクター＆シルクスクリーン風アートに。端末内で完結。',
+  'app.tagline': '写真を、ベクター・版画・水彩・エッチング風のアートに。端末内で完結。',
   'start.camera': 'カメラで撮る', 'start.choose': '画像を選ぶ',
   'start.hint': '画像は端末の外へ送信されません。',
  

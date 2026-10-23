@@ -1,6 +1,6 @@
 // i18n-en.js - English strings.
 export const EN = {
-  'app.tagline': 'Turn photos into vector & screen-print style art. Everything stays on your device.',
+  'app.tagline': 'Turn photos into vector, print, watercolour and etching style art. Everything stays on your device.',
   'start.camera': 'Take a photo', 'start.choose': 'Choose an image',
   'start.hint': 'Your images are never uploaded.',
  
