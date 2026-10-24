@@ -1,6 +1,6 @@
 // app.js - application bootstrap and orchestration (input -> analysis -> style -> export).
 import { initLang, setLang, getLang, t, applyDom } from './i18n.js';
-import { state, loadSettings, saveSettings, applyModeDefaults } from './state.js';
+import { state, loadSettings, saveSettings, applyModeDefaults, mergeParams } from './state.js';
 import { LIMITS, MODE_PRESETS, pipelineParams, INK_MODES, needsInk } from './config.js';
 import { versionString } from './version.js';
 import * as wake from './wake-lock.js';
@@ -20,6 +20,8 @@ import { makeInkFactory } from './render-ink.js';
 import { drawScene, releaseScene } from './render-canvas.js';
 import { showScreen, showProcessing, hideProcessing, showError } from './ui-views.js';
 import { initBusy, withBusy } from './ui-busy.js';
+import { WORKS_AVAILABLE, newWorkId, putWork, putOriginals, patchWork, loadWork, requestPersistence } from './works-db.js';
+import { initWorks } from './ui-works.js';
 import { buildControls, presetDefaults } from './ui-controls.js';
 import { initCompare } from './ui-compare.js';
 import { initZoom } from './ui-zoom.js';
@@ -53,7 +55,7 @@ async function ensurePipeline() {
 const yieldUI = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
 
 /* ---------- replacing the photo / collage (can be cancelled without losing the current edit) ---------- */
-const SESSION_KEYS = ['source', 'canvas', 'work', 'sem', 'faces', 'facesEngine', 'faceStatus', 'engineUsed', 'overrides', 'collage', 'result', 'groups', 'scene'];
+const SESSION_KEYS = ['params', 'workId', 'blob', 'source', 'canvas', 'work', 'sem', 'faces', 'facesEngine', 'faceStatus', 'engineUsed', 'overrides', 'collage', 'result', 'groups', 'scene'];
 let replacing = null, hub = null, camFrom = 'hub', collageAppendNext = false;
 const hasEdits = () => !!(state.result && (state.collage || state.overrides.length));
 const confirmReplace = () => !hasEdits() || window.confirm(t('hub.replace'));
@@ -74,11 +76,13 @@ async function startWithSource(fileOrCanvas) {
   showProcessing('proc.prepare', 0.03); await yieldUI(); beginReplace();
   try {
     const { source, canvas } = await loadSource(fileOrCanvas);
+    state.blob = await asBlob(fileOrCanvas); // the original photo, kept for the Works history
     state.source = source; state.canvas = canvas; state.overrides = []; editing = false; state.collage = null; resetHistory();
-    await analyze();
+    await analyze('new');
   } catch (e) { console.error(e); rollbackReplace(); hideProcessing(); showHub(); showError('start-error', t(/memory|alloc/i.test(String(e && e.message)) ? 'err.memory' : 'err.load')); }
 }
-async function analyze() {
+/** work: 'new' = a new photo (saved as a new work), 'keep' = same photo again (re-analyse), or the id of a saved work being opened. */
+async function analyze(work = 'keep') {
   cancelled = false; const mySeq = ++state.seq;
   showProcessing('proc.prepare', 0.08); await yieldUI();
   state.work = makeWorking(state.canvas, state.params.quality);
@@ -88,8 +92,9 @@ async function analyze() {
   showProcessing('proc.segment', 0.4);
   try { await runPipeline(true); } catch (e) { if (cancelled) return; console.error(e); rollbackReplace(); hideProcessing(); toast(t('err.generic')); if (state.result) resumeEdit(); else showHub(); return; }
   if (cancelled) return;
-  commitReplace(); hideProcessing(); showScreen('result'); zoom.reset();
+  commitReplace(); if (work !== 'keep') state.workId = null; hideProcessing(); showScreen('result'); zoom.reset();
   await withBusy(async () => { buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); drawOriginal(); }); // the first render can take a while: show the printing animation
+  await workAttach(work);
 }
 async function runPipeline(force = false) {
   await ensurePipeline();
@@ -106,21 +111,22 @@ async function processCell(cell) {
   const pp = pipelineParams(state.params, w.w, w.h); cell.res = await client.process(pp); cell.key = JSON.stringify(pp);
   cell.groups = null; cell.inkCache = null;
 }
-async function addCollageFiles(files, append = true) {
-  const have = append && state.collage ? state.collage.cells : [];
+async function addCollageFiles(files, append = true, opts = {}) {
+  const isNew = !(append && state.collage), have = !isNew ? state.collage.cells : [];
   const list = [...files].filter((f) => f instanceof HTMLCanvasElement || /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|avif|heic)$/i.test(f.name)).slice(0, 12 - have.length);
   if (!list.length) return;
-  if (!append && !confirmReplace()) { showHub(); return; } // a new collage replaces the current edit; nothing is changed until it is built
+  if (!append && !opts.restore && !confirmReplace()) { showHub(); return; } // a new collage replaces the current edit; nothing is changed until it is built
   beginReplace(); cancelled = false; const mySeq = ++state.seq; const cells = have.slice();
   try {
     for (let i = 0; i < list.length; i++) {
       showProcessing('proc.collage', (i + 0.1) / list.length * 0.9, { n: i + 1, m: list.length }); await yieldUI();
-      const { source, canvas } = await loadSource(list[i]); const cell = { source, canvas }; await processCell(cell); if (cancelled || mySeq !== state.seq) return; cells.push(cell);
+      const blob = await asBlob(list[i]), { source, canvas } = await loadSource(list[i]); const cell = { source, canvas, blob }; await processCell(cell); if (cancelled || mySeq !== state.seq) return; cells.push(cell);
     }
   } catch (e) { console.error(e); rollbackReplace(); hideProcessing(); toast(t('err.load')); if (state.result) resumeEdit(); else showHub(); return; }
-  state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false; resetHistory(); commitReplace();
+  state.collage = { cells }; state.result = cells[0].res; state.source = cells[0].source; state.canvas = cells[0].canvas; state.overrides = []; editing = false; resetHistory(); commitReplace(); if (isNew || opts.restore) state.workId = null;
   hideProcessing(); showScreen('result'); zoom.reset();
   await withBusy(async () => { buildUI(); await ensureFonts(state.params); await yieldUI(); redraw(); });
+  if (opts.restore) await workAttach(opts.restore); else if (isNew) await workAttach('new'); else if (state.workId) { try { await putOriginals(state.workId, cells.map((c) => c.blob)); workSig = ''; await workSave(false, { n: cells.length }); } catch (e) { console.error(e); toast(t('works.savefail')); } }
 }
 async function reprocessCollage(mySeq) {
   for (let i = 0; i < state.collage.cells.length; i++) {
@@ -173,7 +179,7 @@ function rebuildScene() {
   state.scene = buildScene(state.result, state.groups, state.params, needsInk(state.params) ? previewInkFactory() : null);
 }
 function redraw() {
-  if (!state.result) return; rebuildScene(); const fr = state.scene && state.scene.frame; if ((fr ? fr.tf.join() + state.scene.paper : '') !== origSig) drawOriginal(); paint(); updateBadges(); updateExportNote(state.scene); ensureTextFonts();
+  if (!state.result) return; rebuildScene(); workTouch(); const fr = state.scene && state.scene.frame; if ((fr ? fr.tf.join() + state.scene.paper : '') !== origSig) drawOriginal(); paint(); updateBadges(); updateExportNote(state.scene); ensureTextFonts();
 }
 /** A shown text slot whose font is not loaded draws nothing (this hid text slots 2 and 3 when their default fonts were never opened in the font menu).
     Load what is missing, then redraw once; fonts that cannot be loaded are reported once instead of failing silently. */
@@ -276,6 +282,65 @@ async function setWake(on) { state.params.wakeLock = on; saveSettings(); on ? aw
 let camUI = null;
 const openCamera = (mode = 'single', append = false, from = 'hub') => { camFrom = from; return camUI.open(mode, append); };
 
+/* ---------- works: automatic saving of the original photo(s) and the edit data, and opening them again ---------- */
+const canvasBlob = (cv) => new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.95));
+const asBlob = async (f) => (f instanceof HTMLCanvasElement ? canvasBlob(f) : f);
+let workTimer = 0, workSig = '', works = null, sheetUI = null;
+const workSnap = () => JSON.stringify([state.params, state.overrides]);
+/** Small JPEG of what is on screen, for the list. */
+function workThumb() {
+  const cv = $('cv-result'); if (!cv || !cv.width) return Promise.resolve(null);
+  const k = Math.min(1, 360 / Math.max(cv.width, cv.height)), tc = document.createElement('canvas'); tc.width = Math.max(1, Math.round(cv.width * k)); tc.height = Math.max(1, Math.round(cv.height * k));
+  tc.getContext('2d').drawImage(cv, 0, 0, tc.width, tc.height); return new Promise((r) => tc.toBlob(r, 'image/jpeg', 0.8));
+}
+async function workCreate() {
+  if (!WORKS_AVAILABLE) return;
+  const blobs = state.collage ? state.collage.cells.map((c) => c.blob) : [state.blob]; if (blobs.some((b) => !b)) return;
+  const tok = state.result, id = newWorkId(), now = Date.now();
+  try {
+    const thumb = await workThumb();
+    await putWork({ id, kind: state.collage ? 'collage' : 'single', created: now, updated: now, n: blobs.length, mode: state.params.mode, params: JSON.parse(JSON.stringify(state.params)), overrides: state.overrides.slice(), thumb }, blobs);
+    if (state.result === tok) { state.workId = id; workSig = workSnap(); } requestPersistence();
+  } catch (e) { console.error(e); toast(t('works.savefail')); }
+}
+async function workAttach(work) {
+  if (work === 'keep') return;
+  if (work === 'new') await workCreate(); else { state.workId = work; workSig = workSnap(); }
+}
+/** Called after every redraw: when the edit data changed, save it shortly after the person stops (one write per pause, not per slider step). */
+function workTouch() {
+  if (!state.workId || replacing || workSnap() === workSig) return;
+  clearTimeout(workTimer); workTimer = setTimeout(() => workSave(false), 1200);
+}
+/** light = no thumbnail (used when the page is being hidden, so the edit data is written before the browser may suspend the app). */
+async function workSave(light, extra = {}) {
+  clearTimeout(workTimer); const id = state.workId; if (!id || replacing || !state.result) return;
+  const sig = workSnap(); if (sig === workSig && !Object.keys(extra).length) return;
+  const patch = { params: JSON.parse(JSON.stringify(state.params)), overrides: state.overrides.slice(), mode: state.params.mode, updated: Date.now(), ...extra };
+  try {
+    if (!light) { const th = await workThumb(); if (th) patch.thumb = th; }
+    if (state.workId !== id) return;
+    workSig = sig; if (!(await patchWork(id, patch))) state.workId = null; // deleted from another tab
+  } catch (e) { console.error(e); toast(t('works.savefail')); }
+}
+async function openWork(id) {
+  if (state.workId === id && state.result) { resumeEdit(); sheetUI.hide(); return; }
+  let w; try { w = await loadWork(id); } catch (e) { console.error(e); toast(t('works.openfail')); return; }
+  if (!w) { toast(t('works.missing')); works.refresh(); return; }
+  await workSave(false); // the work being left keeps its latest edits
+  const cur = state.params, params = { ...mergeParams(w.rec.params, { keepMode: true }), wakeLock: cur.wakeLock, rndOpts: cur.rndOpts, rndStyle: cur.rndStyle, faceEngine: cur.faceEngine }; // app-level settings stay as they are
+  showProcessing('proc.prepare', 0.03); await yieldUI(); beginReplace(); clearTimeout(workTimer);
+  try {
+    state.params = params; saveSettings(); $('sel-quality').value = params.quality;
+    if (w.rec.kind === 'collage') { state.collageBusy = true; try { await addCollageFiles(w.blobs, false, { restore: id }); } finally { state.collageBusy = false; } }
+    else {
+      const { source, canvas } = await loadSource(w.blobs[0]);
+      state.blob = w.blobs[0]; state.source = source; state.canvas = canvas; state.overrides = (w.rec.overrides || []).slice(); editing = false; state.collage = null; resetHistory();
+      await analyze(id);
+    }
+    if (state.result && state.workId === id) sheetUI.hide();
+  } catch (e) { console.error(e); rollbackReplace(); hideProcessing(); toast(t('works.openfail')); if (state.result) resumeEdit(); else showHub(); }
+}
 /* ---------- randomise ---------- */
 const snapshot = () => ({ params: JSON.parse(JSON.stringify(state.params)), overrides: state.overrides.slice() });
 async function doRandom() {
@@ -311,13 +376,15 @@ function init() {
   document.addEventListener('vc:lang', () => { updateWakeUI(); if (state.result) { buildUI(); updateBadges(); updateExportNote(state.scene); } $('btn-lang').textContent = t('lang.toggle'); });
   $('btn-lang').addEventListener('click', () => setLang(getLang() === 'ja' ? 'en' : 'ja'));
   $('sel-quality').addEventListener('change', (e) => { state.params.quality = e.target.value; saveSettings(); });
-  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); initSheet(); initLayout(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
+  client = new PipelineClient(onPipeProgress); zoom = initZoom({ onSettle: () => { if (state.scene && $('screen-result').classList.contains('active')) paint(); }, isCompare: () => compare.isOn() }); compare = initCompare(() => zoom.pinching()); initStageFrame(); sheetUI = initSheet(); initLayout(); handles = initTextHandles({ onChange: (k) => onControl(k) }); initAbout(); initExport(getExportScene);
   camUI = initCameraUI({ onSingle: (cv) => startWithSource(cv), onMulti: async (list, append) => { state.collageBusy = true; try { await addCollageFiles(list, append); } finally { state.collageBusy = false; } }, back: () => { if (camFrom === 'result' && state.result) resumeEdit(); else showHub(); }, toast });
   document.addEventListener('vc:face-engine', (e) => { // the person turned face detection on / off: detect again, redraw
     state.params = { ...state.params, faceEngine: e.detail === 'off' ? 'off' : 'modern' }; saveSettings(); state.faces = undefined; state.facesEngine = e.detail; state.faceStatus = null; if (state.result) state.result.kinds = null; buildControls(onControl, setMode); if (state.result) redraw();
   });
   hub = initHub({ hasSession: () => !!state.result, camera: (m) => openCamera(m, false, 'hub'), choose: () => $('file-input').click(), collageCamera: () => openCamera('multi', false, 'hub'), collageChoose: () => { collageAppendNext = false; $('file-collage').click(); }, resume: resumeEdit });
   $('file-input').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) startWithSource(f); });
+  works = initWorks({ currentId: () => state.workId, open: openWork, deleted: (id, was) => { if (was) { state.workId = null; clearTimeout(workTimer); } }, toast });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') workSave(true); }); window.addEventListener('pagehide', () => workSave(true));
   $('btn-photo').addEventListener('click', showHub); $('tb-camera').addEventListener('click', showHub);
   $('file-collage').addEventListener('change', async (e) => { const fl = [...e.target.files], append = collageAppendNext; e.target.value = ''; collageAppendNext = false; if (fl.length) { state.collageBusy = true; try { await addCollageFiles(fl, append); } finally { state.collageBusy = false; } } });
   $('btn-random').addEventListener('click', doRandom); $('sheet-undo').addEventListener('click', undo); $('sheet-redo').addEventListener('click', redo);

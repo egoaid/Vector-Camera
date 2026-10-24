@@ -12,7 +12,9 @@ import { JA4 } from './i18n-ja-v4.js';
 import { EN4 } from './i18n-en-v4.js';
 import { JA5 } from './i18n-ja-v5.js';
 import { EN5 } from './i18n-en-v5.js';
-const DICT = { ja: { ...JA, ...JA2, ...STYLES_JA, ...MANUAL_JA, ...JA3, ...JA4, ...JA5 }, en: { ...EN, ...EN2, ...STYLES_EN, ...MANUAL_EN, ...EN3, ...EN4, ...EN5 } };
+import { JA6 } from './i18n-ja-v6.js';
+import { EN6 } from './i18n-en-v6.js';
+const DICT = { ja: { ...JA, ...JA2, ...STYLES_JA, ...MANUAL_JA, ...JA3, ...JA4, ...JA5, ...JA6 }, en: { ...EN, ...EN2, ...STYLES_EN, ...MANUAL_EN, ...EN3, ...EN4, ...EN5, ...EN6 } };
 let lang = 'ja';
 export const getLang = () => lang;
 export function detectLang() {

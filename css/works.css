@@ -1,0 +1,23 @@
+/* works.css - the Works page (history of photos and edits), its start-screen list, and the Style page's style / colour sub-tabs. */
+.subtabs { display: flex; gap: 6px; margin: 4px 0 10px; }
+.subtab { flex: 1 1 0; min-height: 40px; border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--panel-2); color: var(--muted); font: inherit; font-weight: 800; cursor: pointer; }
+.subtab.on { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panel-2)); }
+.subpage { display: none; }
+.subpage.on { display: block; }
+
+.works-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin-top: 8px; }
+.work { position: relative; border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--panel-2); overflow: hidden; }
+.work-open { display: grid; width: 100%; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.work-thumb { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: var(--border); }
+.work-meta { display: grid; gap: 1px; padding: 6px 8px 8px; font-size: .72rem; line-height: 1.35; }
+.work-meta b { font-size: .78rem; }
+.work-meta span { color: var(--muted); }
+.work-badge { position: absolute; left: 6px; top: 6px; padding: 2px 7px; border-radius: 99px; background: var(--accent); color: #fff; font-size: .66rem; font-weight: 800; }
+.work-del { position: absolute; right: 4px; top: 4px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; cursor: pointer; }
+.work-del svg { width: 18px; height: 18px; }
+.works-empty { margin: 10px 0; }
+.works-clear { margin-top: 12px; }
+.works-home { margin-top: 12px; }
+.works-home h2 { margin-top: 0; }
+@media (max-width: 899px) { .works-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 380px) { .works-grid { grid-template-columns: repeat(2, 1fr); } }

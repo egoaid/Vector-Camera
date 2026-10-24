@@ -41,6 +41,7 @@
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/busy.css">
+<link rel="stylesheet" href="css/works.css">
 <link rel="stylesheet" href="css/camera.css">
 <link rel="stylesheet" href="css/result.css">
 <link rel="stylesheet" href="css/compare.css">
@@ -78,6 +79,7 @@
         "ハーフトーン（ドット・ライン・クロスハッチング・エングレービング・エッチング）と銀塩・セピアなどのトーン",
         "スタイル切り替え、ランダム生成、マイスタイル保存",
         "複数写真のコラージュと、日本語・英語のベクター文字",
+        "作品の自動保存（元の写真と編集内容を端末内に保存し、後から編集を再開）",
         "PNG・JPEG書き出し",
         "画像は端末内で処理（サーバー送信なし）",
         "使用中の画面スリープ抑制（Screen Wake Lock API）"
@@ -129,6 +131,11 @@
       <p id="start-error" class="error" role="alert" hidden></p>
     </div>
 
+    <div class="panel works-home" id="works-home" hidden>
+      <h2 data-i18n="works.title">作品</h2>
+      <div id="works-home-list" class="works-grid"></div>
+    </div>
+
     <div class="panel start-options">
       <div class="field">
         <label for="sel-quality" data-i18n="start.quality">解析サイズ</label>
@@ -151,7 +158,7 @@
       <ol class="steps">
         <li data-i18n-html="m.s1">最初の画面で「カメラで撮る」「画像を選ぶ」、または複数枚の「コラージュ」の入口をタップ。</li>
         <li data-i18n-html="m.s2">自動で領域が分割され、プレビューが表示されます（処理中はシルクスクリーンを刷る小さなアニメーションが出ます）。</li>
-        <li data-i18n-html="m.s3">画面下のメニューで仕上げます。<strong>スタイル</strong>でワンタップで雰囲気を切り替え、<strong>色</strong>・<strong>形・質感</strong>・<strong>文字</strong>で細かく調整。迷ったら「🎲ランダム生成」。</li>
+        <li data-i18n-html="m.s3">画面下のメニューで仕上げます。<strong>スタイル</strong>でワンタップで雰囲気を切り替え（色もここで変更）、<strong>形・質感</strong>・<strong>文字</strong>で細かく調整。迷ったら「🎲ランダム生成」。</li>
         <li data-i18n-html="m.s4"><strong>書き出し</strong>でSVG・ベクターPDF・PNG・JPEGとして保存。</li>
       </ol>
       <h2 data-i18n-html="m.h2">5つの変換モード</h2>
@@ -176,6 +183,7 @@
         <li data-i18n-html="m.c3"><strong>コラージュ</strong>：複数枚を、ちぎり紙・グリッド・ストリップ・モザイクに配置。連写で撮影もできます。</li>
         <li data-i18n-html="m.c4"><strong>文字</strong>：最大3つ。日本語・英語を枠ごとに選べ、書体・影・傾き・かすれなどを設定できます。</li>
         <li data-i18n-html="m.c5"><strong>前景／背景の修正</strong>：被写体の判定が合わないときは、領域をタップして切り替え。元の写真との比較や、ピンチ操作での拡大もできます。</li>
+        <li data-i18n-html="m.c6"><strong>作品</strong>：撮影・生成した作品は、元の写真と編集内容が自動で保存されます。アプリを閉じても、あとから「作品」（最初の画面にも一覧があります）を開いて続きから編集でき、1つずつ削除もできます。保存先はこの端末のブラウザ内です。</li>
       </ul>
       <h2 data-i18n-html="m.h9">書き出し</h2>
       <ul class="feature-list">
@@ -195,6 +203,7 @@
       <h2 data-i18n-html="m.h6">よくある質問</h2>
       <details><summary data-i18n-html="m.q0">どのモードを選べばいいですか？</summary><p data-i18n-html="m.a0">あとでSVGやPDFとして編集したいなら「ベクター」。版画やポップアートの雰囲気なら「シルクスクリーン」（ハーフトーンやエッチングの線もここ）。絵画のような柔らかさなら「水彩画」。迷ったら「スタイル」から選ぶか「🎲ランダム生成」を試してください。</p></details>
       <details><summary data-i18n-html="m.q1">書き出したSVG・PDFは本当にベクターですか？</summary><p data-i18n-html="m.a1">ベクター／シルエット／カラー領域モードは、パスと塗りだけの純粋なベクターです。水彩画も、筆跡ごとの形を半透明で重ねたベクターで書き出されます（紙の粒状感とにじみはPNG・JPEGのみ）。シルクスクリーンモードは、初期設定ではベクターの形状に加工した写真（ラスター）を重ねる構成で、写真部分はラスターです。書き出し欄の「ラスター部分もベクター化する」をオンにすると、粒子やインクの部分もパスに変換され、完全なベクターのSVG・PDFにできます（時間がかかります）。完成画像はPNG・JPEGでも保存できます。</p></details>
+      <details><summary data-i18n-html="m.q4">作った作品はどこに保存されますか？ 消えることはありますか？</summary><p data-i18n-html="m.a4">元の写真と編集内容（パラメーター）は、この端末のブラウザの中だけに自動で保存されます（サーバーには送られません）。保存されるのは「写真が生成されるたび」と「編集のたび」です。ブラウザのデータを消去したり、端末の空き容量が足りなくなったりすると消えることがあるため、大切な作品はSVG・PDF・PNGなどで書き出して残してください。</p></details>
       <details><summary data-i18n-html="m.q2">iPhoneでも使えますか？</summary><p data-i18n-html="m.a2">はい。iPhone（Safari）とAndroid（Chrome）を主な対象にしています。古い機種などで重い場合は「解析サイズ」を「軽量」にし、書き出しは「軽量PNG／JPEG」を使ってください。</p></details>
       <details><summary data-i18n-html="m.q3">オフラインで使えますか？</summary><p data-i18n-html="m.a3">一度読み込んだ後は、オフラインでも動作します（顔検出の同梱ファイルは初回の使用時に保存されます）。</p></details>
       <p class="copyright">© 2026 egoaid. All rights reserved.</p>
@@ -278,11 +287,12 @@
               <p class="note" data-i18n="rnd.lock.note"></p>
             </details>
           </div>
-          <div class="field style-lib" id="style-lib"></div>
-        </section>
-        <section class="page" data-page="color" id="sec-color">
-          <div class="field"><span class="label" data-i18n="preset.label">配色</span><div class="chips" id="presets" role="group"></div></div>
-          <div id="color-ctl"></div>
+          <div class="subtabs" role="tablist" id="style-subtabs"><button type="button" role="tab" class="subtab on" data-sub="style" aria-selected="true" data-i18n="tb.style">スタイル</button><button type="button" role="tab" class="subtab" data-sub="color" aria-selected="false" data-i18n="tb.color">色</button></div>
+          <div class="subpage on" data-sub="style"><div class="field style-lib" id="style-lib"></div></div>
+          <div class="subpage" data-sub="color" id="sec-color">
+            <div class="field"><span class="label" data-i18n="preset.label">配色</span><div class="chips" id="presets" role="group"></div></div>
+            <div id="color-ctl"></div>
+          </div>
         </section>
         <section class="page" data-page="shape" id="sec-shape">
           <div class="modes" role="tablist" id="modes"></div>
@@ -295,6 +305,10 @@
           <details class="grp"><summary data-i18n="grp.frame">余白・縁</summary><div id="frame-ctl"></div></details>
         </section>
         <section class="page" data-page="text" id="sec-text"><div id="text-ctl"></div></section>
+        <section class="page" data-page="works" id="sec-works">
+          <p class="note" data-i18n="works.note">撮影・生成した作品は自動で保存されます。保存先はこの端末のブラウザ内です（アップロードされません）。ブラウザのデータを消去すると、作品も消えます。</p>
+          <div id="works-list" class="works-grid"></div>
+        </section>
         <section class="page" data-page="export">
         <div class="export" id="export">
           <div class="field"><label for="sel-export-size" data-i18n="exp.size">出力サイズ（長辺）</label>
@@ -320,7 +334,7 @@
         </section>
       </div>
     </div>
-    <nav id="toolbar" aria-label="編集メニュー"><button type="button" class="tb-btn tb-left" id="tb-camera" data-i18n-aria="tb.camera" aria-label="写真"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span data-i18n="tb.camera">写真</span></button><button type="button" class="tb-btn" data-tool="compose" id="tb-compose" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/></svg><span data-i18n="tb.compose">compose</span></button><button type="button" class="tb-btn" data-tool="style" id="tb-style" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span data-i18n="tb.style">style</span></button><button type="button" class="tb-btn" data-tool="color" id="tb-color" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c5 0 9 3.6 9 8 0 2.6-2 4-4 4h-2c-1.2 0-2 .9-2 2 0 .6.3 1 .6 1.5.3.5.1 1.5-1.1 1.5-5 0-9-4-9-9s4-8 9-8z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="11" cy="7" r="1.2"/><circle cx="15.5" cy="8" r="1.2"/></svg><span data-i18n="tb.color">color</span></button><button type="button" class="tb-btn" data-tool="shape" id="tb-shape" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span data-i18n="tb.shape">shape</span></button><button type="button" class="tb-btn" data-tool="text" id="tb-text" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span data-i18n="tb.text">text</span></button><button type="button" class="tb-btn tb-right" data-tool="export" id="tb-export" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"/></svg><span data-i18n="tb.export">export</span></button></nav>
+    <nav id="toolbar" aria-label="編集メニュー"><button type="button" class="tb-btn tb-left" id="tb-camera" data-i18n-aria="tb.camera" aria-label="写真"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span data-i18n="tb.camera">写真</span></button><button type="button" class="tb-btn" data-tool="compose" id="tb-compose" hidden aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/></svg><span data-i18n="tb.compose">compose</span></button><button type="button" class="tb-btn" data-tool="style" id="tb-style" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span data-i18n="tb.style">style</span></button><button type="button" class="tb-btn" data-tool="shape" id="tb-shape" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span data-i18n="tb.shape">shape</span></button><button type="button" class="tb-btn" data-tool="text" id="tb-text" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span data-i18n="tb.text">text</span></button><button type="button" class="tb-btn" data-tool="works" id="tb-works" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M3 17l5-4 4 3 3-2 6 4"/></svg><span data-i18n="tb.works">作品</span></button><button type="button" class="tb-btn tb-right" data-tool="export" id="tb-export" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"/></svg><span data-i18n="tb.export">export</span></button></nav>
   </section>
 </main>
 

@@ -13,9 +13,13 @@ export function initSheet() {
     sheet.classList.toggle('open', open || desk()); document.body.classList.toggle('sheet-open', open && !desk()); sheet.dataset.page = page;
     $('sheet-title').textContent = t('tb.' + page);
   }
-  for (const b of btns) b.addEventListener('click', () => { if (b.dataset.tool === page && open && !desk()) open = false; else { page = b.dataset.tool; open = true; } apply(); });
+  const announce = () => { if (open || desk()) document.dispatchEvent(new CustomEvent('vc:page', { detail: page })); }; // lets a page (e.g. Works) refresh itself when it is shown
+  for (const b of btns) b.addEventListener('click', () => { if (b.dataset.tool === page && open && !desk()) open = false; else { page = b.dataset.tool; open = true; } apply(); announce(); });
+  // the Style page has two sub-pages: styles and colours
+  const subtabs = [...sheet.querySelectorAll('#style-subtabs .subtab')], subpages = [...sheet.querySelectorAll('.subpage')];
+  for (const st of subtabs) st.addEventListener('click', () => { for (const x of subtabs) { const on = x === st; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); } for (const sp of subpages) sp.classList.toggle('on', sp.dataset.sub === st.dataset.sub); });
   $('sheet-close').addEventListener('click', () => { open = false; apply(); });
   window.addEventListener('resize', apply); document.addEventListener('vc:sheet', apply); document.addEventListener('vc:lang', apply);
   apply();
-  return { show: (p) => { page = p; open = true; apply(); } };
+  return { show: (p) => { page = p; open = true; apply(); announce(); }, hide: () => { open = false; apply(); } };
 }
